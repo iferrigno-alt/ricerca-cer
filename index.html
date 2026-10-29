@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CER">
+<title>Ricerca CER</title>
+<style>
+:root{--bg:#eaf0f2;--sf:#fff;--ink:#12242c;--mut:#5b6f78;--ln:#d3dde1;--ac:#0b6577;--acf:#fff;--hz:#b42318;--hzb:#fde7e4;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1f;--sf:#17272e;--ink:#e6eef1;--mut:#93a8b1;--ln:#2a3f48;--ac:#5cc3d6;--acf:#06222a;--hz:#ff8a7d;--hzb:#3a1f1c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1a1f;--sf:#17272e;--ink:#e6eef1;--mut:#93a8b1;--ln:#2a3f48;--ac:#5cc3d6;--acf:#06222a;--hz:#ff8a7d;--hzb:#3a1f1c;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:66px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 14px 8px;border-bottom:1px solid var(--ln)}
+.box{display:flex;gap:8px}
+#q{flex:1;min-width:0;font:inherit;font-size:19px;padding:13px 14px;border-radius:14px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);outline:none}
+#q:focus{border-color:var(--ac)}
+#x{border:0;border-radius:14px;padding:0 16px;font:inherit;background:var(--sf);color:var(--mut);border:2px solid var(--ln)}
+.chips{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
+.chip{flex:none;font:inherit;font-size:15px;padding:7px 14px;border-radius:99px;border:1.5px solid var(--ln);background:var(--sf);color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--acf)}
+.chip.hz[aria-pressed=true]{background:var(--hz);border-color:var(--hz);color:var(--bg)}
+main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
+#info{color:var(--mut);font-size:14px;margin:6px 2px 10px}
+.it{cursor:pointer;display:block;width:100%;text-align:left;font:inherit;color:inherit;background:var(--sf);border:1px solid var(--ln);border-left:6px solid var(--ln);border-radius:12px;padding:11px 14px;margin:0 0 8px}
+.it.h{border-left-color:var(--hz)}
+.cd{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.03em}
+.hb{margin-left:8px;font-size:13px;font-weight:600;color:var(--hz);background:var(--hzb);padding:2px 8px;border-radius:99px;letter-spacing:0;vertical-align:3px}
+.ds{margin-top:2px;overflow-wrap:anywhere}
+.dt{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--ln);font-size:14px;color:var(--mut)}
+.it.o .dt{display:block}
+.dt b{color:var(--ink);font-weight:600}
+.cp{margin:10px 8px 0 0;font:inherit;font-size:15px;padding:8px 14px;border-radius:10px;border:0;background:var(--ac);color:var(--acf)}
+.cp.add{background:none;box-shadow:inset 0 0 0 1.5px var(--ac);color:var(--ac)}
+.cp.add.on{background:var(--hz);box-shadow:none;color:#fff}
+.ch .cd{font-size:19px}
+.more{width:100%;padding:12px;font:inherit;border-radius:12px;border:1.5px solid var(--ac);background:none;color:var(--ac)}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+
+/* barra di navigazione */
+#fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:8px;font:inherit;font-size:17px;font-weight:600;padding:13px 22px;border:0;border-radius:99px;background:var(--ac);color:var(--acf);box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap}
+#fab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#vS main{padding-bottom:96px}
+.dlg{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.dlgb{background:var(--sf);color:var(--ink);border-radius:16px;padding:16px;width:100%;max-width:520px;max-height:82vh;overflow:auto}
+.dlgb h3{margin:0 0 6px;font-size:19px}
+.dlgb p{margin:0 0 4px;overflow-wrap:anywhere}
+.dlga{display:grid;gap:8px;margin-top:14px}
+.mw{background:var(--hzb);color:var(--hz);border-bottom:1px solid var(--hz);padding:10px 14px;font-size:14px}
+
+/* banner aggiunta */
+.tg{margin-top:10px;background:var(--hz);color:#fff;border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:10px;font-size:15px}
+.tg span{flex:1;min-width:0;overflow-wrap:anywhere}
+.tgb{display:block;width:100%;margin-top:8px;font:inherit;font-size:15px;padding:9px 12px;border-radius:12px;border:1.5px dashed var(--hz);background:var(--sf);color:var(--hz)}
+.cp.use{background:var(--hz);color:#fff;font-weight:600}
+.tg button{font:inherit;font-size:14px;background:#fff;color:var(--hz);border:0;border-radius:8px;padding:6px 10px;flex:none}
+
+/* sopralluoghi */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln);min-height:56px}
+.top h1{margin:0;font-size:24px}
+.bk{font:inherit;background:none;border:0;color:var(--ac);padding:6px 0;font-size:17px}
+.sv{font-size:13px;color:var(--mut)}
+#et,.lt{font-size:24px;margin:6px 2px 12px;overflow-wrap:anywhere}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px;margin:0 0 12px}
+.card h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.cnt{font-size:13px;background:var(--bg);color:var(--mut);padding:1px 9px;border-radius:99px;font-weight:600}
+.cnt:empty{display:none}
+.cdb{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted var(--mut);text-underline-offset:5px;cursor:pointer}
+.cr.nc{border-style:dashed;border-left-style:solid;border-left-color:var(--ac)}
+.na{font-size:18px;font-weight:700;color:var(--ac)}
+.cfs .hint{font-size:13px}
+.unc{border:1.5px dashed var(--hz);border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.unc h3{margin:0;font-size:16px;color:var(--hz);display:flex;align-items:center;gap:8px}
+.lnk{color:var(--ac);text-decoration:underline;cursor:pointer;white-space:nowrap}
+.opn{white-space:nowrap;flex:none;margin-left:auto;font:inherit;font-size:15px;font-weight:600;background:none;border:1.5px solid var(--ac);color:var(--ac);border-radius:99px;padding:4px 12px;cursor:pointer}
+.opn.cc{margin:0;flex:none;align-self:center}
+.lt .cnt{font-size:15px;vertical-align:4px}
+.grid.g2{grid-template-columns:repeat(2,1fr);gap:8px}
+.fl{display:block;font-size:14px;color:var(--mut);margin:0 0 10px;min-width:0}
+.fl select,.fl input,.fl textarea,.qr input,.qr select,.nt,#ovn{display:block;width:100%;min-width:0;margin-top:4px;font:inherit;font-size:17px;color:var(--ink);background:var(--bg);border:1.5px solid var(--ln);border-radius:10px;padding:10px 12px;outline:none}
+.fl input:focus,.fl textarea:focus,.qr input:focus,.qr select:focus,.nt:focus,#ovn:focus{border-color:var(--ac)}
+input[type=date]{-webkit-appearance:none;appearance:none;min-height:47px}
+textarea{resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:16px;padding:11px 10px;border-radius:12px;border:1.5px solid var(--ac);background:none;color:var(--ac);text-align:center;cursor:pointer}
+.btn.pri{background:var(--ac);color:var(--acf)}
+.btn.dng{border-color:var(--hz);color:var(--hz)}
+.btn:disabled{opacity:.6}
+.wide{width:100%;margin-top:10px}
+.big{padding:14px;font-size:18px;margin:4px 0 14px}
+#gpsb{width:100%;margin-bottom:10px}
+.hint{font-size:14px;color:var(--mut);margin:4px 2px}
+.hint a{color:var(--ac)}
+.err{color:var(--hz)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.grid:empty{display:none}
+.th{position:relative;padding:0;border:0;border-radius:10px;overflow:hidden;aspect-ratio:1/1;background:var(--bg)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th span,.th i{position:absolute;background:rgba(0,0,0,.6);color:#fff;font-size:12px;font-style:normal;padding:1px 7px;border-radius:99px}
+.th span{left:4px;top:4px}.th i{right:4px;top:4px}
+.th b{position:absolute;left:4px;right:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:600;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.th b.no{background:var(--hz)}
+.cfr{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.cfr .btn.sm2.pri{flex:1}
+.cfs{order:2;flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;min-width:0;align-items:center}
+.cfs:empty{display:none}
+.cfs .hint{margin:0;font-size:13px}
+.mt{position:relative;flex:none;width:52px;height:52px;padding:0;border:0;border-radius:8px;overflow:hidden;background:var(--bg)}
+.mt img{width:100%;height:100%;object-fit:cover;display:block}
+.mt span{position:absolute;left:2px;top:2px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:0 5px;border-radius:99px}
+.btn.sm2{flex:none;padding:8px 10px;font-size:15px}
+.ovh{color:#fff;font-size:15px;font-weight:600}
+.ovmv{font:inherit;font-size:14px;background:none;border:0;color:#cfe;text-decoration:underline;padding:2px 0;align-self:flex-start}
+.ovk{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ovk .lb{color:#ddd;font-size:14px;width:100%}
+.ovk button{font:inherit;font-size:15px;font-weight:600;padding:7px 12px;border-radius:99px;border:1.5px solid #fff;background:none;color:#fff;font-variant-numeric:tabular-nums}
+.ovk button[aria-pressed=true]{background:#fff;color:#0b6577}
+.ovk button.h[aria-pressed=true]{color:#b42318}
+.ovk button.ovs{border-style:dashed}
+.cr{border:1px solid var(--ln);border-left:6px solid var(--ln);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.cr.h{border-left-color:var(--hz)}
+.crh{display:flex;align-items:center}
+.crh .cd{font-size:19px}
+.xb{margin-left:auto;font:inherit;background:none;border:0;color:var(--mut);font-size:18px;padding:2px 6px}
+.sm{font-size:14px}
+.qr{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:10px}
+.qr input,.qr select{margin-top:0}
+.nt{margin-top:8px!important;font-size:16px!important}
+.tot{margin-top:12px;font-size:15px}
+.tot:empty{display:none}
+.sl{padding:13px 14px}
+.slt{font-size:19px;font-weight:700;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--mut);margin-top:4px}
+#ov{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.9);display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#ovi{width:100%;height:100%;object-fit:contain;display:block}
+.ovw{position:relative;flex:1;min-height:0;touch-action:pan-y}
+.ova{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:34px;line-height:1}
+.ova.l{left:0}.ova.r{right:0}
+#ovn{background:var(--sf);margin:0}
+#ov .btn.dng{background:var(--sf)}
+
+/* report */
+#vR{background:#d9dee0;min-height:100vh}
+#vR .top{background:#d9dee0;border-color:#c3cacd}
+#vR .bk{color:#0b6577}
+.rep{background:#fff;color:#111;max-width:800px;margin:12px auto 30px;padding:22px 20px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.rep h1{font-size:22px;margin:0 0 4px}
+.rep h2{font-size:17px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #0b6577}
+.rep .sub{color:#555;font-size:13px;margin:0 0 14px}
+.rep table{width:100%;border-collapse:collapse}
+.rep .kv th{text-align:left;width:32%;vertical-align:top;color:#555;font-weight:600;padding:5px 10px 5px 0}
+.rep .kv td{padding:5px 0;overflow-wrap:anywhere}
+.rep .tb th,.rep .tb td{border-bottom:1px solid #ccc;padding:6px 5px;text-align:left;vertical-align:top}
+.rep .tb th{font-size:13px;color:#555}
+.rep .r{text-align:right}.rep .nw{white-space:nowrap}
+.rep .pg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rep figure{margin:0;break-inside:avoid;page-break-inside:avoid}
+.rep figure img{width:100%;max-height:9cm;object-fit:contain;background:#f0f0f0;display:block}
+.rep figcaption{font-size:13px;color:#444;margin-top:3px}
+.rep a{color:#0b6577}
+@page{margin:14mm}
+@media print{
+ .np,#fab,#mw,#dlg,#vS,#vL,#vE,#vG,#ov{display:none!important}
+ :root{padding:0}
+ body,#vR{background:#fff;padding:0;min-height:0}
+ body::before{display:none}
+ .rep{margin:0;padding:0;max-width:none;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div id="vS">
+<header>
+<div class="box"><input id="q" type="search" placeholder="Codice (150101) o parola (oli, batterie…)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><button id="x" aria-label="Cancella">✕</button></div>
+<div class="chips" id="chips"></div>
+<div class="tg" id="tg" hidden><span id="tgt"></span><button id="tga">Annulla</button></div>
+<button class="tgb" id="tgb" data-use="" hidden>Aggiungi senza codice: lo assegno dopo</button>
+</header>
+<main><div id="info"></div><div id="list"></div></main>
+</div>
+
+<div id="mw" class="mw" hidden><b>Attenzione:</b> qui i sopralluoghi non vengono salvati (anteprima o finestra privata). Apri l'app nel browser — Chrome o Safari — per conservarli. Puoi comunque esportare report, CSV e foto prima di chiudere.</div>
+<div id="vL" hidden></div>
+<div id="vE" hidden></div>
+<div id="vG" hidden></div>
+<div id="vR" hidden></div>
+
+<div id="dlg" class="dlg" hidden><div class="dlgb" role="dialog" aria-modal="true"><div id="dlgc"></div><div class="dlga" id="dlga"></div></div></div>
+<div id="ov" hidden>
+<div id="ovh" class="ovh"></div>
+<div class="ovw"><img id="ovi" alt=""><button class="ova l" id="ovp" aria-label="Foto precedente">‹</button><button class="ova r" id="ovx" aria-label="Foto successiva">›</button></div>
+<div id="ovk" class="ovk"></div>
+<textarea id="ovn" rows="2" placeholder="Didascalia (es. cumulo lato nord, big bag n. 3…)"></textarea>
+<div id="ovm" class="ovk"></div>
+<div class="row2"><button class="btn dng" id="ovd">Elimina foto</button><button class="btn pri" id="ovc">Fatto</button></div>
+</div>
+
+<button id="fab" data-go="sop" hidden><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>Sopralluoghi</button>
+
+<script>
+const DB={"r":[["010101","rifiuti da estrazione di minerali metalliferi",0],["010102","rifiuti da estrazione di minerali non metalliferi",0],["010304","sterili che possono generare acido prodotti dalla lavorazione di minerale solforoso",1],["010305","altri sterili contenenti sostanze pericolose",1],["010306","sterili diversi da quelli di cui alle voci 01 03 04 e 01 03 05",0],["010307","altri rifiuti contenenti sostanze pericolose prodotti da trattamenti chimici e fisici di minerali metalliferi",1],["010308","polveri e residui affini diversi da quelli di cui alla voce 01 03 07",0],["010309","fanghi rossi derivanti dalla produzione di allumina, diversi da quelli di cui alla voce 01 03 10",0],["010310","fanghi rossi derivanti dalla produzione di allumina contenenti sostanze pericolose, diversi da quelli di cui alla voce 01 03 07",1],["010399","rifiuti non specificati altrimenti",0],["010407","rifiuti contenenti sostanze pericolose, prodotti da trattamenti chimici e fisici di minerali non metalliferi",1],["010408","scarti di ghiaia e pietrisco, diversi da quelli di cui alla voce 01 04 07",0],["010409","scarti di sabbia e argilla",0],["010410","polveri e residui affini, diversi da quelli di cui alla voce 01 04 07",0],["010411","rifiuti della lavorazione di potassa e salgemma, diversi da quelli di cui alla voce 01 04 07",0],["010412","sterili ed altri residui del lavaggio e della pulitura di minerali, diversi da quelli di cui alle voci 0104 07 e 01 04 11",0],["010413","rifiuti prodotti dal taglio e dalla segagione della pietra, diversi da quelli di cui alla voce 01 04 07",0],["010499","rifiuti non specificati altrimenti",0],["010504","fanghi e rifiuti di perforazione di pozzi per acque dolci",0],["010505","fanghi e rifiuti di perforazione contenenti oli",1],["010506","fanghi di perforazione ed altri rifiuti di perforazione contenenti sostanze pericolose",1],["010507","fanghi e rifiuti di perforazione contenenti barite, diversi da quelli delle voci 01 05 05 e 01 05 06",0],["010508","fanghi e rifiuti di perforazione contenenti cloruri, diversi da quelli delle voci 01 05 05 e 01 05 06",0],["010599","rifiuti non specificati altrimenti",0],["020101","fanghi da operazioni di lavaggio e pulizia",0],["020102","scarti di tessuti animali",0],["020103","scarti di tessuti vegetali",0],["020104","rifiuti plastici (ad esclusione degli imballaggi)",0],["020106","feci animali, urine e letame (comprese le lettiere usate), effluenti, raccolti separatamente e trattati fuori sito",0],["020107","rifiuti derivanti dalla silvicoltura",0],["020108","rifiuti agrochimici contenenti sostanze pericolose",1],["020109","rifiuti agrochimici diversi da quelli della voce 02 01 08",0],["020110","rifiuti metallici",0],["020199","rifiuti non specificati altrimenti",0],["020201","fanghi da operazioni di lavaggio e pulizia",0],["020202","scarti di tessuti animali",0],["020203","scarti inutilizzabili per il consumo o la trasformazione",0],["020204","fanghi da trattamento in loco degli effluenti",0],["020299","rifiuti non specificati altrimenti",0],["020301","fanghi prodotti da operazioni di lavaggio, pulizia, sbucciatura, centrifugazione e separazione",0],["020302","rifiuti legati all'impiego di conservanti",0],["020303","rifiuti prodotti dall'estrazione tramite solvente",0],["020304","scarti inutilizzabili per il consumo o la trasformazione",0],["020305","fanghi da trattamento in loco degli effluenti",0],["020399","rifiuti non specificati altrimenti",0],["020401","terriccio residuo delle operazioni di pulizia e lavaggio delle barbabietole",0],["020402","carbonato di calcio fuori specifica",0],["020403","fanghi da trattamento in loco degli effluenti",0],["020499","rifiuti non specificati altrimenti",0],["020501","scarti inutilizzabili per il consumo o la trasformazione",0],["020502","fanghi da trattamento in loco degli effluenti",0],["020599","rifiuti non specificati altrimenti",0],["020601","scarti inutilizzabili per il consumo o la trasformazione",0],["020602","rifiuti prodotti dall'impiego di conservanti",0],["020603","fanghi da trattamento in loco degli effluenti",0],["020699","rifiuti non specificati altrimenti",0],["020701","rifiuti prodotti dalle operazioni di lavaggio, pulizia e macinazione della materia prima",0],["020702","rifiuti prodotti dalla distillazione di bevande alcoliche",0],["020703","rifiuti prodotti dai trattamenti chimici",0],["020704","scarti inutilizzabili per il consumo o la trasformazione",0],["020705","fanghi da trattamento in loco degli effluenti",0],["020799","rifiuti non specificati altrimenti",0],["030101","scarti di corteccia e sughero",0],["030104","segatura, trucioli, residui di taglio, legno, pannelli di truciolare e piallacci contenenti sostanze pericolose",1],["030105","segatura, trucioli, residui di taglio, legno, pannelli di truciolare e piallacci diversi da quelli di cui alla voce 03 01 04",0],["030199","rifiuti non specificati altrimenti",0],["030201","preservanti del legno contenenti composti organici non alogenati",1],["030202","prodotti per trattamenti conservativi del legno contenenti composti organici clorurati",1],["030203","prodotti per trattamenti conservativi del legno contenenti composti organometallici",1],["030204","prodotti per trattamenti conservativi del legno contenenti composti inorganici",1],["030205","altri prodotti per trattamenti conservativi del legno contenenti sostanze pericolose",1],["030299","prodotti per trattamenti conservativi del legno non specificati altrimenti",0],["030301","scarti di corteccia e legno",0],["030302","fanghi di recupero dei bagni di macerazione (green liquor)",0],["030305","fanghi derivanti da processi di deinchiostrazione nel riciclaggio della carta",0],["030307","scarti della separazione meccanica nella produzione di polpa da rifiuti di carta e cartone",0],["030308","scarti della selezione di carta e cartone destinati ad essere riciclati",0],["030309","fanghi di scarto contenenti carbonato di calcio",0],["030310","scarti di fibre e fanghi contenenti fibre, riempitivi e prodotti di rivestimento generati dai processi di separazione meccanica",0],["030311","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 03 03 10",0],["030399","rifiuti non specificati altrimenti",0],["040101","carniccio e frammenti di calce",0],["040102","rifiuti di calcinazione",0],["040103","bagni di sgrassatura esauriti contenenti solventi senza fase liquida",1],["040104","liquido di concia contenente cromo",0],["040105","liquido di concia non contenente cromo",0],["040106","fanghi, prodotti in particolare dal trattamento in loco degli effluenti, contenenti cromo",0],["040107","fanghi, prodotti in particolare dal trattamento in loco degli effluenti, non contenenti cromo",0],["040108","rifiuti di cuoio conciato (scarti, cascami, ritagli, polveri di lucidatura) contenenti cromo",0],["040109","rifiuti delle operazioni di confezionamento e finitura",0],["040199","rifiuti non specificati altrimenti",0],["040209","rifiuti da materiali compositi (fibre impregnate, elastomeri, plastomeri)",0],["040210","materiale organico proveniente da prodotti naturali (ad es. grasso, cera)",0],["040214","rifiuti provenienti da operazioni di finitura, contenenti solventi organici",1],["040215","rifiuti da operazioni di finitura, diversi da quelli di cui alla voce 04 02 14",0],["040216","tinture e pigmenti contenenti sostanze pericolose",1],["040217","tinture e pigmenti, diversi da quelli di cui alla voce 04 02 16",0],["040219","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["040220","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 04 02 19",0],["040221","rifiuti da fibre tessili grezze",0],["040222","rifiuti da fibre tessili lavorate",0],["040299","rifiuti non specificati altrimenti",0],["050102","fanghi da processi di dissalazione",1],["050103","morchie da fondi di serbatoi",1],["050104","fanghi acidi prodotti da processi di alchilazione",1],["050105","perdite di olio",1],["050106","fanghi oleosi prodotti dalla manutenzione di impianti e apparecchiature",1],["050107","catrami acidi",1],["050108","altri catrami",1],["050109","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["050110","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 05 01 09",0],["050111","rifiuti prodotti dalla purificazione di carburanti mediante basi",1],["050112","acidi contenenti oli",1],["050113","fanghi residui dell'acqua di alimentazione delle caldaie",0],["050114","rifiuti prodotti dalle torri di raffreddamento",0],["050115","filtri di argilla esauriti",1],["050116","rifiuti contenenti zolfo prodotti dalla desolforizzazione del petrolio",0],["050117","bitume",0],["050199","rifiuti non specificati altrimenti",0],["050601","catrami acidi",1],["050603","altri catrami",1],["050604","rifiuti prodotti dalle torri di raffreddamento",0],["050699","rifiuti non specificati altrimenti",0],["050701","rifiuti contenenti mercurio",1],["050702","rifiuti contenenti zolfo",0],["050799","rifiuti non specificati altrimenti",0],["060101","acido solforico ed acido solforoso",1],["060102","acido cloridrico",1],["060103","acido fluoridrico",1],["060104","acido fosforico e fosforoso",1],["060105","acido nitrico e acido nitroso",1],["060106","altri acidi",1],["060199","rifiuti non specificati altrimenti",0],["060201","idrossido di calcio",1],["060203","idrossido di ammonio",1],["060204","idrossido di sodio e di potassio",1],["060205","altre basi",1],["060299","rifiuti non specificati altrimenti",0],["060311","sali e loro soluzioni, contenenti cianuri",1],["060313","sali e loro soluzioni, contenenti metalli pesanti",1],["060314","sali e loro soluzioni, diversi da quelli di cui alle voci 06 03 11 e 06 03 13",0],["060315","ossidi metallici contenenti metalli pesanti",1],["060316","ossidi metallici, diversi da quelli di cui alla voce 06 03 15",0],["060399","rifiuti non specificati altrimenti",0],["060403","rifiuti contenenti arsenico",1],["060404","rifiuti contenenti mercurio",1],["060405","rifiuti contenenti altri metalli pesanti",1],["060499","rifiuti non specificati altrimenti",0],["060502","fanghi da trattamento in loco di effluenti, contenenti sostanze pericolose",1],["060503","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 06 05 02",0],["060602","rifiuti contenenti solfuri pericolosi",1],["060603","rifiuti contenenti solfuri, diversi da quelli di cui alla voce 06 06 02",0],["060699","rifiuti non specificati altrimenti",0],["060701","rifiuti dei processi elettrolitici, contenenti amianto",1],["060702","carbone attivato dalla produzione di cloro",1],["060703","fanghi di solfati di bario, contenenti mercurio",1],["060704","soluzioni ed acidi, ad esempio acido di contatto",1],["060799","rifiuti non specificati altrimenti",0],["060802","rifiuti contenenti clorosilani pericolosi",1],["060899","rifiuti non specificati altrimenti",0],["060902","scorie fosforose",0],["060903","rifiuti prodotti da reazioni a base di calcio contenenti o contaminati da sostanze pericolose",1],["060904","rifiuti prodotti da reazioni a base di calcio, diversi da quelli di cui alla voce 06 09 03",0],["060999","rifiuti non specificati altrimenti",0],["061002","rifiuti contenenti sostanze pericolose",1],["061099","rifiuti non specificati altrimenti",0],["061101","rifiuti prodotti da reazioni a base di calcio nella produzione di diossido di titanio",0],["061199","rifiuti non specificati altrimenti",0],["061301","prodotti fitosanitari, agenti conservativi del legno ed altri biocidi inorganici",1],["061302","carbone attivo esaurito (tranne 06 07 02)",1],["061303","nerofumo",0],["061304","rifiuti derivanti dai processi di lavorazione dell'amianto",1],["061305","fuliggine",1],["061399","rifiuti non specificati altrimenti",0],["070101","soluzioni acquose di lavaggio ed acque madri",1],["070103","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070104","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070107","fondi e residui di reazione, alogenati",1],["070108","altri fondi e residui di reazione",1],["070109","residui di filtrazione e assorbenti esauriti alogenati",1],["070110","altri residui di filtrazione e assorbenti esauriti",1],["070111","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070112","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 01 11",0],["070199","rifiuti non specificati altrimenti",0],["070201","soluzioni acquose di lavaggio ed acque madri",1],["070203","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070204","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070207","fondi e residui di reazione, alogenati",1],["070208","altri fondi e residui di reazione",1],["070209","residui di filtrazione e assorbenti esauriti alogenati",1],["070210","altri residui di filtrazione e assorbenti esauriti",1],["070211","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070212","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 02 11",0],["070213","rifiuti plastici",0],["070214","rifiuti prodotti da additivi, contenenti sostanze pericolose",1],["070215","rifiuti prodotti da additivi, diversi da quelli di cui alla voce 07 02 14",0],["070216","rifiuti contenenti siliconi pericolosi",1],["070217","rifiuti contenenti siliconi diversi da quelli di cui alla voce 07 02 16",0],["070299","rifiuti non specificati altrimenti",0],["070301","soluzioni acquose di lavaggio ed acque madri",1],["070303","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070304","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070307","fondi e residui di reazione, alogenati",1],["070308","altri fondi e residui di reazione",1],["070309","residui di filtrazione e assorbenti esauriti, alogenati",1],["070310","altri residui di filtrazione e assorbenti esauriti",1],["070311","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070312","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 03 11",0],["070399","rifiuti non specificati altrimenti",0],["070401","soluzioni acquose di lavaggio ed acque madri",1],["070403","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070404","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070407","fondi e residui di reazione, alogenati",1],["070408","altri fondi e residui di reazione",1],["070409","residui di filtrazione e assorbenti esauriti, alogenati",1],["070410","altri residui di filtrazione e assorbenti esauriti",1],["070411","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070412","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 04 11",0],["070413","rifiuti solidi contenenti sostanze pericolose",1],["070499","rifiuti non specificati altrimenti",0],["070501","soluzioni acquose di lavaggio ed acque madri",1],["070503","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070504","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070507","fondi e residui di reazione, alogenati",1],["070508","altri fondi e residui di reazione",1],["070509","residui di filtrazione e assorbenti esauriti, alogenati",1],["070510","altri residui di filtrazione e assorbenti esauriti",1],["070511","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070512","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 05 11",0],["070513","rifiuti solidi contenenti sostanze pericolose",1],["070514","rifiuti solidi diversi da quelli di cui alla voce 07 05 13",0],["070599","rifiuti non specificati altrimenti",0],["070601","soluzioni acquose di lavaggio ed acque madri",1],["070603","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070604","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070607","fondi e residui di reazione, alogenati",1],["070608","altri fondi e residui di reazione",1],["070609","residui di filtrazione e assorbenti esauriti alogenati",1],["070610","altri residui di filtrazione e assorbenti esauriti",1],["070611","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070612","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 06 11",0],["070699","rifiuti non specificati altrimenti",0],["070701","soluzioni acquose di lavaggio ed acque madri",1],["070703","solventi organici alogenati, soluzioni di lavaggio ed acque madri",1],["070704","altri solventi organici, soluzioni di lavaggio ed acque madri",1],["070707","fondi e residui di reazione, alogenati",1],["070708","altri fondi e residui di reazione",1],["070709","residui di filtrazione e assorbenti esauriti, alogenati",1],["070710","altri residui di filtrazione e assorbenti esauriti",1],["070711","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["070712","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 07 07 11",0],["070799","rifiuti non specificati altrimenti",0],["080111","pitture e vernici di scarto, contenenti solventi organici o altre sostanze pericolose",1],["080112","pitture e vernici di scarto, diverse da quelle di cui alla voce 08 01 11",0],["080113","fanghi prodotti da pitture e vernici, contenenti solventi organici o altre sostanze pericolose",1],["080114","fanghi prodotti da pitture e vernici, diversi da quelli di cui alla voce 08 01 13",0],["080115","fanghi acquosi contenenti pitture e vernici, contenenti solventi organici o altre sostanze pericolose",1],["080116","fanghi acquosi contenenti pitture e vernici, diversi da quelli di cui alla voce 08 01 15",0],["080117","fanghi prodotti dalla rimozione di pitture e vernici, contenenti solventi organici o altre sostanze pericolose",1],["080118","fanghi prodotti dalla rimozione di pitture e vernici, diversi da quelli di cui alla voce 08 01 17",0],["080119","sospensioni acquose contenenti pitture e vernici, contenenti solventi organici o altre sostanze pericolose",1],["080120","sospensioni acquose contenenti pitture e vernici, diverse da quelle di cui alla voce 08 01 19",0],["080121","residui di pittura o di sverniciatori",1],["080199","rifiuti non specificati altrimenti",0],["080201","polveri di scarti di rivestimenti",0],["080202","fanghi acquosi contenenti materiali ceramici",0],["080203","sospensioni acquose contenenti materiali ceramici",0],["080299","rifiuti non specificati altrimenti",0],["080307","fanghi acquosi contenenti inchiostro",0],["080308","rifiuti liquidi acquosi contenenti inchiostro",0],["080312","scarti di inchiostro, contenenti sostanze pericolose",1],["080313","scarti di inchiostro, diversi da quelli di cui alla voce 08 03 12",0],["080314","fanghi di inchiostro, contenenti sostanze pericolose",1],["080315","fanghi di inchiostro, diversi da quelli di cui alla voce 08 03 14",0],["080316","residui di soluzioni per incisione",1],["080317","toner per stampa esauriti, contenenti sostanze pericolose",1],["080318","toner per stampa esauriti, diversi da quelli di cui alla voce 08 03 17",0],["080319","oli dispersi",1],["080399","rifiuti non specificati altrimenti",0],["080409","adesivi e sigillanti di scarto, contenenti solventi organici o altre sostanze pericolose",1],["080410","adesivi e sigillanti di scarto, diversi da quelli di cui alla voce 08 04 09",0],["080411","fanghi di adesivi e sigillanti, contenenti solventi organici o altre sostanze pericolose",1],["080412","fanghi di adesivi e sigillanti, diversi da quelli di cui alla voce 08 04 11",0],["080413","fanghi acquosi contenenti adesivi o sigillanti, contenenti solventi organici o altre sostanze pericolose",1],["080414","fanghi acquosi contenenti adesivi o sigillanti, diversi da quelli di cui alla voce 08 04 13",0],["080415","rifiuti liquidi acquosi contenenti adesivi o sigillanti, contenenti solventi organici o altre sostanze pericolose",1],["080416","rifiuti liquidi acquosi contenenti adesivi o sigillanti, diversi da quelli di cui alla voce 08 04 15",0],["080417","olio di resina",1],["080499","rifiuti non specificati altrimenti",0],["080501","isocianati di scarto",1],["090101","soluzioni di sviluppo e soluzioni attivanti a base acquosa",1],["090102","soluzioni di sviluppo per lastre offset a base acquosa",1],["090103","soluzioni di sviluppo a base di solventi",1],["090104","soluzioni di fissaggio",1],["090105","soluzioni di lavaggio e soluzioni di arresto-fissaggio",1],["090106","rifiuti contenenti argento prodotti dal trattamento in loco di rifiuti fotografici",1],["090107","carta e pellicole per fotografia, contenenti argento o composti dell'argento",0],["090108","carta e pellicole per fotografia, non contenenti argento o composti dell'argento",0],["090110","macchine fotografiche monouso senza batterie",0],["090111","macchine fotografiche monouso contenenti batterie incluse nelle voci 16 06 01, 16 06 02 o 16 06 03",1],["090112","macchine fotografiche monouso diverse da quelle di cui alla voce 09 01 11",0],["090113","rifiuti liquidi acquosi prodotti dal recupero in loco dell'argento, diversi da quelli di cui alla voce 09 01 06",1],["090199","rifiuti non specificati altrimenti",0],["100101","ceneri pesanti, scorie e polveri di caldaia (tranne le polveri di caldaia di cui alla voce 10 01 04)",0],["100102","ceneri leggere di carbone",0],["100103","ceneri leggere di torba e di legno non trattato",0],["100104","ceneri leggere di olio combustibile e polveri di caldaia",1],["100105","rifiuti solidi prodotti da reazioni a base di calcio nei processi di desolforazione dei fumi",0],["100107","rifiuti fangosi prodotti da reazioni a base di calcio nei processi di desolforazione dei fumi",0],["100109","acido solforico",1],["100113","ceneri leggere prodotte da idrocarburi emulsionati usati come combustibile",1],["100114","ceneri pesanti, scorie e polveri di caldaia prodotte dal coincenerimento, contenenti sostanze pericolose",1],["100115","ceneri pesanti, scorie e polveri di caldaia prodotte dal coincenerimento, diversi da quelli di cui alla voce 10 01 14",0],["100116","ceneri leggere prodotte dal coincenerimento, contenenti sostanze pericolose",1],["100117","ceneri leggere prodotte dal coincenerimento, diverse da quelle di cui alla voce 10 01 16",0],["100118","rifiuti prodotti dalla depurazione dei fumi, contenenti sostanze pericolose",1],["100119","rifiuti prodotti dalla depurazione dei fumi, diversi da quelli di cui alle voci 10 01 05, 10 01 07 e 10 01 18",0],["100120","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["100121","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 10 01 20",0],["100122","fanghi acquosi da operazioni di pulizia di caldaie, contenenti sostanze pericolose",1],["100123","fanghi acquosi da operazioni di pulizia di caldaie, diversi da quelli di cui alla voce 10 01 22",0],["100124","sabbie dei reattori a letto fluidizzato",0],["100125","rifiuti dell'immagazzinamento e della preparazione del combustibile delle centrali termoelettriche a carbone",0],["100126","rifiuti prodotti dal trattamento delle acque di raffreddamento",0],["100199","rifiuti non specificati altrimenti",0],["100201","rifiuti del trattamento delle scorie",0],["100202","scorie non trattate",0],["100207","rifiuti solidi prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["100208","rifiuti solidi prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 02 07",0],["100210","scaglie di laminazione",0],["100211","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100212","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 02 11",0],["100213","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["100214","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 02 13",0],["100215","altri fanghi e residui di filtrazione",0],["100299","rifiuti non specificati altrimenti",0],["100302","frammenti di anodi",0],["100304","scorie della produzione primaria",1],["100305","rifiuti di allumina",0],["100308","scorie saline della produzione secondaria",1],["100309","scorie nere della produzione secondaria",1],["100315","schiumature infiammabili o che rilasciano, al contatto con l'acqua, gas infiammabili in quantità pericolose",1],["100316","schiumature diverse da quelle di cui alla voce 10 03 15",0],["100317","rifiuti contenenti catrame derivanti dalla produzione di anodi",1],["100318","rifiuti contenenti carbonio derivanti dalla produzione degli anodi, diversi da quelli di cui alla voce 10 03 17",0],["100319","polveri dei gas di combustione, contenenti sostanze pericolose",1],["100320","polveri dei gas di combustione, diverse da quelle di cui alla voce 10 03 19",0],["100321","altre polveri e particolati (compresi quelli prodotti da mulini a palle), contenenti sostanze pericolose",1],["100322","altre polveri e particolati (compresi quelli prodotti da mulini a palle), diverse da quelle di cui alla voce 10 03 21",0],["100323","rifiuti solidi prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["100324","rifiuti solidi prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 03 23",0],["100325","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["100326","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 03 25",0],["100327","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100328","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 03 27",0],["100329","rifiuti prodotti dal trattamento di scorie saline e scorie nere, contenenti sostanze pericolose",1],["100330","rifiuti prodotti dal trattamento di scorie saline e scorie nere, diversi da quelli di cui alla voce 10 03 29",0],["100399","rifiuti non specificati altrimenti",0],["100401","scorie della produzione primaria e secondaria",1],["100402","scorie e schiumature della produzione primaria e secondaria",1],["100403","arsenato di calcio",1],["100404","polveri dei gas di combustione",1],["100405","altre polveri e particolato",1],["100406","rifiuti solidi prodotti dal trattamento dei fumi",1],["100407","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",1],["100409","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100410","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 04 09",0],["100499","rifiuti non specificati altrimenti",0],["100501","scorie della produzione primaria e secondaria",0],["100503","polveri dei gas di combustione",1],["100504","altre polveri e particolato",0],["100505","rifiuti solidi derivanti dal trattamento dei fumi",1],["100506","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",1],["100508","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100509","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 05 08",0],["100510","scorie e schiumature infiammabili o che rilasciano, al contatto con l'acqua, gas infiammabili in quantità pericolose",1],["100511","scorie e schiumature diverse da quelle di cui alla voce 10 05 10",0],["100599","rifiuti non specificati altrimenti",0],["100601","scorie della produzione primaria e secondaria",0],["100602","scorie e schiumature della produzione primaria e secondaria",0],["100603","polveri dei gas di combustione",1],["100604","altre polveri e particolato",0],["100606","rifiuti solidi prodotti dal trattamento dei fumi",1],["100607","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",1],["100609","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100610","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 06 09",0],["100699","rifiuti non specificati altrimenti",0],["100701","scorie della produzione primaria e secondaria",0],["100702","scorie e schiumature della produzione primaria e secondaria",0],["100703","rifiuti solidi prodotti dal trattamento dei fumi",0],["100704","altre polveri e particolato",0],["100705","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",0],["100707","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100708","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 07 07",0],["100799","rifiuti non specificati altrimenti",0],["100804","polveri e particolato",0],["100808","scorie saline della produzione primaria e secondaria",1],["100809","altre scorie",0],["100810","scorie e schiumature infiammabili o che rilasciano, al contatto con l'acqua, gas infiammabili in quantità pericolose",1],["100811","scorie e schiumature diverse da quelle di cui alla voce 10 08 10",0],["100812","rifiuti contenenti catrame derivante dalla produzione degli anodi",1],["100813","rifiuti contenenti carbonio della produzione degli anodi, diversi da quelli di cui alla voce 10 08 12",0],["100814","frammenti di anodi",0],["100815","polveri dei gas di combustione, contenenti sostanze pericolose",1],["100816","polveri dei gas di combustione, diverse da quelle di cui alla voce 10 08 15",0],["100817","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["100818","fanghi e residui di filtrazione prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 08 17",0],["100819","rifiuti prodotti dal trattamento delle acque di raffreddamento, contenenti oli",1],["100820","rifiuti prodotti dal trattamento delle acque di raffreddamento, diversi da quelli di cui alla voce 10 08 19",0],["100899","rifiuti non specificati altrimenti",0],["100903","scorie di fusione",0],["100905","forme e anime da fonderia inutilizzate, contenenti sostanze pericolose",1],["100906","forme e anime da fonderia inutilizzate, diverse da quelle di cui alla voce 10 09 05",0],["100907","forme e anime da fonderia utilizzate, contenenti sostanze pericolose",1],["100908","forme e anime da fonderia utilizzate, diverse da quelle di cui alla voce 10 09 07",0],["100909","polveri dei gas di combustione contenenti sostanze pericolose",1],["100910","polveri dei gas di combustione diverse, da quelle di cui alla voce 10 09 09",0],["100911","altri particolati contenenti sostanze pericolose",1],["100912","altri particolati diversi da quelli di cui alla voce 10 09 11",0],["100913","scarti di leganti contenenti sostanze pericolose",1],["100914","scarti di leganti diversi da quelli di cui alla voce 10 09 13",0],["100915","scarti di rilevatori di crepe, contenenti sostanze pericolose",1],["100916","scarti di rilevatori di crepe, diversi da quelli di cui alla voce 10 09 15",0],["100999","rifiuti non specificati altrimenti",0],["101003","scorie di fusione",0],["101005","forme e anime da fonderia inutilizzate, contenenti sostanze pericolose",1],["101006","forme e anime da fonderia inutilizzate, diverse da quelle di cui alla voce 10 10 05",0],["101007","forme e anime da fonderia utilizzate, contenenti sostanze pericolose",1],["101008","forme e anime da fonderia utilizzate, diverse da quelle di cui alla voce 10 10 07",0],["101009","polveri di gas di combustione, contenenti sostanze pericolose",1],["101010","polveri dei gas di combustione, diverse da quelle di cui alla voce 10 10 09",0],["101011","altri particolati contenenti sostanze pericolose",1],["101012","altri particolati diversi da quelli di cui alla voce 10 10 11",0],["101013","scarti di leganti contenenti sostanze pericolose",1],["101014","scarti di leganti diversi da quelli di cui alla voce 10 10 13",0],["101015","scarti di rilevatori di crepe, contenenti sostanze pericolose",1],["101016","scarti di rilevatori di crepe, diversi da quelli di cui alla voce 10 10 15",0],["101099","rifiuti non specificati altrimenti",0],["101103","scarti di materiali in fibra a base di vetro",0],["101105","polveri e particolato",0],["101109","residui di miscela di preparazione non sottoposti a trattamento termico, contenenti sostanze pericolose",1],["101110","residui di miscela di preparazione non sottoposti a trattamento termico, diverse da quelle di cui alla voce 10 11 09",0],["101111","rifiuti di vetro in forma di particolato e polveri di vetro contenenti metalli pesanti (provenienti ad esempio da tubi a raggi catodici)",1],["101112","rifiuti di vetro diversi da quelli di cui alla voce 10 11 11",0],["101113","fanghi provenienti dalla lucidatura e dalla macinazione del vetro, contenenti sostanze pericolose",1],["101114","fanghi provenienti dalla lucidatura e dalla macinazione del vetro, diversi da quelli di cui alla voce 10 11 13",0],["101115","rifiuti solidi prodotti dal trattamento di fumi, contenenti sostanze pericolose",1],["101116","rifiuti prodotti dal trattamento di fumi, diversi da quelli di cui alla voce 10 11 15",0],["101117","fanghi e residui di filtrazione prodotti dal trattamento di fumi, contenenti sostanze pericolose",1],["101118","fanghi e residui di filtrazione prodotti dal trattamento di fumi, diversi da quelli di cui alla voce 10 11 17",0],["101119","rifiuti solidi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["101120","rifiuti solidi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 10 11 19",0],["101199","rifiuti non specificati altrimenti",0],["101201","residui di miscela non sottoposti a trattamento termico",0],["101203","polveri e particolato",0],["101205","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",0],["101206","stampi di scarto",0],["101208","scarti di ceramica, mattoni, mattonelle e materiali da costruzione (sottoposti a trattamento termico)",0],["101209","rifiuti solidi prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["101210","rifiuti solidi prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 12 09",0],["101211","rifiuti delle operazioni di smaltatura, contenenti metalli pesanti",1],["101212","rifiuti delle operazioni di smaltatura diversi da quelli di cui alla voce 10 12 11",0],["101213","fanghi prodotti dal trattamento in loco degli effluenti",0],["101299","rifiuti non specificati altrimenti",0],["101301","residui di miscela non sottoposti a trattamento termico",0],["101304","rifiuti di calcinazione e di idratazione della calce",0],["101306","polveri e particolato (eccetto quelli delle voci 10 13 12 e 10 13 13)",0],["101307","fanghi e residui di filtrazione prodotti dal trattamento dei fumi",0],["101309","rifiuti della fabbricazione di cemento-amianto, contenenti amianto",1],["101310","rifiuti della fabbricazione di cemento-amianto, diversi da quelli di cui alla voce 10 13 09",0],["101311","rifiuti della produzione di materiali compositi a base di cemento, diversi da quelli di cui alle voci 10 13 09 e 10 13 10",0],["101312","rifiuti solidi prodotti dal trattamento dei fumi, contenenti sostanze pericolose",1],["101313","rifiuti solidi prodotti dal trattamento dei fumi, diversi da quelli di cui alla voce 10 13 12",0],["101314","rifiuti e fanghi di cemento",0],["101399","rifiuti non specificati altrimenti",0],["101401","rifiuti prodotti dalla depurazione dei fumi, contenenti mercurio",1],["110105","acidi di decappaggio",1],["110106","acidi non specificati altrimenti",1],["110107","basi di decappaggio",1],["110108","fanghi di fosfatazione",1],["110109","fanghi e residui di filtrazione, contenenti sostanze pericolose",1],["110110","fanghi e residui di filtrazione, diversi da quelli di cui alla voce 11 01 09",0],["110111","soluzioni acquose di lavaggio, contenenti sostanze pericolose",1],["110112","soluzioni acquose di lavaggio, diverse da quelle di cui alla voce 11 01 11",0],["110113","rifiuti di sgrassaggio contenenti sostanze pericolose",1],["110114","rifiuti di sgrassaggio diversi da quelli di cui alla voce 11 01 13",0],["110115","eluati e fanghi di sistemi a membrana o sistemi a scambio ionico, contenenti sostanze pericolose",1],["110116","resine a scambio ionico saturate o esaurite",1],["110198","altri rifiuti contenenti sostanze pericolose",1],["110199","rifiuti non specificati altrimenti",0],["110202","fanghi della lavorazione idrometallurgica dello zinco (compresi jarosite, goethite)",1],["110203","rifiuti della produzione di anodi per processi elettrolitici acquosi",0],["110205","rifiuti della lavorazione idrometallurgica del rame, contenenti sostanze pericolose",1],["110206","rifiuti della lavorazione idrometallurgica del rame, diversi da quelli della voce 11 02 05",0],["110207","altri rifiuti contenenti sostanze pericolose",1],["110299","rifiuti non specificati altrimenti",0],["110301","rifiuti contenenti cianuro",1],["110302","altri rifiuti",1],["110501","zinco solido",0],["110502","ceneri di zinco",0],["110503","rifiuti solidi prodotti dal trattamento dei fumi",1],["110504","fondente esaurito",1],["110599","rifiuti non specificati altrimenti",0],["120101","limatura e trucioli di metalli ferrosi",0],["120102","polveri e particolato di metalli ferrosi",0],["120103","limatura e trucioli di metalli non ferrosi",0],["120104","polveri e particolato di metalli non ferrosi",0],["120105","limatura e trucioli di materiali plastici",0],["120106","oli minerali per macchinari, contenenti alogeni (eccetto emulsioni e soluzioni)",1],["120107","oli minerali per macchinari, non contenenti alogeni (eccetto emulsioni e soluzioni)",1],["120108","emulsioni e soluzioni per macchinari, contenenti alogeni",1],["120109","emulsioni e soluzioni per macchinari, non contenenti alogeni",1],["120110","oli sintetici per macchinari",1],["120112","cere e grassi esauriti",1],["120113","rifiuti di saldatura",0],["120114","fanghi di lavorazione, contenenti sostanze pericolose",1],["120115","fanghi di lavorazione, diversi da quelli di cui alla voce 12 01 14",0],["120116","residui di materiale di sabbiatura, contenente sostanze pericolose",1],["120117","residui di materiale di sabbiatura, diversi da quelli di cui alla voce 12 01 16",0],["120118","fanghi metallici (fanghi di rettifica, affilatura e lappatura) contenenti oli",1],["120119","oli per macchinari, facilmente biodegradabili",1],["120120","corpi d'utensile e materiali di rettifica esauriti, contenenti sostanze pericolose",1],["120121","corpi d'utensile e materiali di rettifica esauriti, diversi da quelli di cui alla voce 12 01 20",0],["120199","rifiuti non specificati altrimenti",0],["120301","soluzioni acquose di lavaggio",1],["120302","rifiuti prodotti da processi di sgrassatura a vapore",1],["130101","oli per circuiti idraulici contenenti PCB",1],["130104","emulsioni clorurate",1],["130105","emulsioni non clorurate",1],["130109","oli minerali per circuiti idraulici, clorurati",1],["130110","oli minerali per circuiti idraulici, non clorurati",1],["130111","oli sintetici per circuiti idraulici",1],["130112","oli per circuiti idraulici, facilmente biodegradabili",1],["130113","altri oli per circuiti idraulici",1],["130204","oli minerali per motori, ingranaggi e lubrificazione, clorurati",1],["130205","oli minerali per motori, ingranaggi e lubrificazione, non clorurati",1],["130206","oli sintetici per motori, ingranaggi e lubrificazione",1],["130207","oli per motori, ingranaggi e lubrificazione, facilmente biodegradabili",1],["130208","altri oli per motori, ingranaggi e lubrificazione",1],["130301","oli isolanti o oli termoconduttori, contenenti PCB",1],["130306","oli minerali isolanti e termoconduttori clorurati, diversi da quelli di cui alla voce 13 03 01",1],["130307","oli minerali isolanti e termoconduttori non clorurati",1],["130308","oli sintetici isolanti e oli termoconduttori",1],["130309","oli isolanti e oli termoconduttori, facilmente biodegradabili",1],["130310","altri oli isolanti e oli termoconduttori",1],["130401","oli di sentina da navigazione interna",1],["130402","oli di sentina derivanti dalle fognature dei moli",1],["130403","oli di sentina da un altro tipo di navigazione",1],["130501","rifiuti solidi delle camere a sabbia e di prodotti di separazione olio/acqua",1],["130502","fanghi di prodotti di separazione olio/acqua",1],["130503","fanghi da collettori",1],["130506","oli prodotti da separatori olio/acqua",1],["130507","acque oleose prodotte da separatori olio/acqua",1],["130508","miscugli di rifiuti prodotti da camere a sabbia e separatori olio/acqua",1],["130701","olio combustibile e carburante diesel",1],["130702","benzina",1],["130703","altri carburanti (comprese le miscele)",1],["130801","fanghi ed emulsioni da processi di dissalazione",1],["130802","altre emulsioni",1],["130899","rifiuti non specificati altrimenti",1],["140601","clorofluorocarburi, HCFC, HFC",1],["140602","altri solventi e miscele di solventi, alogenati",1],["140603","altri solventi e miscele di solventi",1],["140604","fanghi o rifiuti solidi, contenenti solventi alogenati",1],["140605","fanghi o rifiuti solidi, contenenti altri solventi",1],["150101","imballaggi di carta e cartone",0],["150102","imballaggi di plastica",0],["150103","imballaggi in legno",0],["150104","imballaggi metallici",0],["150105","imballaggi compositi",0],["150106","imballaggi in materiali misti",0],["150107","imballaggi di vetro",0],["150109","imballaggi in materia tessile",0],["150110","imballaggi contenenti residui di sostanze pericolose o contaminati da tali sostanze",1],["150111","imballaggi metallici contenenti matrici solide porose pericolose (ad esempio amianto), compresi i contenitori a pressione vuoti",1],["150202","assorbenti, materiali filtranti (inclusi filtri dell'olio non specificati altrimenti), stracci e indumenti protettivi, contaminati da sostanze pericolose",1],["150203","assorbenti, materiali filtranti, stracci e indumenti protettivi, diversi da quelli di cui alla voce 15 02 02",0],["160103","pneumatici fuori uso",0],["160104","veicoli fuori uso",1],["160106","veicoli fuori uso, non contenenti liquidi né altre componenti pericolose",0],["160107","filtri dell'olio",1],["160108","componenti contenenti mercurio",1],["160109","componenti contenenti PCB",1],["160110","componenti esplosivi (ad esempio \"air bag\")",1],["160111","pastiglie per freni, contenenti amianto",1],["160112","pastiglie per freni, diverse da quelle di cui alla voce 16 01 11",0],["160113","liquidi per freni",1],["160114","liquidi antigelo contenenti sostanze pericolose",1],["160115","liquidi antigelo diversi da quelli di cui alla voce 16 01 14",0],["160116","serbatoi per gas liquefatto",0],["160117","metalli ferrosi",0],["160118","metalli non ferrosi",0],["160119","plastica",0],["160120","vetro",0],["160121","componenti pericolosi diversi da quelli di cui alle voci da 16 01 07 a 16 01 11, 16 01 13 e 16 01 14",1],["160122","componenti non specificati altrimenti",0],["160199","rifiuti non specificati altrimenti",0],["160209","trasformatori e condensatori contenenti PCB",1],["160210","apparecchiature fuori uso contenenti PCB o da essi contaminate, diverse da quelle di cui alla voce 16 02 09",1],["160211","apparecchiature fuori uso, contenenti clorofluorocarburi, HCFC, HFC",1],["160212","apparecchiature fuori uso, contenenti amianto in fibre libere",1],["160213","apparecchiature fuori uso, contenenti componenti pericolosi diversi da quelli di cui alle voci 16 02 09 e 16 02 12",1],["160214","apparecchiature fuori uso, diverse da quelle di cui alle voci da 16 02 09 a 16 02 13",0],["160215","componenti pericolosi rimossi da apparecchiature fuori uso",1],["160216","componenti rimossi da apparecchiature fuori uso diversi da quelli di cui alla voce 16 02 15",0],["160303","rifiuti inorganici contenenti sostanze pericolose",1],["160304","rifiuti inorganici, diversi da quelli di cui alla voce 16 03 03",0],["160305","rifiuti organici contenenti sostanze pericolose",1],["160306","rifiuti organici, diversi da quelli di cui alla voce 16 03 05",0],["160307","mercurio metallico",1],["160401","munizioni di scarto",1],["160402","fuochi artificiali di scarto",1],["160403","altri esplosivi di scarto",1],["160504","gas in contenitori a pressione (compresi gli halon), contenenti sostanze pericolose",1],["160505","gas in contenitori a pressione, diversi da quelli di cui alla voce 16 05 04",0],["160506","sostanze chimiche di laboratorio contenenti o costituite da sostanze pericolose, comprese le miscele di sostanze chimiche di laboratorio",1],["160507","sostanze chimiche inorganiche di scarto contenenti o costituite da sostanze pericolose",1],["160508","sostanze chimiche organiche di scarto contenenti o costituite da sostanze pericolose",1],["160509","sostanze chimiche di scarto diverse da quelle di cui alle voci 16 05 06, 16 05 07 e 16 05 08",0],["160601","batterie al piombo",1],["160602","batterie al nichel-cadmio",1],["160603","batterie contenenti mercurio",1],["160604","batterie alcaline (tranne 16 06 03)",0],["160605","altre batterie ed accumulatori",0],["160606","elettroliti di batterie ed accumulatori, oggetto di raccolta differenziata",1],["160708","rifiuti contenenti oli",1],["160709","rifiuti contenenti altre sostanze pericolose",1],["160799","rifiuti non specificati altrimenti",0],["160801","catalizzatori esauriti contenenti oro, argento, renio, rodio, palladio, iridio o platino (tranne 16 08 07)",0],["160802","catalizzatori esauriti contenenti metalli di transizione pericolosi o composti di metalli di transizione pericolosi",1],["160803","catalizzatori esauriti contenenti metalli di transizione o composti di metalli di transizione, non specificati altrimenti",0],["160804","catalizzatori liquidi esauriti per il cracking catalitico (tranne 16 08 07)",0],["160805","catalizzatori esauriti contenenti acido fosforico",1],["160806","liquidi esauriti usati come catalizzatori",1],["160807","catalizzatori esauriti contaminati da sostanze pericolose",1],["160901","permanganati, ad esempio permanganato di potassio",1],["160902","cromati, ad esempio cromato di potassio, dicromato di potassio o di sodio",1],["160903","perossidi, ad esempio perossido d'idrogeno",1],["160904","sostanze ossidanti non specificate altrimenti",1],["161001","rifiuti liquidi acquosi, contenenti sostanze pericolose",1],["161002","rifiuti liquidi acquosi, diversi da quelle di cui alla voce 16 10 01",0],["161003","concentrati acquosi, contenenti sostanze pericolose",1],["161004","concentrati acquosi, diversi da quelli di cui alla voce 16 10 03",0],["161101","rivestimenti e materiali refrattari a base di carbone provenienti da processi metallurgici, contenenti sostanze pericolose",1],["161102","rivestimenti e materiali refrattari a base di carbone provenienti dalle lavorazioni metallurgiche, diversi da quelli di cui alla voce 16 11 01",0],["161103","altri rivestimenti e materiali refrattari provenienti da processi metallurgici, contenenti sostanze pericolose",1],["161104","altri rivestimenti e materiali refrattari provenienti da processi metallurgici, diversi da quelli di cui alla voce 16 11 03",0],["161105","rivestimenti e materiali refrattari provenienti da lavorazioni non metallurgiche, contenenti sostanze pericolose",1],["161106","rivestimenti e materiali refrattari provenienti da lavorazioni non metallurgiche, diversi da quelli di cui alla voce 16 11 05",0],["170101","cemento",0],["170102","mattoni",0],["170103","mattonelle e ceramiche",0],["170106","miscugli o frazioni separate di cemento, mattoni, mattonelle e ceramiche, contenenti sostanze pericolose",1],["170107","miscugli di cemento, mattoni, mattonelle e ceramiche, diversi da quelle di cui alla voce 17 01 06",0],["170201","legno",0],["170202","vetro",0],["170203","plastica",0],["170204","vetro, plastica e legno contenenti sostanze pericolose o da esse contaminati",1],["170301","miscele bituminose contenenti catrame di carbone",1],["170302","miscele bituminose diverse da quelle di cui alla voce 17 03 01",0],["170303","catrame di carbone e prodotti contenenti catrame",1],["170401","rame, bronzo, ottone",0],["170402","alluminio",0],["170403","piombo",0],["170404","zinco",0],["170405","ferro e acciaio",0],["170406","stagno",0],["170407","metalli misti",0],["170409","rifiuti metallici contaminati da sostanze pericolose",1],["170410","cavi impregnati di olio, di catrame di carbone o di altre sostanze pericolose",1],["170411","cavi, diversi da quelli di cui alla voce 17 04 10",0],["170503","terra e rocce, contenenti sostanze pericolose",1],["170504","terra e rocce, diverse da quelle di cui alla voce 17 05 03",0],["170505","materiale di dragaggio, contenente sostanze pericolose",1],["170506","materiale di dragaggio, diverso da quello di cui alla voce 17 05 05",0],["170507","pietrisco per massicciate ferroviarie, contenente sostanze pericolose",1],["170508","pietrisco per massicciate ferroviarie, diverso da quello di cui alla voce 17 05 07",0],["170601","materiali isolanti, contenenti amianto",1],["170603","altri materiali isolanti contenenti o costituiti da sostanze pericolose",1],["170604","materiali isolanti, diversi da quelli di cui alle voci 17 06 01 e 17 06 03",0],["170605","materiali da costruzione contenenti amianto",1],["170801","materiali da costruzione a base di gesso contaminati da sostanze pericolose",1],["170802","materiali da costruzione a base di gesso, diversi da quelli di cui alla voce 17 08 01",0],["170901","rifiuti dell'attività di costruzione e demolizione, contenenti mercurio",1],["170902","rifiuti dell'attività di costruzione e demolizione, contenenti PCB (ad esempio sigillanti contenenti PCB, pavimentazioni a base di resina contenenti PCB, elementi stagni in vetro contenenti PCB, condensatori contenenti PCB)",1],["170903","altri rifiuti dell'attività di costruzione e demolizione (compresi rifiuti misti) contenenti sostanze pericolose",1],["170904","rifiuti misti dell'attività di costruzione e demolizione, diversi da quelli di cui alle voci 17 09 01, 17 09 02 e 17 09 03",0],["180101","oggetti da taglio (eccetto 18 01 03)",0],["180102","parti anatomiche ed organi incluse le sacche per il plasma e le riserve di sangue (tranne 18 01 03)",0],["180103","rifiuti che devono essere raccolti e smaltiti applicando precauzioni particolari per evitare infezioni",1],["180104","rifiuti che non devono essere raccolti e smaltiti applicando precauzioni particolari per evitare infezioni (es. bende, ingessature, lenzuola, indumenti monouso, assorbenti igienici)",0],["180106","sostanze chimiche pericolose o contenenti sostanze pericolose",1],["180107","sostanze chimiche diverse da quelle di cui alla voce 18 01 06",0],["180108","medicinali citotossici e citostatici",1],["180109","medicinali diversi da quelli di cui alla voce 18 01 08",0],["180110","rifiuti di amalgama prodotti da interventi odontoiatrici",1],["180201","oggetti da taglio (eccetto 18 02 02)",0],["180202","rifiuti che devono essere raccolti e smaltiti applicando precauzioni particolari per evitare infezioni",1],["180203","rifiuti che non devono essere raccolti e smaltiti applicando precauzioni particolari per evitare infezioni",0],["180205","sostanze chimiche pericolose o contenenti sostanze pericolose",1],["180206","sostanze chimiche diverse da quelle di cui alla voce 18 02 05",0],["180207","medicinali citotossici e citostatici",1],["180208","medicinali diversi da quelli di cui alla voce 18 02 07",0],["190102","materiali ferrosi estratti da ceneri pesanti",0],["190105","residui di filtrazione prodotti dal trattamento dei fumi",1],["190106","rifiuti liquidi acquosi prodotti dal trattamento dei fumi e altri rifiuti liquidi acquosi",1],["190107","rifiuti solidi prodotti dal trattamento dei fumi",1],["190110","carbone attivo esaurito, prodotto dal trattamento dei fumi",1],["190111","ceneri pesanti e scorie, contenenti sostanze pericolose",1],["190112","ceneri pesanti e scorie, diverse da quelle di cui alla voce 19 01 11",0],["190113","ceneri leggere, contenenti sostanze pericolose",1],["190114","ceneri leggere, diverse da quelle di cui alla voce 19 01 13",0],["190115","polveri di caldaia, contenenti sostanze pericolose",1],["190116","polveri di caldaia, diverse da quelle di cui alla voce 19 01 15",0],["190117","rifiuti della pirolisi, contenenti sostanze pericolose",1],["190118","rifiuti della pirolisi, diversi da quelli di cui alla voce 19 01 17",0],["190119","sabbie dei reattori a letto fluidizzato",0],["190199","rifiuti non specificati altrimenti",0],["190203","rifiuti premiscelati composti esclusivamente da rifiuti non pericolosi",0],["190204","rifiuti premiscelati contenenti almeno un rifiuto pericoloso",1],["190205","fanghi prodotti da trattamenti chimico-fisici, contenenti sostanze pericolose",1],["190206","fanghi prodotti da trattamenti chimico-fisici, diversi da quelli di cui alla voce 19 02 05",0],["190207","oli e concentrati prodotti da processi di separazione",1],["190208","rifiuti combustibili liquidi, contenenti sostanze pericolose",1],["190209","rifiuti combustibili solidi, contenenti sostanze pericolose",1],["190210","rifiuti combustibili, diversi da quelli di cui alle voci 19 02 08 e 19 02 09",0],["190211","altri rifiuti contenenti sostanze pericolose",1],["190299","rifiuti non specificati altrimenti",0],["190304","rifiuti contrassegnati come pericolosi, parzialmente stabilizzati diversi da quelli di cui al punto 19 03 08",1],["190305","rifiuti stabilizzati diversi da quelli di cui alla voce 19 03 04",0],["190306","rifiuti contrassegnati come pericolosi, solidificati",1],["190307","rifiuti solidificati diversi da quelli di cui alla voce 19 03 06",0],["190308","mercurio parzialmente stabilizzato",1],["190401","rifiuti vetrificati",0],["190402","ceneri leggere ed altri rifiuti dal trattamento dei fumi",1],["190403","fase solida non vetrificata",1],["190404","rifiuti liquidi acquosi prodotti dalla tempra di rifiuti vetrificati",0],["190501","parte di rifiuti urbani e simili non compostata",0],["190502","parte di rifiuti animali e vegetali non compostata",0],["190503","compost fuori specifica",0],["190599","rifiuti non specificati altrimenti",0],["190603","liquidi prodotti dal trattamento anaerobico di rifiuti urbani",0],["190604","digestato prodotto dal trattamento anaerobico di rifiuti urbani",0],["190605","liquidi prodotti dal trattamento anaerobico di rifiuti di origine animale o vegetale",0],["190606","digestato prodotto dal trattamento anaerobico di rifiuti di origine animale o vegetale",0],["190699","rifiuti non specificati altrimenti",0],["190702","percolato di discarica, contenente sostanze pericolose",1],["190703","percolato di discarica, diverso da quello di cui alla voce 19 07 02",0],["190801","residui di vagliatura",0],["190802","rifiuti da dissabbiamento",0],["190805","fanghi prodotti dal trattamento delle acque reflue urbane",0],["190806","resine a scambio ionico saturate o esaurite",1],["190807","soluzioni e fanghi di rigenerazione degli scambiatori di ioni",1],["190808","rifiuti prodotti da sistemi a membrana, contenenti sostanze pericolose",1],["190809","miscele di oli e grassi prodotte dalla separazione olio/acqua, contenenti esclusivamente oli e grassi commestibili",0],["190810","miscele di oli e grassi prodotte dalla separazione olio/acqua, diverse da quelle di cui alla voce 19 08 09",1],["190811","fanghi prodotti dal trattamento biologico delle acque reflue industriali, contenenti sostanze pericolose",1],["190812","fanghi prodotti dal trattamento biologico delle acque reflue industriali, diversi da quelli di cui alla voce 19 08 11",0],["190813","fanghi contenenti sostanze pericolose prodotti da altri trattamenti delle acque reflue industriali",1],["190814","fanghi prodotti da altri trattamenti delle acque reflue industriali, diversi da quelli di cui alla voce 19 08 13",0],["190899","rifiuti non specificati altrimenti",0],["190901","rifiuti solidi prodotti dai processi di filtrazione e vaglio primari",0],["190902","fanghi prodotti dai processi di chiarificazione dell'acqua",0],["190903","fanghi prodotti dai processi di decarbonatazione",0],["190904","carbone attivo esaurito",0],["190905","resine a scambio ionico saturate o esaurite",0],["190906","soluzioni e fanghi di rigenerazione delle resine a scambio ionico",0],["190999","rifiuti non specificati altrimenti",0],["191001","rifiuti di ferro e acciaio",0],["191002","rifiuti di metalli non ferrosi",0],["191003","fluff — frazione leggera e polveri, contenenti sostanze pericolose",1],["191004","fluff — frazione leggera e polveri, diverse da quelle di cui alla voce 19 10 03",0],["191005","altre frazioni, contenenti sostanze pericolose",1],["191006","altre frazioni, diverse da quelle di cui alla voce 19 10 05",0],["191101","filtri di argilla esauriti",1],["191102","catrami acidi",1],["191103","rifiuti liquidi acquosi",1],["191104","rifiuti prodotti dalla purificazione di carburanti tramite basi",1],["191105","fanghi prodotti dal trattamento in loco degli effluenti, contenenti sostanze pericolose",1],["191106","fanghi prodotti dal trattamento in loco degli effluenti, diversi da quelli di cui alla voce 19 11 05",0],["191107","rifiuti prodotti dalla depurazione di fumi",1],["191199","rifiuti non specificati altrimenti",0],["191201","carta e cartone",0],["191202","metalli ferrosi",0],["191203","metalli non ferrosi",0],["191204","plastica e gomma",0],["191205","vetro",0],["191206","legno, contenente sostanze pericolose",1],["191207","legno diverso da quello di cui alla voce 19 12 06",0],["191208","prodotti tessili",0],["191209","minerali (ad esempio sabbia, rocce)",0],["191210","rifiuti combustibili (combustibile da rifiuti)",0],["191211","altri rifiuti (compresi materiali misti) prodotti dal trattamento meccanico dei rifiuti, contenenti sostanze pericolose",1],["191212","altri rifiuti (compresi materiali misti) prodotti dal trattamento meccanico dei rifiuti, diversi da quelli di cui alla voce 19 12 11",0],["191301","rifiuti solidi prodotti dalle operazioni di bonifica dei terreni, contenenti sostanze pericolose",1],["191302","rifiuti solidi prodotti dalle operazioni di bonifica dei terreni, diversi da quelli di cui alla voce 19 13 01",0],["191303","fanghi prodotti dalle operazioni di bonifica dei terreni, contenenti sostanze pericolose",1],["191304","fanghi prodotti dalle operazioni di bonifica dei terreni, diversi da quelli di cui alla voce 19 13 03",0],["191305","fanghi prodotti dalle operazioni di risanamento delle acque di falda, contenenti sostanze pericolose",1],["191306","fanghi prodotti dalle operazioni di risanamento delle acque di falda, diversi da quelli di cui alla voce 19 13 05",0],["191307","rifiuti liquidi acquosi e rifiuti concentrati acquosi prodotti dalle operazioni di risanamento delle acque di falda, contenenti sostanze pericolose",1],["191308","rifiuti liquidi acquosi e rifiuti concentrati acquosi prodotti dalle operazioni di risanamento delle acque di falda, diversi da quelli di cui alla voce 19 13 07",0],["200101","carta e cartone",0],["200102","vetro",0],["200108","rifiuti biodegradabili di cucine e mense",0],["200110","abbigliamento",0],["200111","prodotti tessili",0],["200113","solventi",1],["200114","acidi",1],["200115","sostanze alcaline",1],["200117","prodotti fotochimici",1],["200119","pesticidi",1],["200121","tubi fluorescenti ed altri rifiuti contenenti mercurio",1],["200123","apparecchiature fuori uso contenenti clorofluorocarburi",1],["200125","oli e grassi commestibili",0],["200126","oli e grassi diversi da quelli di cui alla voce 20 01 25",1],["200127","vernici, inchiostri, adesivi e resine contenenti sostanze pericolose",1],["200128","vernici, inchiostri, adesivi e resine, diversi da quelli di cui alla voce 20 01 27",0],["200129","detergenti, contenenti sostanze pericolose",1],["200130","detergenti diversi da quelli di cui alla voce 20 01 29",0],["200131","medicinali citotossici e citostatici",1],["200132","medicinali diversi da quelli di cui alla voce 20 01 31",0],["200133","batterie e accumulatori di cui alle voci 16 06 01, 16 06 02 e 16 06 03, nonché batterie e accumulatori non suddivisi contenenti tali batterie",1],["200134","batterie e accumulatori, diversi da quelli di cui alla voce 20 01 33",0],["200135","apparecchiature elettriche ed elettroniche fuori uso, diverse da quelle di cui alla voce 20 01 21 e 20 01 23, contenenti componenti pericolosi",1],["200136","apparecchiature elettriche ed elettroniche fuori uso, diverse da quelle di cui alle voci 20 01 21, 20 01 23 e 20 01 35",0],["200137","legno contenente sostanze pericolose",1],["200138","legno diverso da quello di cui alla voce 20 01 37",0],["200139","plastica",0],["200140","metalli",0],["200141","rifiuti prodotti dalla pulizia di camini e ciminiere",0],["200199","altre frazioni non specificate altrimenti",0],["200201","rifiuti biodegradabili",0],["200202","terra e roccia",0],["200203","altri rifiuti non biodegradabili",0],["200301","rifiuti urbani non differenziati",0],["200302","rifiuti dei mercati",0],["200303","residui della pulizia stradale",0],["200304","fanghi delle fosse settiche",0],["200306","rifiuti della pulizia delle fognature",0],["200307","rifiuti ingombranti",0],["200399","rifiuti urbani non specificati altrimenti",0]],"c":{"01":"rifiuti derivanti da prospezione, estrazione da miniera o cava, nonché dal trattamento fisico o chimico di minerali","02":"rifiuti prodotti da agricoltura, orticoltura, acquacoltura, selvicoltura, caccia e pesca, preparazione e lavorazione di alimenti","03":"rifiuti della lavorazione del legno e della produzione di pannelli, mobili, polpa, carta e cartone","04":"rifiuti della lavorazione di pelli e pellicce, e dell'industria tessile","05":"rifiuti della raffinazione del petrolio, purificazione del gas naturale e trattamento pirolitico del carbone","06":"rifiuti dei processi chimici inorganici","07":"rifiuti dei processi chimici organici","08":"rifiuti della produzione, formulazione, fornitura ed uso di rivestimenti (pitture, vernici e smalti vetrati), adesivi, sigillanti e inchiostri per stampa","09":"rifiuti dell'industria fotografica","10":"rifiuti provenienti da processi termici","11":"rifiuti prodotti dal trattamento chimico superficiale e dal rivestimento di metalli ed altri materiali; idrometallurgia non ferrosa","12":"rifiuti prodotti dalla sagomatura e dal trattamento fisico e meccanico superficiale di metalli e plastica","13":"Oli esauriti e residui di combustibili liquidi (tranne oli commestibili ed oli di cui ai capitoli 05, 12 e 19)","14":"Solventi organici, refrigeranti e propellenti di scarto (tranne 07 e 08)","15":"rifiuti di imballaggio; assorbenti, stracci, materiali filtranti e indumenti protettivi (non specificati altrimenti)","16":"rifiuti non specificati altrimenti nell'elenco","17":"rifiuti dalle attività di costruzione e demolizione (compreso il terreno prelevato da siti contaminati)","18":"rifiuti prodotti dal settore sanitario e veterinario o da attività di ricerca collegate (tranne i rifiuti di cucina e di ristorazione non direttamente provenienti da trattamento terapeutico)","19":"rifiuti prodotti da impianti di trattamento dei rifiuti, impianti di trattamento delle acque reflue fuori sito, nonché dalla potabilizzazione dell'acqua e dalla sua preparazione per uso industriale","20":"rifiuti urbani (rifiuti domestici e assimilabili prodotti da attività commerciali e industriali nonché dalle istituzioni) inclusi i rifiuti della raccolta differenziata"},"s":{"0101":"rifiuti da estrazione di minerali","0103":"rifiuti prodotti da trattamenti chimici e fisici di minerali metalliferi","0104":"rifiuti prodotti da trattamenti chimici e fisici di minerali non metalliferi","0105":"fanghi di perforazione ed altri rifiuti di perforazione","0201":"rifiuti prodotti da agricoltura, orticoltura, acquacoltura, selvicoltura, caccia e pesca","0202":"rifiuti della preparazione e della trasformazione di carne, pesce ed altri alimenti di origine animale","0203":"rifiuti della preparazione e del trattamento di frutta, verdura, cereali, oli alimentari, cacao, caffè, té e tabacco; della produzione di conserve alimentari; della produzione di lievito ed estratto di lievito; della preparazione e fermentazione di melassa","0204":"rifiuti prodotti dalla raffinazione dello zucchero","0205":"rifiuti dell'industria lattiero-casearia","0206":"rifiuti dell'industria dolciaria e della panificazione","0207":"rifiuti della produzione di bevande alcoliche e analcoliche (tranne caffè, té e cacao)","0301":"rifiuti della lavorazione del legno e della produzione di pannelli e mobili","0302":"rifiuti dei trattamenti conservativi del legno","0303":"rifiuti della produzione e della lavorazione di polpa, carta e cartone","0401":"rifiuti della lavorazione di pelli e pellicce","0402":"rifiuti dell'industria tessile","0501":"rifiuti della raffinazione del petrolio","0506":"rifiuti prodotti dal trattamento pirolitico del carbone","0507":"rifiuti prodotti dalla purificazione e dal trasporto di gas naturale","0601":"rifiuti della produzione, formulazione, fornitura e uso di acidi","0602":"rifiuti della produzione, formulazione, fornitura e uso di basi","0603":"rifiuti della produzione, formulazione, fornitura e uso di sali, loro soluzioni e ossidi metallici","0604":"rifiuti contenenti metalli, diversi da quelli di cui alla voce 06 03","0605":"fanghi da trattamento in loco degli effluenti","0606":"rifiuti della produzione, formulazione, fornitura e uso di prodotti chimici contenenti zolfo, dei processi chimici dello zolfo e dei processi di desolforazione","0607":"rifiuti della produzione, formulazione, fornitura e uso di prodotti alogeni e dei processi chimici degli alogeni","0608":"rifiuti della produzione, formulazione, fornitura e uso del silicio e dei suoi derivati","0609":"rifiuti della produzione, formulazione, fornitura e uso di prodotti fosforosi e dei processi chimici del fosforo","0610":"rifiuti della produzione, formulazione, fornitura e uso di prodotti chimici contenenti azoto, dei processi chimici dell'azoto e della produzione di fertilizzanti","0611":"rifiuti dalla produzione di pigmenti inorganici e opacificanti","0613":"rifiuti di processi chimici inorganici non specificati altrimenti","0701":"rifiuti della produzione, formulazione, fornitura e uso di prodotti chimici organici di base","0702":"rifiuti della produzione, formulazione, fornitura ed uso di plastiche, gomme sintetiche e fibre artificiali","0703":"rifiuti della produzione, formulazione, fornitura ed uso di coloranti e pigmenti organici (tranne 06 11)","0704":"rifiuti della produzione, formulazione, fornitura ed uso di prodotti fitosanitari (tranne 02 01 08 e 02 01 09), agenti conservativi del legno (tranne 03 02) e altri biocidi","0705":"rifiuti della produzione, formulazione, fornitura e uso di prodotti farmaceutici","0706":"rifiuti della produzione, formulazione, fornitura ed uso di grassi, lubrificanti, saponi, detergenti, disinfettanti e cosmetici","0707":"rifiuti della produzione, formulazione, fornitura e uso di prodotti della chimica fine e di prodotti chimici non specificati altrimenti","0801":"rifiuti della produzione, formulazione, fornitura ed uso nonché della rimozione di pitture e vernici","0802":"rifiuti della produzione, formulazione, fornitura e uso di altri rivestimenti (inclusi materiali ceramici)","0803":"rifiuti della produzione, formulazione, fornitura e uso di inchiostri per stampa","0804":"rifiuti della produzione, formulazione, fornitura e uso di adesivi e sigillanti (inclusi i prodotti impermeabilizzanti)","0805":"rifiuti non specificati altrimenti alla voce 08","0901":"rifiuti dell'industria fotografica","1001":"rifiuti prodotti da centrali termiche ed altri impianti termici (tranne 19)","1002":"rifiuti dell'industria siderurgica","1003":"rifiuti della metallurgia termica dell'alluminio","1004":"rifiuti della metallurgia termica del piombo","1005":"rifiuti della metallurgia termica dello zinco","1006":"rifiuti della metallurgia termica del rame","1007":"rifiuti della metallurgia termica di argento, oro e platino","1008":"rifiuti della metallurgia termica di altri minerali non ferrosi","1009":"rifiuti della fusione di materiali ferrosi","1010":"rifiuti della fusione di materiali non ferrosi","1011":"rifiuti della fabbricazione del vetro e di prodotti di vetro","1012":"rifiuti della fabbricazione di prodotti di ceramica, mattoni, mattonelle e materiali da costruzione","1013":"rifiuti della fabbricazione di cemento, calce e gesso e manufatti di tali materiali","1014":"rifiuti prodotti dai forni crematori","1101":"rifiuti prodotti dal trattamento chimico superficiale e rivestimento di metalli (ad esempio, processi galvanici, zincatura, decappaggio, pulitura elettrolitica, fosfatazione, sgrassaggio con alcali, anodizzazione)","1102":"rifiuti prodotti dalla lavorazione idrometallurgica di metalli non ferrosi","1103":"rifiuti solidi e fanghi prodotti da processi di rinvenimento","1105":"rifiuti prodotti da processi di galvanizzazione a caldo","1201":"rifiuti prodotti dalla lavorazione e dal trattamento fisico e meccanico superficiale di metalli e plastica","1203":"rifiuti prodotti da processi di sgrassatura ad acqua e vapore (tranne 11)","1301":"scarti di oli per circuiti idraulici","1302":"scarti di olio motore, olio per ingranaggi e oli lubrificanti","1303":"oli isolanti e oli termoconduttori usati","1304":"oli di sentina","1305":"prodotti di separazione olio/acqua","1307":"residui di combustibili liquidi","1308":"rifiuti di oli non specificati altrimenti","1406":"rifiuti di solventi organici, refrigeranti e propellenti di schiuma/aerosol","1501":"imballaggi (compresi i rifiuti urbani di imballaggio oggetto di raccolta differenziata)","1502":"assorbenti, materiali filtranti, stracci e indumenti protettivi","1601":"veicoli fuori uso appartenenti a diversi modi di trasporto (comprese le macchine mobili non stradali) e rifiuti prodotti dallo smantellamento di veicoli fuori uso e dalla manutenzione di veicoli (tranne 13, 14, 16 06 e 16 08)","1602":"rifiuti provenienti da apparecchiature elettriche ed elettroniche","1603":"prodotti fuori specifica e prodotti inutilizzati","1604":"esplosivi di scarto","1605":"gas in contenitori a pressione e sostanze chimiche di scarto","1606":"batterie ed accumulatori","1607":"rifiuti della pulizia di serbatoi e di fusti per trasporto e stoccaggio (tranne 05 e 13)","1608":"catalizzatori esauriti","1609":"sostanze ossidanti","1610":"rifiuti liquidi acquosi destinati ad essere trattati fuori sito","1611":"rifiuti di rivestimenti e materiali refrattari","1701":"cemento, mattoni, mattonelle e ceramiche","1702":"legno, vetro e plastica","1703":"miscele bituminose, catrame di carbone e prodotti contenenti catrame","1704":"metalli (incluse le loro leghe)","1705":"terra (compresa quella proveniente da siti contaminati), rocce e materiale di dragaggio","1706":"materiali isolanti e materiali da costruzione contenenti amianto","1708":"materiali da costruzione a base di gesso","1709":"altri rifiuti dell'attività di costruzione e demolizione","1801":"rifiuti dei reparti di maternità e rifiuti legati a diagnosi, trattamento e prevenzione delle malattie negli esseri umani","1802":"rifiuti legati alle attività di ricerca, diagnosi, trattamento e prevenzione delle malattie negli animali","1901":"rifiuti da incenerimento o pirolisi di rifiuti","1902":"rifiuti prodotti da trattamenti chimico-fisici di rifiuti (comprese decromatazione, decianizzazione, neutralizzazione)","1903":"rifiuti stabilizzati/solidificati","1904":"rifiuti vetrificati e rifiuti di vetrificazione","1905":"rifiuti prodotti dal trattamento aerobico di rifiuti solidi","1906":"rifiuti prodotti dal trattamento anaerobico dei rifiuti","1907":"Percolato di discarica","1908":"rifiuti prodotti dagli impianti per il trattamento delle acque reflue, non specificati altrimenti","1909":"rifiuti prodotti dalla potabilizzazione dell'acqua o dalla sua preparazione per uso industriale","1910":"rifiuti prodotti da operazioni di frantumazione di rifiuti contenenti metallo","1911":"rifiuti prodotti dalla rigenerazione degli oli","1912":"rifiuti prodotti dal trattamento meccanico dei rifiuti (ad esempio selezione, triturazione, compattazione, riduzione in pellet) non specificati altrimenti","1913":"rifiuti prodotti dalle operazioni di bonifica di terreni e risanamento delle acque di falda","2001":"frazioni oggetto di raccolta differenziata (tranne 15 01)","2002":"rifiuti prodotti da giardini e parchi (inclusi i rifiuti provenienti da cimiteri)","2003":"Altri rifiuti urbani"}};
+const R=DB.r,CH=DB.c,SB=DB.s;
+const nz=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+R.forEach(r=>r.push(nz(r[1])));
+const RM=new Map(R.map(r=>[r[0],r]));
+const $=i=>document.getElementById(i);
+const fmt=c=>c?c.slice(0,2)+' '+c.slice(2,4)+' '+c.slice(4):'da assegnare';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ============ RICERCA ============ */
+let flt='all',chap='',shown=60,showAll=false;
+const chips=[['all','Tutti'],['h','Pericolosi *'],['n','Non pericolosi']];
+$('chips').innerHTML=chips.map(c=>`<button class="chip${c[0]=='h'?' hz':''}" data-f="${c[0]}" aria-pressed="${c[0]=='all'}">${c[1]}</button>`).join('')+'<button class="chip" id="cc" hidden></button>';
+function search(){
+  const raw=$('q').value.trim();
+  let res=R;
+  if(chap)res=res.filter(r=>r[0].startsWith(chap));
+  if(flt=='h')res=res.filter(r=>r[2]);else if(flt=='n')res=res.filter(r=>!r[2]);
+  return findCodes(raw,res);
+}
+function findCodes(raw,res){
+  res=res||R;
+  if(!raw)return res;
+  if(/^[\d\s.*]+$/.test(raw)&&/\d/.test(raw)){
+    const d=raw.replace(/\D/g,'');
+    const a=res.filter(r=>r[0].startsWith(d));
+    return a.concat(d.length>=3?res.filter(r=>!r[0].startsWith(d)&&r[0].includes(d)):[]);
+  }
+  const tk=nz(raw).split(/\s+/);
+  return res.filter(r=>tk.every(t=>r[3].includes(t)));
+}
+function render(){
+  const raw=$('q').value.trim(),L=$('list'),I=$('info');
+  $('tg').hidden=!pick&&!target;
+  if(pick){$('tgt').innerHTML='<b>'+esc(pick.title)+'</b><br>Cerca o apri un capitolo, tocca il codice e premi “Usa questo codice”.';$('tgb').hidden=!pick.blank}
+  else{$('tgb').hidden=true;if(target)$('tgt').innerHTML='Aggiungi a: <b>'+esc(targetName||'sopralluogo')+'</b>'}
+  $('cc').hidden=!chap;if(chap)$('cc').textContent=(chap.length==2?'Cap. '+chap:'Voce '+chap.slice(0,2)+' '+chap.slice(2))+' ✕';
+  if(!raw&&!chap&&flt=='all'){
+    I.textContent='Scegli un capitolo per capire dove cercare, oppure scrivi sopra un codice o una parola ('+R.length+' codici)';
+    L.innerHTML=Object.keys(CH).sort().map(k=>`<button class="it ch" data-ch="${k}"><span class="cd">${k}</span><div class="ds">${esc(CH[k])}</div><div class="dt" style="display:block;border:0;margin:2px 0 0;padding:0">${R.filter(r=>r[0].startsWith(k)).length} codici</div></button>`).join('');
+    return;
+  }
+  if(!raw&&chap.length==2&&flt=='all'&&!showAll){
+    const ks=Object.keys(SB).filter(k=>k.startsWith(chap)).sort();
+    I.textContent='Capitolo '+chap+' · '+(CH[chap]||'');
+    L.innerHTML=ks.map(k=>`<button class="it ch" data-ch="${k}"><span class="cd">${k.slice(0,2)} ${k.slice(2)}</span><div class="ds">${esc(SB[k])}</div><div class="dt" style="display:block;border:0;margin:2px 0 0;padding:0">${R.filter(r=>r[0].startsWith(k)).length} codici</div></button>`).join('')+'<button class="more" id="allc">Mostra tutti i codici del capitolo</button>';
+    return;
+  }
+  const res=search();
+  I.textContent=res.length+(res.length==1?' risultato':' risultati')+(target||pick?' · tocca un codice per sceglierlo':'');
+  let h=res.slice(0,shown).map(r=>{
+    const c=r[0];
+    return `<div class="it${r[2]?' h':''}" data-c="${c}" role="button" tabindex="0"><span class="cd">${fmt(c)}${r[2]?'<span class="hb">pericoloso</span>':''}</span><div class="ds">${esc(r[1])}</div><div class="dt"><div><b>Capitolo ${c.slice(0,2)}</b> ${esc(CH[c.slice(0,2)]||'')}</div><div style="margin-top:6px"><b>${fmt(c).slice(0,5)}</b> ${esc(SB[c.slice(0,4)]||'')}</div>${pick?`<button class="cp use" data-use="${c}">✓ Usa questo codice</button>`:`<button class="cp add${target?' on':''}" data-add="${c}">+ ${target?'Aggiungi al sopralluogo':'Aggiungi a un sopralluogo'}</button><button class="cp" data-cp="${c}${r[2]?'*':''}">Copia codice</button>`}</div></div>`;
+  }).join('');
+  if(res.length>shown)h+=`<button class="more" id="more">Mostra altri (${res.length-shown})</button>`;
+  if(!res.length)h='<div id="info">Nessun codice trovato. Prova con meno parole o con il solo numero.</div>';
+  L.innerHTML=h;
+}
+let tm;
+$('q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{shown=60;render()},80)});
+$('list').addEventListener('keydown',e=>{const it=e.target.closest&&e.target.closest('[data-c]');if(it&&e.target===it&&(e.key=='Enter'||e.key==' ')){e.preventDefault();it.classList.toggle('o')}});
+$('q').addEventListener('keydown',e=>{if(e.key=='Enter')e.target.blur()});
+$('x').onclick=()=>{$('q').value='';chap='';flt='all';shown=60;sync();render();$('q').focus()};
+function sync(){document.querySelectorAll('[data-f]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f==flt))}
+
+/* ============ ARCHIVIO (IndexedDB) ============ */
+let dbp,MEM=null;
+function idb(){return dbp||(dbp=new Promise((ok,ko)=>{
+  const to=setTimeout(()=>ko(new Error('timeout')),4000);
+  try{const q=indexedDB.open('cer-sopralluoghi',1);q.onupgradeneeded=()=>{const d=q.result;d.createObjectStore('sop',{keyPath:'id'});d.createObjectStore('foto',{keyPath:'id'}).createIndex('sop','sop')};q.onsuccess=()=>{clearTimeout(to);ok(q.result)};q.onerror=()=>{clearTimeout(to);ko(q.error)}}
+  catch(e){clearTimeout(to);ko(e)}
+}))}
+/* se il browser blocca l'archivio (anteprime, finestre private) l'app funziona lo stesso, ma senza salvare */
+function memStore(st){const m=MEM[st],R=v=>({result:v});return{put:o=>(m.set(o.id,o),R(o.id)),get:k=>R(m.get(k)),getAll:()=>R([...m.values()]),delete:k=>(m.delete(k),R()),index:()=>({getAll:id=>R([...m.values()].filter(x=>x.sop==id))})}}
+async function tx(store,mode,fn){
+  let d=null;
+  if(!MEM){try{d=await idb()}catch(e){MEM={sop:new Map(),foto:new Map()};const w=$('mw');if(w)w.hidden=$('vS').hidden===false}}
+  if(MEM){const q=fn(memStore(store));return q?q.result:undefined}
+  return new Promise((ok,ko)=>{const t=d.transaction(store,mode),q=fn(t.objectStore(store));let r;if(q)q.onsuccess=()=>{r=q.result};t.oncomplete=()=>ok(r);t.onerror=()=>ko(t.error);t.onabort=()=>ko(t.error)});
+}
+const put=(st,o)=>tx(st,'readwrite',s=>s.put(o));
+const del=(st,k)=>tx(st,'readwrite',s=>s.delete(k));
+const get=(st,k)=>tx(st,'readonly',s=>s.get(k));
+const all=st=>tx(st,'readonly',s=>s.getAll());
+const fotoDi=id=>tx('foto','readonly',s=>s.index('sop').getAll(id)).then(f=>(f||[]).sort((a,b)=>a.ts-b.ts));
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(_){}
+
+/* ============ UTILITÀ ============ */
+const UN=['kg','t','m³','l','m²','m','pz','colli'];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dIt=s=>s?s.split('-').reverse().join('/'):'';
+const num=v=>{v=String(v==null?'':v).trim().replace(/\s/g,'');if(!v)return null;if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=Number(v);return isFinite(n)?n:null};
+const fn=n=>n.toLocaleString('it-IT',{maximumFractionDigits:3});
+const maps=g=>`https://www.google.com/maps?q=${g.lat},${g.lon}`;
+const slug=s=>(s||'sopralluogo').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,40)||'sopralluogo';
+const fname=s=>'sopralluogo_'+slug(s.cantiere)+'_'+(s.data||today());
+let lastU='kg';try{lastU=localStorage.getItem('cer_u')||'kg'}catch(_){}
+function totali(s){const m={};s.cer.forEach(x=>{const v=num(x.q);if(v!=null)m[x.u]=(m[x.u]||0)+v});return m}
+const totTxt=m=>Object.keys(m).map(u=>fn(m[u])+' '+u).join(' + ');
+function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
+async function esporta(name,blob){
+  const dc=await dlCap();
+  if(dc){try{await dc.save({filename:name,data:blob})}catch(e){if(!e||e.code!='declined')note('Non riesco a salvare il file qui. Riprova tra poco.')}return}
+  try{const f=new File([blob],name,{type:blob.type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}
+  catch(e){if(e&&e.name=='AbortError')return}
+  dl(name,blob);
+}
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=url});
+    const M=1600,k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));
+    const w=Math.round(img.naturalWidth*k),h=Math.round(img.naturalHeight*k);
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    return await new Promise(ok=>c.toBlob(b=>ok(b||file),'image/jpeg',.82));
+  }catch(_){return file}finally{URL.revokeObjectURL(url)}
+}
+
+/* ============ FINESTRE DI DIALOGO (nella pagina, funzionano ovunque) ============ */
+let dlgRes=null;
+function dlgOpen(html,btns){
+  if(dlgRes)dlgClose('');
+  $('dlgc').innerHTML=html;
+  $('dlga').innerHTML=btns.map(b=>`<button class="btn ${b[1]||''}" data-dr="${b[2]}">${esc(b[0])}</button>`).join('');
+  $('dlga').style.gridTemplateColumns=btns.length>1?'1fr 1fr':'1fr';
+  $('dlg').hidden=false;return new Promise(ok=>{dlgRes=ok});
+}
+function dlgClose(v){$('dlg').hidden=true;const r=dlgRes;dlgRes=null;if(r)r(v)}
+const ask=(msg,ok,danger)=>dlgOpen(`<p>${esc(msg)}</p>`,[['Annulla','',''],[ok||'Conferma',danger?'dng':'pri','1']]).then(v=>v==='1');
+const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
+/* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
+const inClaude=!!(window.claude&&typeof window.claude.use=='function');
+let DLp=null;const dlCap=()=>DLp||(DLp=inClaude?Promise.resolve(window.claude.use('downloads')).catch(()=>null):Promise.resolve(null));
+
+/* ============ SCELTA CODICE: usa la pagina di ricerca ============ */
+let pick=null;
+function pickCode(title,blank){
+  if(pick)pickDone(null);
+  pick={res:null,title:title||'Scegli il codice CER',blank:!!blank,y:scrollY,ov:!$('ov').hidden,from:view};
+  const p=new Promise(ok=>{pick.res=ok});
+  if(pick.ov)$('ov').hidden=true;
+  $('q').value='';chap='';flt='all';showAll=false;shown=60;sync();
+  show('vS');render();
+  return p;
+}
+function pickDone(c){
+  const p=pick;if(!p)return;pick=null;
+  show(p.from);if(p.ov)$('ov').hidden=false;
+  scrollTo(0,p.y);
+  $('q').value='';chap='';render();
+  p.res(c);
+}
+function addRow(c){const x={id:uid(),c,q:'',u:lastU,n:''};cur.cer.push(x);return x}
+
+/* ============ NAVIGAZIONE ============ */
+let fotos=[],umap={};
+let cur=null,target=null,targetName='',urls=[],focusNew=false,autoGps=false,dirty=false,st,watch=null;
+const V=['vS','vL','vE','vG','vR'];let view='vS';
+function show(v){
+  view=v;V.forEach(x=>$(x).hidden=x!=v);$('fab').hidden=v!='vS'||!!target||!!pick;$('mw').hidden=!MEM||v=='vS';
+  scrollTo(0,0);
+}
+function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];umap={};fotos=[]}
+async function route(){
+  if(pick){const p=pick;pick=null;p.res(null);if(p.ov)closePh(true)}
+  await flush();stopGps();
+  const [a,id,grp]=((curRoute||'').slice(1)||'cerca').split('/');
+  if(a!='cerca'){target=null}
+  freeUrls();
+  if(a=='sop'&&id){
+    const s=await get('sop',id);if(!s){go('sop');return}
+    s.acc=s.acc||{};if(s.sfn==null)s.sfn=s.acc.note||'';
+    let nid=false;s.cer.forEach(x=>{if(!x.id){x.id=uid();nid=true}});
+    cur=s;show('vE');renderEdit();if(nid)save();
+    if(autoGps){autoGps=false;rileva()}
+    if(focusNew){focusNew=false;const q=document.querySelectorAll('#cers [data-q]');const last=q[q.length-1];if(last){last.scrollIntoView({block:'center'});last.focus({preventScroll:true})}}
+  }else if(a=='gal'&&id){
+    const s=await get('sop',id);if(!s){go('sop');return}
+    s.acc=s.acc||{};if(s.sfn==null)s.sfn=s.acc.note||'';cur=s;galGrp=grp||'';show('vG');renderGal();
+  }else if(a=='rep'&&id){
+    const s=await get('sop',id);if(!s){go('sop');return}
+    if(s.sfn==null)s.sfn=(s.acc&&s.acc.note)||'';cur=null;show('vR');renderRep(s);
+  }else if(a=='sop'){cur=null;show('vL');renderList()}
+  else{cur=null;show('vS');$('tg').hidden=!target;if(target)$('tgt').innerHTML='Aggiungi a: <b>'+esc(targetName||'sopralluogo')+'</b>';render()}
+}
+let curRoute=location.hash;
+function go(h){h='#'+h;curRoute=h;try{if(location.hash!==h)history.pushState(null,'',h)}catch(_){}route()}
+window.addEventListener('hashchange',()=>{curRoute=location.hash;route()});
+window.addEventListener('popstate',()=>{curRoute=location.hash;route()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+window.addEventListener('pagehide',()=>flush());
+
+/* ============ SALVATAGGIO ============ */
+function setStatus(t){const e=$('sv');if(e)e.textContent=t}
+function save(){if(!cur)return;cur.mod=Date.now();dirty=true;setStatus('…');clearTimeout(st);st=setTimeout(flush,400)}
+async function flush(){clearTimeout(st);if(!dirty||!cur)return;dirty=false;try{await put('sop',cur);setStatus('Salvato ✓')}catch(e){setStatus('Errore di salvataggio');dirty=true}}
+
+/* ============ ELENCO SOPRALLUOGHI ============ */
+async function renderList(){
+  const a=(await all('sop')).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
+  $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
+<button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
+${a.length?a.map(s=>`<button class="it sl" data-go="sop/${s.id}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.cer.length} codici CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}</div></button>`).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto: la posizione verrà rilevata subito.</p>'}
+<section class="card" style="margin-top:18px"><h2>Backup</h2><p class="hint">Sopralluoghi e foto restano salvati solo in questo browser, su questo dispositivo. Fai un backup ogni tanto per non perderli o per spostarli su un altro telefono.</p>
+<div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
+}
+const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
+async function nuovo(){
+  const s=newSop();
+  await put('sop',s);autoGps=true;go('sop/'+s.id);
+}
+const b2d=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)});
+async function backup(){
+  const s=await all('sop'),f=await all('foto'),fo=[];
+  for(const p of f)fo.push(Object.assign({},p,{blob:await b2d(p.blob)}));
+  await esporta('backup_sopralluoghi_'+today()+'.json',new Blob([JSON.stringify({app:'ricerca-cer',v:1,sop:s,foto:fo})],{type:'application/json'}));
+}
+async function ripristina(file){
+  try{
+    const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.sop))throw 0;
+    for(const s of d.sop)await put('sop',s);
+    for(const p of d.foto||[]){p.blob=await (await fetch(p.blob)).blob();await put('foto',p)}
+    note('Ripristinati '+d.sop.length+' sopralluoghi e '+(d.foto||[]).length+' foto.');renderList();
+  }catch(_){note('Questo file non è un backup valido.')}
+}
+
+/* ============ SCHEDA SOPRALLUOGO ============ */
+const ACC=[['mezzi','Accesso mezzi',['Libero','Limitato','Non carrabile']],['mezzo','Mezzo più grande ammesso',['Furgone (fino a 3,5 t)','Autocarro 2-3 assi','Autocarro con gru','Scarrabile / cassone','Bilico / autoarticolato']],['larg','Larghezza accesso','m'],['alt','Altezza massima','m'],['fondo','Fondo stradale',['Asfalto','Cemento','Ghiaia','Sterrato','Erba / terreno','Misto']],['sosta','Area di carico',['In cantiere','Su strada pubblica','Non disponibile']],['dist','Distanza rifiuti – punto di carico','m'],['piano','Piano / ascensore / scale'],['permessi','Permessi e orari'],['note','Note']];
+const ACCM=Object.fromEntries(ACC.map(a=>[a[0],a]));
+const asel=(k,l)=>`<label class="fl">${l}<select data-a="${k}"><option value=""></option>${ACCM[k][2].map(o=>`<option${cur.acc[k]==o?' selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+const afld=(k,l,dec,ph)=>`<label class="fl">${l}<input data-a="${k}"${dec?' inputmode="decimal"':''} placeholder="${esc(ph||'')}" value="${esc(cur.acc[k])}"></label>`;
+const fld=(k,l,ph,type)=>`<label class="fl">${l}<input data-k="${k}" type="${type||'text'}" placeholder="${esc(ph||'')}" value="${esc(cur[k])}"></label>`;
+function renderEdit(){
+  const s=cur;
+  $('vE').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><span id="sv" class="sv"></span></div>
+<main>
+<h1 id="et">${esc(s.cantiere||'Nuovo sopralluogo')}</h1>
+<button class="btn wide" id="gb" data-go="gal/${s.id}" style="margin:0 0 12px">🖼 Galleria foto per sezione e codice CER</button>
+<section class="card"><h2>Dati del cantiere</h2>
+${fld('cantiere','Cantiere','es. Demolizione capannone')}
+${fld('luogo','Luogo / indirizzo','Via, numero civico, comune')}
+${fld('committente','Committente','')}
+<div class="row2">${fld('data','Data','','date')}${fld('tecnico','Tecnico','')}</div>
+<label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
+</section>
+<section class="card"><h2>Posizione GPS</h2>
+<button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
+<div class="row2"><label class="fl">Latitudine<input id="lat" inputmode="decimal" placeholder="40.6263"></label><label class="fl">Longitudine<input id="lon" inputmode="decimal" placeholder="14.3757"></label></div>
+<div id="gpsi" class="hint"></div>
+</section>
+<section class="card"><h2>Rifiuti e codici CER <span id="nc" class="cnt"></span><button class="opn" id="of" data-go="gal/${s.id}/rif" hidden>Foto ›</button></h2>
+<p class="hint" style="margin:0 2px 10px">Aggiungi una voce per ogni rifiuto e scatta le foto dentro la voce. Il codice puoi sceglierlo subito o assegnarlo dopo.</p>
+<div id="unc" class="unc" hidden><h3>Da classificare <span id="nf" class="cnt"></span></h3><p class="hint">Tocca una foto per assegnarle il codice CER.</p><div id="phs" class="grid"></div></div>
+<div id="cers"></div>
+<button class="btn pri wide big" id="addc">+ Aggiungi CER</button>
+<div id="tot" class="tot"></div>
+</section>
+<section class="card"><h2>Stato di fatto e accessibilità <span id="ns" class="cnt"></span><button class="opn" id="os" data-go="gal/${s.id}/sf" hidden>Apri ›</button></h2>
+<label class="fl">Note<textarea data-k="sfn" rows="4" placeholder="Stato dei luoghi, accessi, mezzi, ostacoli, permessi, referente sul posto…">${esc(s.sfn)}</textarea></label>
+<div class="row2"><label class="btn pri">📷 Scatta foto<input type="file" accept="image/*" capture="environment" hidden data-phs></label><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*" multiple hidden data-phs></label></div>
+<div id="phsf" class="grid"></div>
+</section>
+<section class="card"><h2>Esporta</h2>
+<div class="row2"><button class="btn" data-go="rep/${s.id}">Report / PDF</button><button class="btn" id="csv">Tabella CSV</button></div>
+<button class="btn wide" id="zip">Foto con codici CER (ZIP)</button>
+<button class="btn dng wide" id="dels">Elimina sopralluogo</button>
+</section>
+</main>`;
+  updGps();renderCer();renderPh();
+}
+function updGps(keep){
+  const g=cur.gps;
+  if(!keep){$('lat').value=g?g.lat:'';$('lon').value=g?g.lon:''}
+  $('gpsb').textContent=g?'Rileva di nuovo':'📍 Rileva posizione';
+  $('gpsi').innerHTML=g?[g.acc?'Precisione ±'+g.acc+' m':(g.man?'Coordinate inserite a mano':''),g.ts?new Date(g.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',`<a href="${maps(g)}" target="_blank" rel="noopener">Apri sulla mappa</a>`].filter(Boolean).join(' · ')
+    :'Premi il pulsante sul posto: il telefono chiederà il permesso di usare la posizione. In alternativa scrivi le coordinate.';
+}
+function stopGps(){if(watch!=null){navigator.geolocation.clearWatch(watch.id);clearTimeout(watch.to);watch=null}}
+function rileva(){
+  const info=$('gpsi'),b=$('gpsb');
+  if(!navigator.geolocation){info.innerHTML='<span class="err">Questo browser non dà accesso al GPS. Inserisci le coordinate a mano.</span>';return}
+  if(!window.isSecureContext){info.innerHTML='<span class="err">Il GPS funziona solo se la pagina è aperta da un indirizzo https. Inserisci le coordinate a mano.</span>';return}
+  stopGps();
+  const s=cur;let best=null;b.disabled=true;b.textContent='Rilevo la posizione…';
+  const fine=()=>{stopGps();if(cur===s){b.disabled=false;updGps()}};
+  watch={};
+  watch.id=navigator.geolocation.watchPosition(p=>{
+    if(cur!==s)return stopGps();
+    const c=p.coords;
+    if(!best||c.accuracy<best){best=c.accuracy;s.gps={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null,ts:Date.now()};updGps();b.disabled=true;b.textContent='Affino… ±'+Math.round(c.accuracy)+' m';save()}
+    if(c.accuracy<=8)fine();
+  },e=>{
+    stopGps();if(cur!==s)return;b.disabled=false;updGps();
+    $('gpsi').innerHTML='<span class="err">'+(inClaude?'In questa versione aperta da Claude il GPS non è disponibile. Scrivi le coordinate: in Google Maps tieni premuto sul punto e copia i numeri che compaiono.':e.code==1?'Permesso negato: abilita la posizione per questo browser nelle impostazioni del telefono.':'Posizione non disponibile. Riprova all’aperto o inserisci le coordinate a mano.')+'</span>';
+  },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
+  watch.to=setTimeout(fine,20000);
+}
+function renderCer(){
+  const L=$('cers');$('nc').textContent=cur.cer.length||'';
+  L.innerHTML=cur.cer.length?cur.cer.map((x,i)=>{const r=RM.get(x.c),h=r&&r[2];
+    const head=x.c?`<button class="cdb" data-chg="${i}" aria-label="Cambia codice"><span class="cd">${fmt(x.c)}${h?'*':''}</span></button>${h?'<span class="hb">pericoloso</span>':''}`
+      :`<span class="na">${esc(lbl(cur,x))}</span>`;
+    return `<div class="cr${h?' h':''}${x.c?'':' nc'}"><div class="crh">${head}<button class="xb" data-dc="${i}" aria-label="Rimuovi voce">✕</button></div>
+<div class="ds sm">${r?esc(r[1]):'Scatta pure le foto: il codice lo assegni quando lo sai.'}</div>
+${x.c?'':`<button class="btn pri wide" data-chg="${i}" style="margin-top:8px">🔍 Assegna codice CER</button>`}
+<div class="cfr"><div class="cfs" id="cf${x.id}"></div><label class="btn sm2 pri">📷 Foto<input type="file" accept="image/*" capture="environment" hidden data-phc="${x.id}"></label><label class="btn sm2" aria-label="Foto dalla galleria">🖼<input type="file" accept="image/*" multiple hidden data-phc="${x.id}"></label></div>
+<div class="qr"><input data-q="${i}" inputmode="decimal" placeholder="Quantità" value="${esc(x.q)}"><select data-u="${i}" aria-label="Unità di misura">${UN.map(u=>`<option${u==x.u?' selected':''}>${u}</option>`).join('')}</select></div>
+<input class="nt" data-n="${i}" placeholder="Note (stato fisico, ubicazione, contenitore…)" value="${esc(x.n)}"></div>`}).join('')
+    :'<p class="hint" style="margin-bottom:4px">Nessun rifiuto ancora. Premi “+ Aggiungi CER”.</p>';
+  renderTot();paintLinks();
+}
+const lbl=(s,x)=>{if(x.c)return fmt(x.c)+(isH(x.c)?'*':'');const b=s.cer.filter(y=>!y.c);return 'Codice da assegnare'+(b.length>1?' ('+(b.indexOf(x)+1)+')':'')};
+const codesOf=(s,p)=>(p.cer||[]).map(id=>s.cer.find(x=>x.id==id)).filter(Boolean);
+const isH=c=>{const r=RM.get(c);return !!(r&&r[2])};
+function paintLinks(){
+  if(!cur)return;
+  cur.cer.forEach(x=>{const el=$('cf'+x.id);if(!el)return;
+    const ps=[];fotos.forEach((p,i)=>{if((p.cer||[]).includes(x.id)&&umap[p.id])ps.push([p,i])});
+    el.innerHTML=ps.length?`<button class="opn cc" data-go="gal/${cur.id}/c:${x.id}">${ps.length} foto ›</button>`+ps.map(([p,i])=>`<button class="mt" data-pf="${p.id}" aria-label="Foto ${i+1}"><img src="${umap[p.id]}" alt=""><span>${i+1}</span></button>`).join(''):'<span class="hint">Nessuna foto collegata</span>';
+  });
+}
+function renderTot(){
+  const m=totali(cur),nh=cur.cer.filter(x=>{const r=RM.get(x.c);return r&&r[2]}).length,t=totTxt(m);
+  $('tot').innerHTML=cur.cer.length?`<b>${cur.cer.length}</b> ${cur.cer.length==1?'codice':'codici'}${nh?` (${nh} pericolos${nh==1?'o':'i'})`:''}${t?' · Totale: <b>'+esc(t)+'</b>':''}`:'';
+}
+async function renderPh(){
+  if(view!='vE'){if(view=='vG')renderGal();return}
+  const s=cur,f=await fotoDi(s.id);if(cur!==s||view!='vE')return;
+  freeUrls();
+  if(s.nf!==f.length){s.nf=f.length;save()}
+  const sp=split(f);fotos=sp.gen;fotosAcc=sp.acc;fotosSf=sp.sf;umap={};
+  const mk=p=>{const u=URL.createObjectURL(p.blob);urls.push(u);umap[p.id]=u;return u};
+  $('nf').textContent=fotos.filter(p=>!codesOf(s,p).length).length||'';
+  $('of').hidden=!fotos.length;$('os').hidden=!fotosSf.length;
+  $('gb').textContent='🖼 Galleria foto per sezione e codice CER'+(f.length?' ('+f.length+')':'');
+  fotos.forEach(p=>mk(p));
+  const unc=fotos.map((p,i)=>[p,i]).filter(([p])=>!codesOf(s,p).length);
+  $('unc').hidden=!unc.length;
+  $('phs').innerHTML=unc.map(([p,i])=>`<button class="th" data-pf="${p.id}"><img src="${umap[p.id]}" alt="Foto ${i+1}" loading="lazy"><span>${i+1}</span>${p.nota?'<i>✎</i>':''}<b class="no">senza CER</b></button>`).join('');
+  $('ns').textContent=fotosSf.length||'';
+  $('phsf').innerHTML=fotosSf.map((p,i)=>`<button class="th" data-pf="${p.id}"><img src="${mk(p)}" alt="Foto stato di fatto S${i+1}" loading="lazy"><span>S${i+1}</span>${p.nota?'<i>✎</i>':''}</button>`).join('');
+  paintLinks();
+}
+const catOf=p=>{const c=p.cat||(p.acc?'acc':'rif');return c=='acc'?'sf':c};
+const split=f=>({gen:f.filter(p=>catOf(p)=='rif'),acc:f.filter(p=>catOf(p)=='acc'),sf:f.filter(p=>catOf(p)=='sf')});
+let fotosAcc=[],fotosSf=[];
+const CATS=[['sf','Stato di fatto e accessibilità','S'],['rif','Rifiuti','']];
+async function addFoto(files,cid,cat){
+  if(!files.length)return;
+  const s=cur;setStatus('Salvo foto…');
+  try{for(const f of files){const b=await shrink(f);await put('foto',{id:uid(),sop:s.id,blob:b,nota:'',cer:cid?[cid]:[],cat:cat||'rif',ts:Date.now()})}}
+  catch(e){note('Non riesco a salvare la foto: memoria del browser piena?')}
+  if(cur===s){await renderPh();setStatus('Salvato ✓')}
+}
+let ovF=null,ovU=null,ovDirty=false;
+function paintOvk(){
+  const k=catOf(ovF);
+  $('ovm').innerHTML='<span class="lb">Sezione:</span>'+CATS.map(c=>`<button data-cat="${c[0]}" aria-pressed="${c[0]==k}">${c[1]}</button>`).join('');
+  if(k!='rif'){$('ovk').innerHTML='';return}
+  const none=!(ovF.cer||[]).length;
+  $('ovk').innerHTML=`<span class="lb">${none?'<b style="color:#ffb4a8">Da classificare.</b> Tocca il codice CER di questa foto:':'Codici CER di questa foto (tocca per togliere o aggiungere):'}</span>`+cur.cer.map(x=>`<button class="${isH(x.c)?'h':''}" data-ok="${x.id}" aria-pressed="${(ovF.cer||[]).includes(x.id)}">${esc(lbl(cur,x))}</button>`).join('')+`<button id="ovnew" class="ovs">🔍 ${cur.cer.length?'Altro codice':'Cerca il codice'}</button>`;
+}
+let ovList=[];
+async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;await put('foto',ovF);ovDirty=false}}
+async function ovGo(d){
+  if(!ovF)return;const j=ovList.indexOf(ovF.id)+d;if(j<0||j>=ovList.length)return;
+  await savePh();if(ovU)URL.revokeObjectURL(ovU);openPh(ovList[j],ovList);
+}
+async function openPh(id,list){
+  if(list)ovList=list;
+  ovF=await get('foto',id);if(!ovF||!cur)return;ovDirty=false;
+  ovF.cer=(ovF.cer||[]).filter(k=>cur.cer.some(x=>x.id==k));
+  const k=catOf(ovF);
+  $('ovh').textContent=k=='acc'?'Foto accessibilità A'+(fotosAcc.findIndex(p=>p.id==id)+1):k=='sf'?'Stato di fatto e accessibilità S'+(fotosSf.findIndex(p=>p.id==id)+1):'Foto rifiuti '+(fotos.findIndex(p=>p.id==id)+1);
+  const pos=ovList.indexOf(id);
+  if(ovList.length>1)$('ovh').textContent+='  ·  '+(pos+1)+' di '+ovList.length;
+  $('ovp').hidden=pos<=0;$('ovx').hidden=pos<0||pos>=ovList.length-1;
+  ovU=URL.createObjectURL(ovF.blob);$('ovi').src=ovU;$('ovn').value=ovF.nota||'';paintOvk();$('ov').hidden=false;
+}
+async function closePh(salva){
+  if(salva)await savePh();
+  $('ov').hidden=true;$('ovi').removeAttribute('src');if(ovU)URL.revokeObjectURL(ovU);ovF=ovU=null;
+  if(cur)renderPh();
+}
+const csvQ=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+const csvBlob=rows=>new Blob(['﻿'+rows.map(r=>r.map(csvQ).join(';')).join('\r\n')],{type:'text/csv'});
+const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);return 'foto_'+String(i+1).padStart(2,'0')+(k.length?'_CER_'+k.join('_'):cs.length?'_CER_da_assegnare':'')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg')};
+const fotoNums=(f,id)=>f.map((p,i)=>(p.cer||[]).includes(id)?i+1:0).filter(Boolean);
+async function csv(s){
+  const f=split(await fotoDi(s.id)).gen,co=v=>v==null||v===''?'':String(v).replace('.',',');
+  const rows=[['Cantiere','Luogo','Committente','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità','Unità','Note','Foto n.','File foto']];
+  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],n=num(x.q),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',n!=null?co(n):x.q,x.u,x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
+  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','']);
+  esporta(fname(s)+'.csv',csvBlob(rows));
+}
+/* ZIP (senza compressione: le JPEG sono già compresse) */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+async function makeZip(files){
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+  const d=new Date(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){
+    const data=new Uint8Array(await f.blob.arrayBuffer()),nm=enc.encode(f.name),crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    parts.push(h,nm,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(c,nm);off+=30+nm.length+data.length;
+  }
+  const cs=cen.reduce((a,x)=>a+x.byteLength,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,e],{type:'application/zip'});
+}
+async function zipFoto(s){
+  const all_=await fotoDi(s.id);if(!all_.length){note('Questo sopralluogo non ha foto.');return}
+  const {gen:f,acc:fa,sf:fs}=split(all_);
+  setStatus('Preparo lo ZIP…');
+  const files=f.map((p,i)=>({name:fotoName(s,p,i),blob:p.blob}));
+  const el=[['File foto','Foto n.','Sezione','Codici CER','Descrizioni','Didascalia']];
+  f.forEach((p,i)=>{const cs=codesOf(s,p);el.push([files[i].name,i+1,'Rifiuti',cs.map(x=>lbl(s,x)).join(', '),cs.map(x=>{const r=RM.get(x.c);return r?r[1]:''}).join(' | '),p.nota||''])});
+  fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg');files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','',p.nota||''])});
+  files.push({name:'elenco_foto.csv',blob:csvBlob(el)});
+  if((s.sfn||'').trim())files.push({name:'stato_di_fatto_note.txt',blob:new Blob([s.sfn],{type:'text/plain'})});
+  const z=await makeZip(files);setStatus('Salvato ✓');
+  esporta(fname(s)+'_foto.zip',z);
+}
+async function elimina(){
+  if(!await ask('Eliminare questo sopralluogo con tutte le sue foto? Non si può annullare.','Elimina',1))return;
+  const s=cur;dirty=false;cur=null;
+  for(const p of await fotoDi(s.id))await del('foto',p.id);
+  await del('sop',s.id);go('sop');
+}
+
+/* ============ GALLERIA ============ */
+let galGrp='';
+async function renderGal(){
+  const s=cur,f=await fotoDi(s.id);if(cur!==s||view!='vG')return;
+  freeUrls();const sp=split(f);fotos=sp.gen;fotosAcc=sp.acc;fotosSf=sp.sf;
+  const nr=new Map(fotos.map((p,i)=>[p.id,i+1])),one=!!galGrp;
+  const th=(p,lab)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<button class="th" data-pf="${p.id}"><img src="${u}" alt="Foto ${lab}" loading="lazy"><span>${lab}</span>${p.nota?'<i>✎</i>':''}</button>`};
+  const G=[['sf','Stato di fatto e accessibilità',esc(s.sfn||''),fotosSf,(p,i)=>th(p,'S'+(i+1)),'']];
+  s.cer.forEach(x=>{const r=RM.get(x.c);G.push(['c:'+x.id,x.c?`CER ${fmt(x.c)}${isH(x.c)?'*<span class="hb">pericoloso</span>':''}`:esc(lbl(s,x)),esc(r?r[1]:'')+(x.q?' · <b>'+esc(x.q)+' '+x.u+'</b>':''),fotos.filter(p=>(p.cer||[]).includes(x.id)),p=>th(p,String(nr.get(p.id))),'Nessuna foto collegata a questo codice.'])});
+  G.push(['nocer','Rifiuti senza codice CER','Apri la foto e tocca il codice giusto per collegarla.',fotos.filter(p=>!codesOf(s,p).length),p=>th(p,String(nr.get(p.id))),'']);
+  G.push(['rif','Tutte le foto dei rifiuti','',fotos,(p,i)=>th(p,String(i+1)),'']);
+  let h='';
+  if(one){
+    const g=G.find(x=>x[0]==galGrp);
+    h=g?`<h1 class="lt">${g[1]} <span class="cnt">${g[3].length||''}</span></h1>${g[2]?`<p class="hint" style="margin:-6px 2px 12px">${g[2]}</p>`:''}${g[3].length?`<div class="grid g2">${g[3].map(g[4]).join('')}</div>`:`<p class="hint">${g[5]||'Nessuna foto in questo gruppo.'}</p>`}`:'<p class="hint">Gruppo non trovato.</p>';
+  }else{
+    h=`<h1 class="lt">${esc(s.cantiere||'Sopralluogo')}</h1>`+G.filter(g=>g[0]!='rif'&&(g[3].length||g[5])).map(g=>`<section class="card"><h2>${g[1]} <span class="cnt">${g[3].length||''}</span>${g[3].length?`<button class="opn" data-go="gal/${s.id}/${g[0]}">Apri ›</button>`:''}</h2>${g[2]?`<p class="hint" style="margin:-4px 2px 8px">${g[2]}</p>`:''}${g[3].length?`<div class="grid">${g[3].map(g[4]).join('')}</div>`:`<p class="hint">${g[5]}</p>`}</section>`).join('')+(f.length?'':'<p class="hint">Nessuna foto ancora in questo sopralluogo.</p>');
+  }
+  $('vG').innerHTML=`<div class="top"><button class="bk" data-go="${one?'gal/'+s.id:'sop/'+s.id}">‹ ${one?'Tutte le foto':'Sopralluogo'}</button>${one?`<button class="bk" data-go="sop/${s.id}">Sopralluogo</button>`:`<span class="sv">${f.length} foto</span>`}</div><main>${h}</main>`;
+}
+
+/* ============ REPORT ============ */
+const accRows=s=>ACC.filter(a=>s.acc&&String(s.acc[a[0]]||'').trim()).map(a=>[a[1],s.acc[a[0]]+(typeof a[2]=='string'?' '+a[2]:'')]);
+const kv=(k,v)=>v?`<tr><th>${k}</th><td>${esc(v).replace(/\n/g,'<br>')}</td></tr>`:'';
+let repSop=null;
+async function scaricaReport(){
+  const a=document.querySelector('#vR .rep');if(!a||!repSop)return;
+  const c=a.cloneNode(true);
+  for(const im of c.querySelectorAll('img')){try{im.src=await b2d(await (await fetch(im.getAttribute('src'))).blob())}catch(_){}}
+  let css='';try{for(const sh of document.styleSheets)for(const r of sh.cssRules)if(r.selectorText&&r.selectorText.includes('.rep'))css+=r.cssText+'\n'}catch(_){}
+  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}@page{margin:14mm}@media print{.rep{margin:0!important;padding:0!important;box-shadow:none!important;max-width:none!important}}\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
+  esporta('verbale_'+fname(repSop).replace(/^sopralluogo_/,'')+'.html',new Blob([html],{type:'text/html'}));
+}
+async function renderRep(s){
+  repSop=s;
+  const {gen:f,acc:fa,sf:fs}=split(await fotoDi(s.id)),t=totTxt(totali(s));
+  const fig=(p,lab,extra)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<figure><img src="${u}" alt="${lab}"><figcaption><b>${lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
+  $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
+<article class="rep">
+<h1>Verbale di sopralluogo</h1>
+<p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
+<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Data',dIt(s.data))}${kv('Tecnico',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
+${fs.length||(s.sfn||'').trim()?`<h2>Stato di fatto e accessibilità</h2>${(s.sfn||'').trim()?`<p style="white-space:pre-line;margin:0 0 12px">${esc(s.sfn)}</p>`:''}${fs.length?`<div class="pg">${fs.map((p,i)=>fig(p,'Foto S'+(i+1))).join('')}</div>`:''}`:''}
+<h2>Rifiuti individuati</h2>
+${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th class="r">Quantità</th>${f.length?'<th class="r">Foto</th>':''}</tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),h=r&&r[2];return `<tr><td class="nw"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td class="r nw">${x.q?esc(x.q)+' '+x.u:'—'}</td>${f.length?`<td class="r">${fotoNums(f,x.id).join(', ')||'—'}</td>`:''}</tr>`}).join('')}</tbody></table>
+<p style="font-size:13px;color:#555">${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'* rifiuto pericoloso. ':''}${t?'Totale: '+esc(t):''}</p>`:'<p>Nessun codice registrato.</p>'}
+${f.length?`<h2>Documentazione fotografica dei rifiuti</h2><div class="pg">${f.map((p,i)=>fig(p,'Foto '+(i+1),codesOf(s,p).length?' · CER '+codesOf(s,p).map(x=>lbl(s,x)).join(', '):'')).join('')}</div>`:''}
+</article>`;
+}
+
+/* ============ AGGIUNTA CER DALLA RICERCA ============ */
+async function addCer(c){
+  let id=target;
+  if(!id){
+    const a=(await all('sop')).sort((x,y)=>(y.mod||0)-(x.mod||0));
+    const v=await dlgOpen(`<h3>Aggiungi ${fmt(c)}${isH(c)?'*':''} a…</h3>`+(a.length?'<p class="hint">Scegli il sopralluogo oppure creane uno nuovo.</p>':'')+`<button class="btn pri wide" data-dr="new" style="margin:6px 0 10px">+ Nuovo sopralluogo</button>`+a.map(s=>`<button class="it sl" data-dr="s:${s.id}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="meta">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}${s.luogo||s.data?' · ':''}${s.cer.length} codici CER</div></button>`).join(''),[['Annulla','','']]);
+    if(!v)return;
+    if(v=='new'){const n=newSop();await put('sop',n);id=n.id;autoGps=true}else id=v.slice(2);
+  }
+  const s=await get('sop',id);if(!s){target=null;go('sop');return}
+  s.cer.push({id:uid(),c,q:'',u:lastU,n:''});s.mod=Date.now();await put('sop',s);
+  focusNew=true;target=null;go('sop/'+s.id);
+}
+
+/* ============ EVENTI ============ */
+$('vE').addEventListener('input',e=>{
+  const t=e.target,d=t.dataset;if(!cur)return;
+  if(d.a){cur.acc[d.a]=t.value;save()}
+  else if(d.k){cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';save()}
+  else if(t.id=='lat'||t.id=='lon'){stopGps();$('gpsb').disabled=false;const a=num($('lat').value),b=num($('lon').value);cur.gps=(a!=null&&b!=null&&Math.abs(a)<=90&&Math.abs(b)<=180)?{lat:a,lon:b,acc:null,man:1,ts:Date.now()}:null;updGps(true);save()}
+  else if(d.q!=null){cur.cer[+d.q].q=t.value;renderTot();save()}
+  else if(d.n!=null){cur.cer[+d.n].n=t.value;save()}
+});
+$('vE').addEventListener('change',e=>{
+  const t=e.target,d=t.dataset;if(!cur)return;
+  if(d.a){cur.acc[d.a]=t.value;save()}
+  else if(d.pha!=null){const a=[...t.files];t.value='';addFoto(a,null,'acc')}
+  else if(d.phs!=null){const a=[...t.files];t.value='';addFoto(a,null,'sf')}
+  else if(d.u!=null){cur.cer[+d.u].u=t.value;lastU=t.value;try{localStorage.setItem('cer_u',lastU)}catch(_){}renderTot();save()}
+  else if(d.ph!=null){const a=[...t.files];t.value='';addFoto(a)}
+  else if(d.phc!=null){const a=[...t.files];t.value='';addFoto(a,d.phc)}
+});
+$('vL').addEventListener('change',e=>{if(e.target.id=='rst'){const f=e.target.files[0];e.target.value='';if(f)ripristina(f)}});
+$('ovc').onclick=()=>closePh(true);
+$('ovp').onclick=()=>ovGo(-1);$('ovx').onclick=()=>ovGo(1);
+let tx0=null;
+$('ovi').addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});
+$('ovi').addEventListener('touchend',e=>{if(tx0==null)return;const dx=e.changedTouches[0].clientX-tx0;tx0=null;if(Math.abs(dx)>50)ovGo(dx<0?1:-1)});
+document.addEventListener('keydown',e=>{if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(true)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;await del('foto',ovF.id);closePh(false)};
+$('tga').onclick=()=>{if(pick){pickDone(null);return}const id=target;target=null;go(id?'sop/'+id:'sop')};
+
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const dr=t.closest('[data-dr]');if(dr){dlgClose(dr.dataset.dr);return}
+  if(t.id=='dlg'){dlgClose('');return}
+  const g=t.closest('[data-go]');
+  if(g){e.preventDefault();go(g.dataset.go);return}
+  /* sopralluoghi */
+  if(t.id=='nuovo'){nuovo();return}
+  if(t.id=='bkp'){backup();return}
+  if(t.id=='gpsb'){rileva();return}
+  if(t.id=='addc'){(async()=>{const c=await pickCode('Aggiungi CER',true);if(c==null||!cur)return;const x=addRow(c);renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
+  const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER');if(!c||!cur)return;x.c=c;renderCer();renderPh();save()})();return}
+  const ub=t.closest('[data-use]');if(ub&&pick){pickDone(ub.dataset.use);return}
+  if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
+  if(t.id=='csv'){flush();csv(cur);return}
+  if(t.id=='zip'){flush();zipFoto(cur);return}
+  const ct=t.closest('[data-cat]');
+  if(ct&&ovF){const k=ct.dataset.cat;if(k!=catOf(ovF)){ovF.cat=k;delete ovF.acc;if(k!='rif')ovF.cer=[];ovDirty=true;$('ovh').textContent='Foto '+CATS.find(c=>c[0]==k)[1].toLowerCase();paintOvk()}return}
+  const ok=t.closest('[data-ok]');
+  if(ok&&ovF){const k=ok.dataset.ok;ovF.cer=ovF.cer||[];ovF.cer=ovF.cer.includes(k)?ovF.cer.filter(x=>x!=k):ovF.cer.concat(k);ovDirty=true;paintOvk();return}
+  if(t.id=='dels'){elimina();return}
+  if(t.id=='prt'){print();return}
+  if(t.id=='rdl'){scaricaReport();return}
+  if(t.dataset.dc!=null){const i=+t.dataset.dc,x=cur.cer[i];(async()=>{if(!await ask('Togliere la voce '+lbl(cur,x)+' da questo sopralluogo? Le sue foto restano tra quelle da classificare.','Togli',1))return;const k=cur.cer.indexOf(x);if(k<0)return;cur.cer.splice(k,1);renderCer();save();for(const p of fotos){if((p.cer||[]).includes(x.id)){p.cer=p.cer.filter(y=>y!=x.id);await put('foto',p)}}renderPh()})();return}
+  const pf=t.closest('[data-pf]');if(pf){openPh(pf.dataset.pf,[...pf.parentElement.querySelectorAll('[data-pf]')].map(x=>x.dataset.pf));return}
+  /* ricerca */
+  if(t.dataset.add){addCer(t.dataset.add);return}
+  if(t.dataset.f){flt=t.dataset.f;shown=60;sync();render();return}
+  if(t.id=='cc'){chap=chap.length>2?chap.slice(0,2):'';showAll=false;shown=60;render();scrollTo(0,0);return}
+  if(t.id=='allc'){showAll=true;shown=60;render();scrollTo(0,0);return}
+  if(t.id=='more'){shown+=100;render();return}
+  if(t.dataset.cp){
+    try{navigator.clipboard.writeText(t.dataset.cp.replace('*','')).then(()=>t.textContent='Copiato')}catch(_){t.textContent='Copia non disponibile'}
+    return}
+  const ch=t.closest('[data-ch]');
+  if(ch){chap=ch.dataset.ch;showAll=false;shown=60;render();scrollTo(0,0);return}
+  const it=t.closest('[data-c]');
+  if(it)it.classList.toggle('o');
+});
+route();
+</script>
+</body>
+</html>
