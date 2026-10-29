@@ -81,6 +81,9 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 #mpq:focus{border-color:var(--ac)}
 .mpr{max-height:40vh;overflow:auto;padding:0 max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
 .mpr button{display:block;width:100%;text-align:left;font:inherit;font-size:15px;color:var(--ink);background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+.mpg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
+.mpg .btn{font-size:15px;padding:9px 8px}
+.gmb{display:block;text-align:center;font-size:15px;font-weight:600;color:var(--ac);border:1.5px solid var(--ac);border-radius:10px;padding:9px 12px;text-decoration:none;background:var(--sf)}
 .mapw{position:relative;flex:1;min-height:200px}
 #mapc{position:absolute;inset:0;background:#dfe6e8}
 .mpl{position:absolute;top:10px;right:10px;z-index:1000;display:flex;gap:6px}
@@ -213,7 +216,8 @@ textarea{resize:vertical}
 
 <div id="mp" class="mp" hidden>
 <div class="mph"><button class="bk" id="mpx">Annulla</button><b>Scegli la posizione</b><span style="width:60px"></span></div>
-<form id="mpf" class="mpf"><input id="mpq" type="search" placeholder="Cerca indirizzo o luogo…" autocomplete="off" enterkeyhint="search"><button class="btn pri" type="submit">Cerca</button></form>
+<form id="mpf" class="mpf"><input id="mpq" type="search" placeholder="Indirizzo, attività o coordinate…" autocomplete="off" enterkeyhint="search"><button class="btn pri" type="submit">Cerca</button></form>
+<div class="mpg"><button class="btn" id="mpgm" type="button">🔎 Cerca su Google Maps</button><button class="btn pri" id="mppa" type="button">📋 Incolla coordinate</button></div>
 <div id="mpr" class="mpr" hidden></div>
 <div class="mapw"><div id="mapc"></div><div class="mpl"><button data-ly="map" aria-pressed="true">Mappa</button><button data-ly="sat" aria-pressed="false">Satellite</button><button id="mpme" aria-label="La mia posizione">📍</button></div></div>
 <div class="mpb"><div id="mpi" class="mpi">Tocca la mappa per mettere il segnaposto, poi trascinalo per precisare.</div><button class="btn pri wide" id="mps" disabled style="margin-top:8px">💾 Salva questa posizione</button></div>
@@ -543,20 +547,54 @@ async function openMap(){
   setTimeout(()=>map.invalidateSize(),60);
 }
 function closeMap(){$('mp').hidden=true}
-async function cercaLuogo(q){
-  q=q.trim();if(!q)return;const R_=$('mpr');R_.hidden=false;R_.innerHTML='<p class="hint">Cerco…</p>';
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=it&q='+encodeURIComponent(q));
-    mpRes=await r.json();
-    R_.innerHTML=mpRes.length?mpRes.map((x,i)=>`<button data-mr="${i}">${esc(x.display_name)}</button>`).join(''):'<p class="hint">Nessun luogo trovato. Prova con via e comune, oppure sposta la mappa a mano.</p>';
-  }catch(_){R_.innerHTML='<p class="hint err">Ricerca non riuscita: controlla la connessione.</p>'}
+function parseCoord(q){
+  const m=q.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||q.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||q.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i)||q.match(/^\s*(-?\d{1,2}[.,]\d{3,})\s*[,; ]\s*(-?\d{1,3}[.,]\d{3,})\s*$/);
+  if(!m)return null;const a=+m[1].replace(',','.'),b=+m[2].replace(',','.');
+  return Math.abs(a)<=90&&Math.abs(b)<=180?[a,b]:null;
 }
+async function cercaLuogo(q){
+  q=q.trim();if(!q)return;const R_=$('mpr');R_.hidden=false;
+  const c=parseCoord(q);
+  if(c){R_.hidden=true;map.setView(c,18);setMp(c[0],c[1]);return}
+  const g=`<a class="gmb" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener">🔎 Cerca “${esc(q)}” su Google Maps</a><p class="hint" style="margin:6px 2px 0">Trovato il posto su Google Maps, <b>tieni premuto sul punto</b>, copia i numeri delle coordinate (tipo 40.6329, 14.4117) e <b>incollali qui sopra</b>.</p>`;
+  if(/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(q)){R_.innerHTML='<p class="hint">Questo è un link breve di Google Maps e non contiene le coordinate. In Google Maps tieni premuto sul punto e copia i numeri delle coordinate, poi incollali qui.</p>';return}
+  R_.innerHTML='<p class="hint">Cerco…</p>';
+  const ctr=map?map.getCenter():null,z=map?map.getZoom():6;
+  const bias=ctr&&z>=9?`&lat=${ctr.lat.toFixed(4)}&lon=${ctr.lng.toFixed(4)}`:'&lat=41.9&lon=12.5';
+  const [ph,nm]=await Promise.all([
+    fetch('https://photon.komoot.io/api/?limit=8'+bias+'&q='+encodeURIComponent(q)).then(r=>r.json()).then(j=>(j.features||[]).map(f=>{const p=f.properties,co=f.geometry.coordinates;return{n:p.name||[p.street,p.housenumber].filter(Boolean).join(' '),d:[p.name?[p.street,p.housenumber].filter(Boolean).join(' '):'',p.postcode&&p.city?p.postcode+' '+p.city:p.city||p.county,p.country!='Italia'&&p.country!='Italy'?p.country:''].filter(Boolean).join(', '),lat:co[1],lon:co[0]}})).catch(()=>[]),
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=it&q='+encodeURIComponent(q)).then(r=>r.json()).then(j=>j.map(x=>{const p=x.display_name.split(', ');return{n:x.name||p[0],d:p.slice(1,5).join(', '),lat:+x.lat,lon:+x.lon}})).catch(()=>[])
+  ]);
+  mpRes=[];for(const x of [...ph,...nm]){if(!x.n||!isFinite(x.lat))continue;if(mpRes.some(y=>Math.abs(y.lat-x.lat)<.0003&&Math.abs(y.lon-x.lon)<.0003))continue;mpRes.push(x)}
+  mpRes=mpRes.slice(0,8);
+  R_.innerHTML=(mpRes.length?mpRes.map((x,i)=>`<button data-mr="${i}"><b>${esc(x.n)}</b>${x.d?'<br><span class="hint" style="margin:0">'+esc(x.d)+'</span>':''}</button>`).join(''):'<p class="hint">Sulla mappa gratuita non trovo questo nome: le piccole attività spesso non ci sono.</p>')+g;
+}
+function gmapsUrl(){
+  const q=$('mpq').value.trim();
+  if(q&&!parseCoord(q))return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+  const p=mpPos||(map?{lat:map.getCenter().lat,lon:map.getCenter().lng}:null);
+  return p?`https://www.google.com/maps/@${(+p.lat).toFixed(6)},${(+p.lon).toFixed(6)},18z`:'https://www.google.com/maps';
+}
+$('mpgm').onclick=()=>{
+  const w=window.open(gmapsUrl(),'_blank','noopener');
+  $('mpi').innerHTML='In Google Maps <b>tieni premuto sul punto</b>, tocca le coordinate per copiarle, poi torna qui e premi <b>📋 Incolla coordinate</b>.';
+  if(!w)location.href=gmapsUrl();
+};
+$('mppa').onclick=async()=>{
+  let t='';
+  try{t=await navigator.clipboard.readText()}catch(_){t=''}
+  const c=t&&parseCoord(t);
+  if(c&&map){$('mpr').hidden=true;$('mpq').value=t.trim().slice(0,120);map.setView(c,18);setMp(c[0],c[1]);return}
+  if(!t){$('mpq').value='';$('mpq').focus();$('mpi').innerHTML='Il telefono non mi lascia leggere gli appunti: <b>tieni premuto nella casella in alto e scegli Incolla</b>.';return}
+  $('mpi').innerHTML='Negli appunti non ci sono coordinate. In Google Maps <b>tieni premuto sul punto</b> e tocca i numeri (tipo 40.6329, 14.4117) per copiarli.';
+};
+$('mpq').addEventListener('paste',()=>setTimeout(()=>{const c=parseCoord($('mpq').value);if(c&&map){$('mpr').hidden=true;map.setView(c,18);setMp(c[0],c[1])}},0));
 $('mpf').addEventListener('submit',e=>{e.preventDefault();$('mpq').blur();cercaLuogo($('mpq').value)});
 $('mpx').onclick=closeMap;
 $('mps').onclick=()=>{if(!mpPos||!cur)return;gpsPend=null;stopGps();$('gpsp').hidden=true;$('gpsb').disabled=false;cur.gps={lat:mpPos.lat,lon:mpPos.lon,acc:null,man:1,map:1,ts:Date.now()};closeMap();updGps();save()};
 $('mpme').onclick=()=>{if(!navigator.geolocation||!map)return;$('mpi').textContent='Cerco dove ti trovi…';navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],18);setMp(p.coords.latitude,p.coords.longitude)},()=>{$('mpi').innerHTML='<span class="err">Posizione non disponibile: tocca tu il punto sulla mappa.</span>'},{enableHighAccuracy:true,timeout:15000,maximumAge:30000})};
 document.querySelectorAll('[data-ly]').forEach(b=>b.onclick=()=>setLayer(b.dataset.ly));
-$('mpr').addEventListener('click',e=>{const b=e.target.closest('[data-mr]');if(!b)return;const x=mpRes[+b.dataset.mr];$('mpr').hidden=true;map.setView([+x.lat,+x.lon],18);setMp(+x.lat,+x.lon)});
+$('mpr').addEventListener('click',e=>{const b=e.target.closest('[data-mr]');if(!b)return;const x=mpRes[+b.dataset.mr];$('mpr').hidden=true;map.setView([x.lat,x.lon],18);setMp(x.lat,x.lon)});
 
 let gpsPend=null;
 function gpsShowPend(searching){
@@ -823,7 +861,7 @@ document.addEventListener('click',e=>{
   if(t.id=='mpo'){openMap();return}
   if(t.id=='gpss'&&gpsPend&&cur){cur.gps=gpsPend;gpsPend=null;stopGps();$('gpsb').disabled=false;$('gpsp').hidden=true;updGps();save();return}
   if(t.id=='gpsc'){gpsPend=null;stopGps();$('gpsp').hidden=true;if(cur){$('gpsb').disabled=false;updGps()}return}
-  if(t.id=='addc'){(async()=>{const c=await pickCode('Aggiungi CER',true);if(c==null||!cur)return;const x=addRow(c);renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
+  if(t.id=='addc'){(async()=>{if(!cur)return;const x=addRow('');renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
   const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER');if(!c||!cur)return;x.c=c;renderCer();renderPh();save()})();return}
   const ub=t.closest('[data-use]');if(ub&&pick){pickDone(ub.dataset.use);return}
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
