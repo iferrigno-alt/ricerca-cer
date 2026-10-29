@@ -73,6 +73,9 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .cr.nc{border-style:dashed;border-left-style:solid;border-left-color:var(--ac)}
 .na{font-size:18px;font-weight:700;color:var(--ac)}
 .cfs .hint{font-size:13px}
+.gpsp{border:1.5px dashed var(--ac);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:15px}
+.gpsp b{font-variant-numeric:tabular-nums}
+.gpsp a{color:var(--ac)}
 .unc{border:1.5px dashed var(--hz);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .unc h3{margin:0;font-size:16px;color:var(--hz);display:flex;align-items:center;gap:8px}
 .lnk{color:var(--ac);text-decoration:underline;cursor:pointer;white-space:nowrap}
@@ -369,7 +372,7 @@ function show(v){
 function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];umap={};fotos=[]}
 async function route(){
   if(pick){const p=pick;pick=null;p.res(null);if(p.ov)closePh(true)}
-  await flush();stopGps();
+  await flush();stopGpsAll();
   const [a,id,grp]=((curRoute||'').slice(1)||'cerca').split('/');
   if(a!='cerca'){target=null}
   freeUrls();
@@ -413,7 +416,7 @@ ${a.length?a.map(s=>`<button class="it sl" data-go="sop/${s.id}"><div class="slt
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();
-  await put('sop',s);autoGps=true;go('sop/'+s.id);
+  await put('sop',s);go('sop/'+s.id);
 }
 const b2d=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)});
 async function backup(){
@@ -451,6 +454,7 @@ ${fld('committente','Committente','')}
 </section>
 <section class="card"><h2>Posizione GPS</h2>
 <button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
+<div id="gpsp" class="gpsp" hidden><div id="gpspt"></div><div class="row2" style="margin-top:8px"><button class="btn" id="gpsc">Annulla</button><button class="btn pri" id="gpss">💾 Salva questa posizione</button></div></div>
 <div class="row2"><label class="fl">Latitudine<input id="lat" inputmode="decimal" placeholder="40.6263"></label><label class="fl">Longitudine<input id="lon" inputmode="decimal" placeholder="14.3757"></label></div>
 <div id="gpsi" class="hint"></div>
 </section>
@@ -481,25 +485,31 @@ function updGps(keep){
   $('gpsi').innerHTML=g?[g.acc?'Precisione ±'+g.acc+' m':(g.man?'Coordinate inserite a mano':''),g.ts?new Date(g.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',`<a href="${maps(g)}" target="_blank" rel="noopener">Apri sulla mappa</a>`].filter(Boolean).join(' · ')
     :'Premi il pulsante sul posto: il telefono chiederà il permesso di usare la posizione. In alternativa scrivi le coordinate.';
 }
+function stopGpsAll(){gpsPend=null;stopGps()}
 function stopGps(){if(watch!=null){navigator.geolocation.clearWatch(watch.id);clearTimeout(watch.to);watch=null}}
+let gpsPend=null;
+function gpsShowPend(searching){
+  const p=gpsPend;$('gpsp').hidden=!p;if(!p)return;
+  $('gpspt').innerHTML=`${searching?'Sto affinando la posizione…':'Posizione trovata'} <b>±${p.acc} m</b><br><b>${p.lat}, ${p.lon}</b> · <a href="${maps(p)}" target="_blank" rel="noopener">vedi sulla mappa</a><br><span class="hint" style="margin:0">Non è ancora salvata: premi “Salva questa posizione” quando ti va bene.</span>`;
+}
+function gpsEnd(){stopGps();if(!cur)return;$('gpsb').disabled=false;$('gpsb').textContent=gpsPend?'Rileva di nuovo':(cur.gps?'Rileva di nuovo':'📍 Rileva posizione');gpsShowPend(false)}
 function rileva(){
   const info=$('gpsi'),b=$('gpsb');
   if(!navigator.geolocation){info.innerHTML='<span class="err">Questo browser non dà accesso al GPS. Inserisci le coordinate a mano.</span>';return}
   if(!window.isSecureContext){info.innerHTML='<span class="err">Il GPS funziona solo se la pagina è aperta da un indirizzo https. Inserisci le coordinate a mano.</span>';return}
-  stopGps();
-  const s=cur;let best=null;b.disabled=true;b.textContent='Rilevo la posizione…';
-  const fine=()=>{stopGps();if(cur===s){b.disabled=false;updGps()}};
+  stopGps();gpsPend=null;gpsShowPend();
+  const s=cur;b.disabled=true;b.textContent='Cerco la posizione…';
   watch={};
   watch.id=navigator.geolocation.watchPosition(p=>{
     if(cur!==s)return stopGps();
     const c=p.coords;
-    if(!best||c.accuracy<best){best=c.accuracy;s.gps={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null,ts:Date.now()};updGps();b.disabled=true;b.textContent='Affino… ±'+Math.round(c.accuracy)+' m';save()}
-    if(c.accuracy<=8)fine();
+    if(!gpsPend||c.accuracy<gpsPend.acc){gpsPend={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy),alt:c.altitude!=null?Math.round(c.altitude):null,ts:Date.now()};gpsShowPend(true);b.textContent='Affino… ±'+gpsPend.acc+' m'}
+    if(c.accuracy<=8)gpsEnd();
   },e=>{
     stopGps();if(cur!==s)return;b.disabled=false;updGps();
     $('gpsi').innerHTML='<span class="err">'+(inClaude?'In questa versione aperta da Claude il GPS non è disponibile. Scrivi le coordinate: in Google Maps tieni premuto sul punto e copia i numeri che compaiono.':e.code==1?'Permesso negato: abilita la posizione per questo browser nelle impostazioni del telefono.':'Posizione non disponibile. Riprova all’aperto o inserisci le coordinate a mano.')+'</span>';
   },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
-  watch.to=setTimeout(fine,20000);
+  watch.to=setTimeout(gpsEnd,20000);
 }
 function renderCer(){
   const L=$('cers');$('nc').textContent=cur.cer.length||'';
@@ -695,7 +705,7 @@ async function addCer(c){
     const a=(await all('sop')).sort((x,y)=>(y.mod||0)-(x.mod||0));
     const v=await dlgOpen(`<h3>Aggiungi ${fmt(c)}${isH(c)?'*':''} a…</h3>`+(a.length?'<p class="hint">Scegli il sopralluogo oppure creane uno nuovo.</p>':'')+`<button class="btn pri wide" data-dr="new" style="margin:6px 0 10px">+ Nuovo sopralluogo</button>`+a.map(s=>`<button class="it sl" data-dr="s:${s.id}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="meta">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}${s.luogo||s.data?' · ':''}${s.cer.length} codici CER</div></button>`).join(''),[['Annulla','','']]);
     if(!v)return;
-    if(v=='new'){const n=newSop();await put('sop',n);id=n.id;autoGps=true}else id=v.slice(2);
+    if(v=='new'){const n=newSop();await put('sop',n);id=n.id}else id=v.slice(2);
   }
   const s=await get('sop',id);if(!s){target=null;go('sop');return}
   s.cer.push({id:uid(),c,q:'',u:lastU,n:''});s.mod=Date.now();await put('sop',s);
@@ -739,6 +749,8 @@ document.addEventListener('click',e=>{
   if(t.id=='nuovo'){nuovo();return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
+  if(t.id=='gpss'&&gpsPend&&cur){cur.gps=gpsPend;gpsPend=null;stopGps();$('gpsb').disabled=false;$('gpsp').hidden=true;updGps();save();return}
+  if(t.id=='gpsc'){gpsPend=null;stopGps();$('gpsp').hidden=true;if(cur){$('gpsb').disabled=false;updGps()}return}
   if(t.id=='addc'){(async()=>{const c=await pickCode('Aggiungi CER',true);if(c==null||!cur)return;const x=addRow(c);renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
   const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER');if(!c||!cur)return;x.c=c;renderCer();renderPh();save()})();return}
   const ub=t.closest('[data-use]');if(ub&&pick){pickDone(ub.dataset.use);return}
