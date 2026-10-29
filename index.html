@@ -73,6 +73,24 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .cr.nc{border-style:dashed;border-left-style:solid;border-left-color:var(--ac)}
 .na{font-size:18px;font-weight:700;color:var(--ac)}
 .cfs .hint{font-size:13px}
+.mp{position:fixed;inset:0;z-index:46;background:var(--bg);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.mph{display:flex;align-items:center;justify-content:space-between;padding:8px max(14px,env(safe-area-inset-right,0px)) 4px max(14px,env(safe-area-inset-left,0px))}
+.mph b{font-size:17px}
+.mpf{display:flex;gap:8px;padding:4px max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
+#mpq{flex:1;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border-radius:12px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);outline:none}
+#mpq:focus{border-color:var(--ac)}
+.mpr{max-height:40vh;overflow:auto;padding:0 max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
+.mpr button{display:block;width:100%;text-align:left;font:inherit;font-size:15px;color:var(--ink);background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+.mapw{position:relative;flex:1;min-height:200px}
+#mapc{position:absolute;inset:0;background:#dfe6e8}
+.mpl{position:absolute;top:10px;right:10px;z-index:1000;display:flex;gap:6px}
+.mpl button{font:inherit;font-size:14px;font-weight:600;padding:7px 11px;border-radius:99px;border:0;background:#fff;color:#0b6577;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.mpl button[aria-pressed=true]{background:#0b6577;color:#fff}
+.mpb{padding:10px max(14px,env(safe-area-inset-right,0px)) 12px max(14px,env(safe-area-inset-left,0px));border-top:1px solid var(--ln);background:var(--sf)}
+.mpi{font-size:15px}
+.mpi b{font-variant-numeric:tabular-nums}
+.pin{background:none;border:0}
+.pin::before{content:"";position:absolute;left:4px;top:2px;width:20px;height:20px;border-radius:50% 50% 50% 0;background:#b42318;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
 .gpsp{border:1.5px dashed var(--ac);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:15px}
 .gpsp b{font-variant-numeric:tabular-nums}
 .gpsp a{color:var(--ac)}
@@ -193,6 +211,13 @@ textarea{resize:vertical}
 <div id="vG" hidden></div>
 <div id="vR" hidden></div>
 
+<div id="mp" class="mp" hidden>
+<div class="mph"><button class="bk" id="mpx">Annulla</button><b>Scegli la posizione</b><span style="width:60px"></span></div>
+<form id="mpf" class="mpf"><input id="mpq" type="search" placeholder="Cerca indirizzo o luogo…" autocomplete="off" enterkeyhint="search"><button class="btn pri" type="submit">Cerca</button></form>
+<div id="mpr" class="mpr" hidden></div>
+<div class="mapw"><div id="mapc"></div><div class="mpl"><button data-ly="map" aria-pressed="true">Mappa</button><button data-ly="sat" aria-pressed="false">Satellite</button><button id="mpme" aria-label="La mia posizione">📍</button></div></div>
+<div class="mpb"><div id="mpi" class="mpi">Tocca la mappa per mettere il segnaposto, poi trascinalo per precisare.</div><button class="btn pri wide" id="mps" disabled style="margin-top:8px">💾 Salva questa posizione</button></div>
+</div>
 <div id="dlg" class="dlg" hidden><div class="dlgb" role="dialog" aria-modal="true"><div id="dlgc"></div><div class="dlga" id="dlga"></div></div></div>
 <div id="ov" hidden>
 <div id="ovh" class="ovh"></div>
@@ -372,7 +397,7 @@ function show(v){
 function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];umap={};fotos=[]}
 async function route(){
   if(pick){const p=pick;pick=null;p.res(null);if(p.ov)closePh(true)}
-  await flush();stopGpsAll();
+  await flush();stopGpsAll();$('mp').hidden=true;
   const [a,id,grp]=((curRoute||'').slice(1)||'cerca').split('/');
   if(a!='cerca'){target=null}
   freeUrls();
@@ -454,6 +479,7 @@ ${fld('committente','Committente','')}
 </section>
 <section class="card"><h2>Posizione GPS</h2>
 <button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
+<button class="btn wide" id="mpo" style="margin:0 0 10px">🗺 Scegli sulla mappa</button>
 <div id="gpsp" class="gpsp" hidden><div id="gpspt"></div><div class="row2" style="margin-top:8px"><button class="btn" id="gpsc">Annulla</button><button class="btn pri" id="gpss">💾 Salva questa posizione</button></div></div>
 <div class="row2"><label class="fl">Latitudine<input id="lat" inputmode="decimal" placeholder="40.6263"></label><label class="fl">Longitudine<input id="lon" inputmode="decimal" placeholder="14.3757"></label></div>
 <div id="gpsi" class="hint"></div>
@@ -476,17 +502,62 @@ ${fld('committente','Committente','')}
 <button class="btn dng wide" id="dels">Elimina sopralluogo</button>
 </section>
 </main>`;
-  updGps();renderCer();renderPh();
+  updGps();renderCer();renderPh();if(inClaude)$("mpo").hidden=true;
 }
 function updGps(keep){
   const g=cur.gps;
   if(!keep){$('lat').value=g?g.lat:'';$('lon').value=g?g.lon:''}
   $('gpsb').textContent=g?'Rileva di nuovo':'📍 Rileva posizione';
-  $('gpsi').innerHTML=g?[g.acc?'Precisione ±'+g.acc+' m':(g.man?'Coordinate inserite a mano':''),g.ts?new Date(g.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',`<a href="${maps(g)}" target="_blank" rel="noopener">Apri sulla mappa</a>`].filter(Boolean).join(' · ')
+  $('gpsi').innerHTML=g?[g.acc?'Precisione ±'+g.acc+' m':(g.map?'Scelta sulla mappa':g.man?'Coordinate inserite a mano':''),g.ts?new Date(g.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',`<a href="${maps(g)}" target="_blank" rel="noopener">Apri sulla mappa</a>`].filter(Boolean).join(' · ')
     :'Premi il pulsante sul posto: il telefono chiederà il permesso di usare la posizione. In alternativa scrivi le coordinate.';
 }
 function stopGpsAll(){gpsPend=null;stopGps()}
 function stopGps(){if(watch!=null){navigator.geolocation.clearWatch(watch.id);clearTimeout(watch.to);watch=null}}
+/* ============ MAPPA ============ */
+let LP=null,map=null,mk=null,lyr={},mpPos=null,mpRes=[];
+function loadLeaflet(){return LP||(LP=new Promise((ok,ko)=>{
+  const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(l);
+  const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';sc.onload=()=>window.L?ok(window.L):ko();sc.onerror=()=>{LP=null;ko()};document.head.appendChild(sc);
+}))}
+function setMp(lat,lon){
+  mpPos={lat:+(+lat).toFixed(6),lon:+(+lon).toFixed(6)};
+  if(!mk){mk=L.marker([lat,lon],{draggable:true,icon:L.divIcon({className:'pin',iconSize:[28,34],iconAnchor:[14,33]})}).addTo(map);mk.on('dragend',()=>{const p=mk.getLatLng();setMp(p.lat,p.lng)})}
+  else mk.setLatLng([lat,lon]);
+  $('mpi').innerHTML=`Segnaposto: <b>${mpPos.lat}, ${mpPos.lon}</b><br><span class="hint" style="margin:0">Trascinalo o tocca un altro punto per spostarlo.</span>`;$('mps').disabled=false;
+}
+function setLayer(k){if(!map)return;Object.values(lyr).forEach(x=>map.removeLayer(x));lyr[k].addTo(map);document.querySelectorAll('[data-ly]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ly==k))}
+async function openMap(){
+  if(!cur)return;
+  $('mp').hidden=false;$('mpr').hidden=true;$('mpq').value='';$('mps').disabled=true;
+  $('mpi').textContent='Tocca la mappa per mettere il segnaposto, poi trascinalo per precisare.';
+  try{await loadLeaflet()}catch(_){$('mpi').innerHTML='<span class="err">Non riesco a caricare la mappa: serve la connessione a internet. Riprova quando hai campo.</span>';return}
+  if(!map){
+    map=L.map('mapc',{zoomControl:true});
+    lyr.map=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+    lyr.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Immagini © Esri'});
+    lyr.map.addTo(map);map.on('click',e=>setMp(e.latlng.lat,e.latlng.lng));
+  }
+  mpPos=null;if(mk){mk.remove();mk=null}
+  const st=gpsPend||cur.gps;
+  if(st){map.setView([st.lat,st.lon],17);setMp(st.lat,st.lon)}else map.setView([41.9,12.5],6);
+  setTimeout(()=>map.invalidateSize(),60);
+}
+function closeMap(){$('mp').hidden=true}
+async function cercaLuogo(q){
+  q=q.trim();if(!q)return;const R_=$('mpr');R_.hidden=false;R_.innerHTML='<p class="hint">Cerco…</p>';
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=it&q='+encodeURIComponent(q));
+    mpRes=await r.json();
+    R_.innerHTML=mpRes.length?mpRes.map((x,i)=>`<button data-mr="${i}">${esc(x.display_name)}</button>`).join(''):'<p class="hint">Nessun luogo trovato. Prova con via e comune, oppure sposta la mappa a mano.</p>';
+  }catch(_){R_.innerHTML='<p class="hint err">Ricerca non riuscita: controlla la connessione.</p>'}
+}
+$('mpf').addEventListener('submit',e=>{e.preventDefault();$('mpq').blur();cercaLuogo($('mpq').value)});
+$('mpx').onclick=closeMap;
+$('mps').onclick=()=>{if(!mpPos||!cur)return;gpsPend=null;stopGps();$('gpsp').hidden=true;$('gpsb').disabled=false;cur.gps={lat:mpPos.lat,lon:mpPos.lon,acc:null,man:1,map:1,ts:Date.now()};closeMap();updGps();save()};
+$('mpme').onclick=()=>{if(!navigator.geolocation||!map)return;$('mpi').textContent='Cerco dove ti trovi…';navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],18);setMp(p.coords.latitude,p.coords.longitude)},()=>{$('mpi').innerHTML='<span class="err">Posizione non disponibile: tocca tu il punto sulla mappa.</span>'},{enableHighAccuracy:true,timeout:15000,maximumAge:30000})};
+document.querySelectorAll('[data-ly]').forEach(b=>b.onclick=()=>setLayer(b.dataset.ly));
+$('mpr').addEventListener('click',e=>{const b=e.target.closest('[data-mr]');if(!b)return;const x=mpRes[+b.dataset.mr];$('mpr').hidden=true;map.setView([+x.lat,+x.lon],18);setMp(+x.lat,+x.lon)});
+
 let gpsPend=null;
 function gpsShowPend(searching){
   const p=gpsPend;$('gpsp').hidden=!p;if(!p)return;
@@ -749,6 +820,7 @@ document.addEventListener('click',e=>{
   if(t.id=='nuovo'){nuovo();return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
+  if(t.id=='mpo'){openMap();return}
   if(t.id=='gpss'&&gpsPend&&cur){cur.gps=gpsPend;gpsPend=null;stopGps();$('gpsb').disabled=false;$('gpsp').hidden=true;updGps();save();return}
   if(t.id=='gpsc'){gpsPend=null;stopGps();$('gpsp').hidden=true;if(cur){$('gpsb').disabled=false;updGps()}return}
   if(t.id=='addc'){(async()=>{const c=await pickCode('Aggiungi CER',true);if(c==null||!cur)return;const x=addRow(c);renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
