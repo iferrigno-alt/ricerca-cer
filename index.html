@@ -205,7 +205,7 @@ textarea{resize:vertical}
 .rep table.grp>thead .gk{font-weight:800}
 .rep table.grp>tbody td{padding:8px 0 0;vertical-align:top}
 .rep table.grp>tbody tr{break-inside:avoid;page-break-inside:avoid}
-.rep .gtot{font-size:15px}
+.rep .gtot{font-size:14px;font-weight:400;margin-top:3px}
 @media (max-width:600px){.rep{padding:16px 12px}.rep .tb{font-size:13px}.rep .tb th,.rep .tb td{padding:6px 3px}.rep .tb .nw{white-space:normal}.rep .tb .kc{white-space:nowrap}}.rep .nw{white-space:nowrap}
 .rep h3.rg{font-size:15px;margin:16px 0 8px;break-after:avoid;page-break-after:avoid}
 .rep h3.rg span{font-weight:400;color:#555}
@@ -868,9 +868,9 @@ ${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'<p style="font-size:13px;
 ${f.length?(()=>{
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
   const cap=(p,i,x)=>{const q=x&&pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>!x||y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
-  /* ogni gruppo: nuova pagina; l'intestazione del CER si ripete su ogni pagina (thead), il totale solo all'inizio */
+  /* ogni gruppo: nuova pagina; intestazione del CER e totale presunto ripetuti su ogni pagina (thead) */
   const grp=(title,tot,items)=>{let rows='';for(let k=0;k<items.length;k+=2)rows+=`<tr><td><div class="pg">${items.slice(k,k+2).join('')}</div></td></tr>`;
-    return `<table class="grp"><thead><tr><th>${title}</th></tr></thead><tbody>${tot?`<tr><td class="gtot">Totale presunto: <b>${esc(tot)}</b></td></tr>`:''}${rows}</tbody></table>`};
+    return `<table class="grp"><thead><tr><th>${title}${tot?`<div class="gtot">Totale presunto: <b>${esc(tot)}</b></div>`:''}</th></tr></thead><tbody>${rows}</tbody></table>`};
   let h='';
   s.cer.forEach(x=>{const ps=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===x.id);if(!ps.length)return;const r=RM.get(x.c),tt=entTot(x,f).txt;
     h+=grp(`<span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}`,tt,ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,i,x))))});
