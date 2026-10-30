@@ -189,10 +189,16 @@ textarea{resize:vertical}
 #vR{background:#d9dee0;min-height:100vh}
 #vR .top{background:#d9dee0;border-color:#c3cacd}
 #vR .bk{color:#0b6577}
-.rep{background:#fff;color:#111;max-width:800px;margin:12px auto 30px;padding:22px 20px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.rep{color:#111;max-width:800px;margin:12px auto 30px;padding:0 10px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.rep .page{position:relative;background:#fff;padding:22px 20px 14px;margin:0 0 14px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.rep .pf{text-align:right;font-size:11px;line-height:1.35;color:#666;margin-top:16px}
+.rep .ph{margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #0b6577}
+.rep .ph h2{border:0;margin:0;padding:0}
+.rep .ph .gk{font-weight:800}
+.rep .ph .gtot{font-size:14px;margin-top:3px}
+.rep .seg{font-weight:400;color:#666;font-size:13px}
 .rep h1{font-size:22px;margin:0 0 4px}
 .rep h2{font-size:17px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #0b6577}
-.rep h2{break-before:page;page-break-before:always;break-after:avoid;page-break-after:avoid}
 .rep .tb tr,.rep .kv tr,.rep figure{break-inside:avoid;page-break-inside:avoid}
 .rep .sub{color:#555;font-size:13px;margin:0 0 14px}
 .rep table{width:100%;border-collapse:collapse}
@@ -202,16 +208,6 @@ textarea{resize:vertical}
 .rep .tb th{font-size:13px;color:#555}
 .rep .r{text-align:right}
 .rep .tt{max-width:420px}
-.rep table.pgw{width:100%;border-collapse:collapse}
-.rep table.pgw>*>tr>td{padding:0}
-.rep .pgsp{height:0}
-.rep .pg1f{display:none}
-.rep table.grp{width:100%;border-collapse:collapse;margin-top:26px;break-before:page;page-break-before:always}
-.rep table.grp>thead th{text-align:left;font-size:15px;font-weight:600;padding:0 0 6px;border-bottom:2px solid #0b6577}
-.rep table.grp>thead .gk{font-weight:800}
-.rep table.grp>tbody td{padding:8px 0 0;vertical-align:top}
-.rep table.grp>tbody tr{break-inside:avoid;page-break-inside:avoid}
-.rep .gtot{font-size:14px;font-weight:400;margin-top:3px}
 @media (max-width:600px){.rep{padding:16px 12px}.rep .tb{font-size:13px}.rep .tb th,.rep .tb td{padding:6px 3px}.rep .tb .nw{white-space:normal}.rep .tb .kc{white-space:nowrap}}.rep .nw{white-space:nowrap}
 .rep h3.rg{font-size:15px;margin:16px 0 8px;break-after:avoid;page-break-after:avoid}
 .rep h3.rg span{font-weight:400;color:#555}
@@ -222,15 +218,10 @@ textarea{resize:vertical}
 .rep a{color:#0b6577}
 @page{size:A4;margin:0}
 @media print{
- .rep .pgsp{height:12mm}
- .rep tfoot .pgsp{height:16mm}
- .rep .pg1f{display:block;position:absolute;top:286.2mm;right:14mm;font:11px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:#555;text-align:right}
- .rep{padding:0 14mm!important}
  .np,#fab,#mw,#dlg,#vS,#vL,#vE,#vG,#ov{display:none!important}
  :root{padding:0}
  body,#vR{background:#fff;padding:0;min-height:0}
  body::before{display:none}
- .rep{margin:0;max-width:none;box-shadow:none}
 }
 </style>
 </head>
@@ -852,46 +843,67 @@ async function renderGal(){
 const accRows=s=>ACC.filter(a=>s.acc&&String(s.acc[a[0]]||'').trim()).map(a=>[a[1],s.acc[a[0]]+(typeof a[2]=='string'?' '+a[2]:'')]);
 const kv=(k,v)=>v?`<tr><th>${k}</th><td>${esc(v).replace(/\n/g,'<br>')}</td></tr>`:'';
 let repSop=null;
-/* margine 0 sulla prima pagina: il browser non stampa titolo e indirizzo su nessuna pagina; numero di pagina e data in basso a destra */
-const pageCss=d=>`@page{size:A4;margin:0 0 14mm 0;@bottom-right{content:"Pagina " counter(page) "\\A ${d}";white-space:pre;text-align:right;vertical-align:middle;padding-right:14mm;font:11px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:#555}}@page:first{margin:0}`;
-function setPageCss(d){let st=document.getElementById('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}st.textContent=pageCss(d)}
+/* stampa: pagine A4 costruite dall'app, margine 0 (il browser non aggiunge titolo e indirizzo), piè di pagina nostro */
+const PRINT_CSS=`@page{size:A4;margin:0}
+@media print{
+ html,body{margin:0!important;padding:0!important;background:#fff!important}
+ .rep{margin:0!important;padding:0!important;max-width:none!important}
+ .rep .page{width:210mm;height:296.6mm;overflow:hidden;margin:0!important;padding:12mm 14mm 0!important;box-shadow:none!important;box-sizing:border-box;break-after:page;page-break-after:always}
+ .rep .page:last-child{break-after:auto;page-break-after:auto}
+ .rep .pf{position:absolute;right:14mm;bottom:8mm;margin:0}
+ .rep figure img{height:68mm;max-height:none}
+ .rep .page.p1 .kv{font-size:14px}
+}`;
+function setPrintCss(){let st=document.getElementById('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}st.textContent=PRINT_CSS}
 async function scaricaReport(){
   const a=document.querySelector('#vR .rep');if(!a||!repSop)return;
   const c=a.cloneNode(true);
   for(const im of c.querySelectorAll('img')){try{im.src=await b2d(await (await fetch(im.getAttribute('src'))).blob())}catch(_){}}
   let css='';try{for(const sh of document.styleSheets)for(const r of sh.cssRules)if(r.selectorText&&r.selectorText.includes('.rep'))css+=r.cssText+'\n'}catch(_){}
-  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}'+pageCss(dIt(repSop.data)||dIt(today()))+'@media print{.rep{margin:0!important;padding:0 14mm!important;box-shadow:none!important;max-width:none!important}.rep .pgsp{height:12mm!important}.rep tfoot .pgsp{height:16mm!important}.rep .pg1f{display:block!important;position:absolute;top:286.2mm;right:14mm;font:11px/1.35 system-ui,sans-serif;color:#555;text-align:right}}\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
+  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}'+PRINT_CSS+'\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
   esporta('verbale_'+fname(repSop).replace(/^sopralluogo_/,'')+'.html',new Blob([html],{type:'text/html'}));
 }
 async function renderRep(s){
-  repSop=s;const pdt=dIt(s.data)||dIt(today());setPageCss(pdt);
-  const {gen:f,acc:fa,sf:fs}=split(await fotoDi(s.id)),t=totTxt(totali(s,f));
+  repSop=s;setPrintCss();const pdt=dIt(s.data)||dIt(today());
+  const {gen:f,sf:fs}=split(await fotoDi(s.id));
   const fig=(p,lab,extra)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<figure><img src="${u}" alt="${lab}"><figcaption><b>${lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
-  $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
-<article class="rep"><div class="pg1f">Pagina 1<br>${esc(pdt)}</div><table class="pgw"><thead><tr><td><div class="pgsp"></div></td></tr></thead><tfoot><tr><td><div class="pgsp"></div></td></tr></tfoot><tbody><tr><td>
-<h1>Verbale di sopralluogo</h1>
+  const grid=items=>items.length?`<div class="pg">${items.join('')}</div>`:'';
+  const chunk=(a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o.length?o:[[]]};
+  const lines=t=>String(t||'').split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/80)),0);
+  const pages=[];
+  /* 1. verbale */
+  pages.push({c:'p1',h:`<h1>Verbale di sopralluogo</h1>
 <p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
-<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
-${fs.length||(s.sfn||'').trim()?`<h2>Stato di fatto e accessibilità</h2>${(s.sfn||'').trim()?`<p style="white-space:pre-line;margin:0 0 12px">${esc(s.sfn)}</p>`:''}${fs.length?`<div class="pg">${fs.map((p,i)=>fig(p,'Foto S'+(i+1))).join('')}</div>`:''}`:''}
-<h2>Rifiuti individuati</h2>
-${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th>Foto e quantità presunte</th><th class="r">Totale</th></tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),et=entTot(x,f),nums=fotoNums(f,x.id);
-  const fq=nums.map(k=>{const p=f[k-1],q=pqTxt(p,x);return `<div class="nw">Foto ${k}${q?' — '+esc(q):''}</div>`}).join('');
-  return `<tr><td class="nw kc"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td>${fq||'—'}</td><td class="r nw">${et.txt?'<b>'+esc(et.txt)+'</b>':'—'}</td></tr>`}).join('')}</tbody></table>
-${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}
-${f.length?(()=>{
+<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>`});
+  /* 2. stato di fatto e accessibilità */
+  const sfn=(s.sfn||'').trim();
+  if(fs.length||sfn){
+    const nl=lines(sfn),first=nl>12?2:nl>4?4:6;
+    const its=fs.map((p,i)=>fig(p,'Foto S'+(i+1)));
+    const ch=[its.slice(0,first),...chunk(its.slice(first),6).filter(x=>x.length)];
+    ch.forEach((c,k)=>pages.push({h:`<div class="ph"><h2>Stato di fatto e accessibilità${k?' <span class="seg">(segue)</span>':''}</h2></div>${!k&&sfn?`<p style="white-space:pre-line;margin:0 0 12px">${esc(sfn)}</p>`:''}${grid(c)}`}));
+  }
+  /* 3. rifiuti individuati (tabella divisa su più pagine se serve) */
+  const thead='<thead><tr><th>Codice CER</th><th>Descrizione</th><th>Foto e quantità presunte</th><th class="r">Totale</th></tr></thead>';
+  const rows=s.cer.map(x=>{const r=RM.get(x.c),et=entTot(x,f),nums=fotoNums(f,x.id);
+    const fq=nums.map(k=>{const p=f[k-1],q=pqTxt(p,x);return `<div class="nw">Foto ${k}${q?' — '+esc(q):''}</div>`}).join('');
+    const u=Math.max(1,Math.ceil(((r?r[1]:'').length)/34),nums.length)+(x.n?Math.ceil(x.n.length/40):0)+.6;
+    return {u,h:`<tr><td class="nw kc"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td>${fq||'—'}</td><td class="r nw">${et.txt?'<b>'+esc(et.txt)+'</b>':'—'}</td></tr>`}});
+  const rp=[];let cur_=[],sum=0;rows.forEach(r=>{if(cur_.length&&sum+r.u>34){rp.push(cur_);cur_=[];sum=0}cur_.push(r.h);sum+=r.u});if(cur_.length||!rp.length)rp.push(cur_);
+  const haz=s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]});
+  rp.forEach((c,k)=>pages.push({h:`<div class="ph"><h2>Rifiuti individuati${k?' <span class="seg">(segue)</span>':''}</h2></div>${s.cer.length?`<table class="tb">${thead}<tbody>${c.join('')}</tbody></table>${k==rp.length-1&&haz?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}`}));
+  /* 4. una sezione per ogni CER: 6 foto per pagina, intestazione e totale ripetuti */
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
-  const cap=(p,i,x)=>{const q=x&&pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>!x||y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
-  /* ogni gruppo: nuova pagina; intestazione del CER e totale presunto ripetuti su ogni pagina (thead) */
-  const grp=(title,tot,items)=>{let rows='';for(let k=0;k<items.length;k+=2)rows+=`<tr><td><div class="pg">${items.slice(k,k+2).join('')}</div></td></tr>`;
-    return `<table class="grp"><thead><tr><th>${title}${tot?`<div class="gtot">Totale presunto: <b>${esc(tot)}</b></div>`:''}</th></tr></thead><tbody>${rows}</tbody></table>`};
-  let h='';
+  const cap=(p,x)=>{const q=pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
   s.cer.forEach(x=>{const ps=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===x.id);if(!ps.length)return;const r=RM.get(x.c),tt=entTot(x,f).txt;
-    h+=grp(`<span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}`,tt,ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,i,x))))});
-  return h})():''}
-${(()=>{const m=totali(s,f),us=Object.keys(m);if(!us.length)return '';
-  return `<h2>Totale complessivo</h2><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
-  <p style="font-size:13px;color:#555">Somma delle quantità di tutti i codici CER del sopralluogo, distinta per unità di misura.</p>`})()}
-</td></tr></tbody></table></article>`;
+    chunk(ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,x))),6).forEach(c=>pages.push({h:`<div class="ph"><div><span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}</div>${tt?`<div class="gtot">Totale presunto: <b>${esc(tt)}</b></div>`:''}</div>${grid(c)}`}))});
+  /* 5. totale complessivo */
+  const m=totali(s,f),us=Object.keys(m);
+  if(us.length)pages.push({h:`<div class="ph"><h2>Totale complessivo</h2></div><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
+  <p style="font-size:13px;color:#555">Somma delle quantità di tutti i codici CER del sopralluogo, distinta per unità di misura.</p>`});
+  const T=pages.length;
+  $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
+<article class="rep">${pages.map((p,i)=>`<section class="page ${p.c||''}">${p.h}<div class="pf">Pagina ${i+1} di ${T}<br>${esc(pdt)}</div></section>`).join('')}</article>`;
 }
 
 /* ============ AGGIUNTA CER DALLA RICERCA ============ */
