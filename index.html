@@ -198,7 +198,9 @@ textarea{resize:vertical}
 .rep .kv td{padding:5px 0;overflow-wrap:anywhere}
 .rep .tb th,.rep .tb td{border-bottom:1px solid #ccc;padding:6px 5px;text-align:left;vertical-align:top}
 .rep .tb th{font-size:13px;color:#555}
-.rep .r{text-align:right}.rep .nw{white-space:nowrap}
+.rep .r{text-align:right}
+.rep .tt{max-width:420px}
+@media (max-width:600px){.rep{padding:16px 12px}.rep .tb{font-size:13px}.rep .tb th,.rep .tb td{padding:6px 3px}.rep .tb .nw{white-space:normal}.rep .tb .kc{white-space:nowrap}}.rep .nw{white-space:nowrap}
 .rep h3.rg{font-size:15px;margin:16px 0 8px;break-after:avoid;page-break-after:avoid}
 .rep h3.rg span{font-weight:400;color:#555}
 .rep .pg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -853,8 +855,10 @@ async function renderRep(s){
 <table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
 ${fs.length||(s.sfn||'').trim()?`<h2>Stato di fatto e accessibilità</h2>${(s.sfn||'').trim()?`<p style="white-space:pre-line;margin:0 0 12px">${esc(s.sfn)}</p>`:''}${fs.length?`<div class="pg">${fs.map((p,i)=>fig(p,'Foto S'+(i+1))).join('')}</div>`:''}`:''}
 <h2>Rifiuti individuati</h2>
-${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th class="r">Quantità</th>${f.length?'<th class="r">Foto</th>':''}</tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),h=r&&r[2];return `<tr><td class="nw"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}${(()=>{const pq=photoQ(f,x);return pq.n?`<div style="color:#555;font-size:13px">Quantità presunte: ${pq.list.map(o=>'foto '+(o.i+1)+' = '+esc(fn(o.v))+' '+esc(o.u)).join(' · ')}</div>`:''})()}</td><td class="r nw">${(()=>{const t=entTot(x,f).txt;return t?'<b>'+esc(t)+'</b>':'—'})()}</td>${f.length?`<td class="r">${fotoNums(f,x.id).join(', ')||'—'}</td>`:''}</tr>`}).join('')}</tbody></table>
-<p style="font-size:13px;color:#555">${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'* rifiuto pericoloso. ':''}${t?'Totale: '+esc(t):''}</p>`:'<p>Nessun codice registrato.</p>'}
+${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th>Foto e quantità presunte</th><th class="r">Totale</th></tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),et=entTot(x,f),nums=fotoNums(f,x.id);
+  const fq=nums.map(k=>{const p=f[k-1],q=pqTxt(p,x);return `<div class="nw">Foto ${k}${q?' — '+esc(q):''}</div>`}).join('');
+  return `<tr><td class="nw kc"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td>${fq||'—'}</td><td class="r nw">${et.txt?'<b>'+esc(et.txt)+'</b>':'—'}</td></tr>`}).join('')}</tbody></table>
+${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}
 ${f.length?(()=>{
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
   const cap=(p,i,x)=>{const q=x&&pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>!x||y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
@@ -864,6 +868,9 @@ ${f.length?(()=>{
   const nc=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===null);
   if(nc.length)h+=`<h3 class="rg">Foto non attribuite a CER</h3><div class="pg">${nc.map(([p,i])=>fig(p,'Foto '+(i+1),'')).join('')}</div>`;
   return h})():''}
+${(()=>{const m=totali(s,f),us=Object.keys(m);if(!us.length)return '';
+  return `<h2>Totale complessivo</h2><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
+  <p style="font-size:13px;color:#555">Somma delle quantità di tutti i codici CER del sopralluogo, distinta per unità di misura.</p>`})()}
 </article>`;
 }
 
