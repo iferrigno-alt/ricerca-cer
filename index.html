@@ -113,6 +113,13 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .ovmore summary{cursor:pointer;padding:4px 0}
 .ovmore[open]{display:flex;flex-direction:column;gap:8px}
 #ovn{min-height:0}
+.lnk2{display:inline-block;margin-top:8px;font:inherit;font-size:14px;background:none;border:0;padding:0;color:var(--ac);text-decoration:underline;cursor:pointer}
+.arc.done{opacity:.6}
+a.btn{text-decoration:none}
+.op.off{opacity:.7}
+.opc{font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#vA .card,#vO .card{margin-bottom:12px}
+#vA .it{cursor:default}
 .unc{border:1.5px dashed var(--hz);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .unc h3{margin:0;font-size:16px;color:var(--hz);display:flex;align-items:center;gap:8px}
 .lnk{color:var(--ac);text-decoration:underline;cursor:pointer;white-space:nowrap}
@@ -242,7 +249,7 @@ textarea{resize:vertical}
 .rep a{color:#0b6577}
 @page{size:A4;margin:0}
 @media print{
- .np,#fab,#mw,#dlg,#vS,#vL,#vE,#vG,#ov{display:none!important}
+ .np,#fab,#mw,#dlg,#vS,#vL,#vE,#vG,#vA,#vO,#ov{display:none!important}
  :root{padding:0}
  body,#vR{background:#fff;padding:0;min-height:0}
  body::before{display:none}
@@ -265,6 +272,8 @@ textarea{resize:vertical}
 <div id="vL" hidden></div>
 <div id="vE" hidden></div>
 <div id="vG" hidden></div>
+<div id="vA" hidden></div>
+<div id="vO" hidden></div>
 <div id="vR" hidden></div>
 
 <div id="mp" class="mp" hidden>
@@ -453,7 +462,7 @@ function addRow(c){const x={id:uid(),c,q:'',u:lastU,n:''};cur.cer.push(x);return
 /* ============ NAVIGAZIONE ============ */
 let fotos=[],umap={};
 let cur=null,target=null,targetName='',urls=[],focusNew=false,autoGps=false,dirty=false,st,watch=null;
-const V=['vS','vL','vE','vG','vR'];let view='vS';
+const V=['vS','vL','vE','vG','vR','vA','vO'];let view='vS';
 function show(v){
   view=v;V.forEach(x=>$(x).hidden=x!=v);$('fab').hidden=v!='vS'||!!target||!!pick;$('mw').hidden=!MEM||v=='vS';
   scrollTo(0,0);
@@ -478,7 +487,9 @@ async function route(){
   }else if(a=='rep'&&id){
     const s=await get('sop',id);if(!s){go('sop');return}
     if(s.sfn==null)s.sfn=(s.acc&&s.acc.note)||'';cur=null;show('vR');renderRep(s);
-  }else if(a=='sop'){cur=null;show('vL');renderList()}
+  }else if(a=='arch'){cur=null;show('vA');renderArch()}
+  else if(a=='ops'){cur=null;show('vO');renderOps()}
+  else if(a=='sop'){cur=null;show('vL');renderList()}
   else{cur=null;show('vS');$('tg').hidden=!target;if(target)$('tgt').innerHTML='Aggiungi a: <b>'+esc(targetName||'sopralluogo')+'</b>';render()}
 }
 let curRoute=location.hash;
@@ -491,18 +502,22 @@ window.addEventListener('pagehide',()=>flush());
 /* ============ SALVATAGGIO ============ */
 function setStatus(t){const e=$('sv');if(e)e.textContent=t}
 function save(){if(!cur)return;cur.mod=Date.now();dirty=true;setStatus('…');clearTimeout(st);st=setTimeout(flush,400)}
-async function flush(){clearTimeout(st);if(!dirty||!cur)return;dirty=false;try{await put('sop',cur);setStatus('Salvato ✓')}catch(e){setStatus('Errore di salvataggio');dirty=true}}
+async function flush(){clearTimeout(st);if(!dirty||!cur)return;dirty=false;try{await put('sop',cur);setStatus('Salvato ✓');syncSoon()}catch(e){setStatus('Errore di salvataggio');dirty=true}}
 
 /* ============ ELENCO SOPRALLUOGHI ============ */
 async function renderList(){
   const a=(await all('sop')).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
+  const st={};if(linked()&&!inClaude)for(const x of a)st[x.id]=await syncState(x);
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
+${isAdmin()&&!inClaude?`<div class="row2" style="margin-bottom:12px"><button class="btn pri" data-go="arch">🗂 Lavori degli operatori</button><button class="btn" data-go="ops">👥 Operatori</button></div>`:''}
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${a.length?a.map(s=>`<button class="it sl" data-go="sop/${s.id}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.cer.length} codici CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}</div></button>`).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto: la posizione verrà rilevata subito.</p>'}
-<section class="card" style="margin-top:18px"><h2>Backup</h2><p class="hint">Sopralluoghi e foto restano salvati solo in questo browser, su questo dispositivo. Fai un backup ogni tanto per non perderli o per spostarli su un altro telefono.</p>
+${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
+<section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
+<section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
+  syncUI();
 }
-const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
+const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();
   await put('sop',s);go('sop/'+s.id);
@@ -513,6 +528,165 @@ async function backup(){
   for(const p of f)fo.push(Object.assign({},p,{blob:await b2d(p.blob)}));
   await esporta('backup_sopralluoghi_'+today()+'.json',new Blob([JSON.stringify({app:'ricerca-cer',v:1,sop:s,foto:fo})],{type:'application/json'}));
 }
+/* ============ ARCHIVIO ONLINE (Google Drive) ============ */
+const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}return null};
+const DEFAULT_SRV='https://script.google.com/macros/s/AKfycbysQFOFahQghYSZ5-pqfMUjQWyHITzPIN5Mq66cZAlolFvMgDSSpzR8-SRUlICdYtdaPg/exec';
+let SRV=LS('cer_srv')||DEFAULT_SRV,CODE=LS('cer_code')||'',ROLE=LS('cer_role')||'',ONAME=LS('cer_name')||'',syncErr='',syncing=false,syncAgain=false,syncTm;
+const isAdmin=()=>ROLE==='admin'&&!!SRV&&!!CODE;
+const linked=()=>!!SRV&&!!CODE&&!!ROLE;
+async function api(action,data){
+  if(!SRV)throw new Error('Archivio non collegato');
+  let r;
+  try{r=await fetch(SRV,{method:'POST',body:JSON.stringify(Object.assign({action,code:CODE},data||{}))})}
+  catch(_){throw new Error('Nessuna connessione con l’archivio')}
+  let j;try{j=await r.json()}catch(_){throw new Error('Risposta non valida dall’archivio: controlla l’indirizzo')}
+  if(!j.ok){const m={codice:'Codice non valido o operatore disattivato',archiviato:'Sopralluogo già archiviato in ufficio','non autorizzato':'Questo sopralluogo appartiene a un altro operatore'};throw new Error(m[j.err]||j.err||'Errore dell’archivio')}
+  return j;
+}
+async function collega(srv,code){
+  const oS=SRV,oC=CODE;SRV=srv.trim();CODE=code.trim();
+  try{const j=await api('ping');ROLE=j.role;ONAME=j.name;LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
+  catch(e){SRV=oS;CODE=oC;throw e}
+}
+function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
+const b2b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=ko;r.readAsDataURL(b)});
+const b64b=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||'image/jpeg'})};
+async function syncState(s){const fo=await fotoDi(s.id);const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
+function syncSoon(ms){if(!linked()||inClaude)return;clearTimeout(syncTm);syncTm=setTimeout(syncAll,ms==null?2500:ms)}
+async function syncAll(){
+  if(!linked()||inClaude)return;
+  if(syncing){syncAgain=true;return}
+  if(navigator.onLine===false){syncErr='Nessuna connessione: invio appena torna il segnale';syncUI();return}
+  syncing=true;syncErr='';syncUI();
+  try{
+    await flush();
+    for(const s0 of await all('sop')){
+      const fo=await fotoDi(s0.id),unsent=fo.filter(p=>!p.sent),dels=(s0.delf||[]).slice();
+      if((s0.sentMod||0)>=(s0.mod||0)&&!unsent.length&&!dels.length)continue;
+      const snap=s0.mod||0;
+      const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0}))});
+      delete sop.sentMod;delete sop.delf;delete sop.remote;
+      await api('putSop',{sop});
+      for(const p of unsent){
+        await api('putFoto',{sop:s0.id,id:p.id,type:(p.blob&&p.blob.type)||'image/jpeg',b64:await b2b64(p.blob)});
+        const fr=await get('foto',p.id);if(fr){fr.sent=1;await put('foto',fr)}
+        syncUI();
+      }
+      for(const id of dels)await api('delFoto',{sop:s0.id,id});
+      const fresh=await get('sop',s0.id);
+      if(fresh){fresh.sentMod=snap;fresh.delf=(fresh.delf||[]).filter(x=>!dels.includes(x));await put('sop',fresh)}
+      if(cur&&cur.id===s0.id){cur.sentMod=snap;cur.delf=(cur.delf||[]).filter(x=>!dels.includes(x))}
+    }
+    LS('cer_last',String(Date.now()));
+  }catch(e){syncErr=e.message||String(e)}
+  syncing=false;syncUI();
+  if(syncAgain){syncAgain=false;syncSoon(800)}
+}
+async function syncUI(){
+  const el=$('sync');if(!el)return;
+  if(inClaude){el.innerHTML='<p class="hint" style="margin:0">L’invio all’ufficio funziona dall’app aperta con il link del sito, non da questa anteprima.</p>';return}
+  if(!linked()){el.innerHTML=`<p class="hint" style="margin:0 0 8px">Per inviare i sopralluoghi all’ufficio apri il link che ti ha mandato l’amministratore.</p>
+<details><summary class="hint" style="cursor:pointer">Collega a mano (amministratore)</summary>
+<label class="fl" style="margin-top:8px">Indirizzo dell’archivio<input id="csrv" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(SRV)}"></label>
+<label class="fl">Codice di accesso<input id="ccode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+<button class="btn pri wide" id="conn">Collega</button></details>`;return}
+  let n=0;for(const s of await all('sop'))n+=(await syncState(s)).todo?1:0;
+  const last=+(LS('cer_last')||0);
+  el.innerHTML=`<p style="margin:0 0 6px">Collegato come <b>${esc(ONAME)}</b>${ROLE==='admin'?' · amministratore':''}</p>
+<p class="hint" style="margin:0 0 10px">${syncing?'⏳ Invio in corso…':syncErr?'<span class="err">'+esc(syncErr)+'</span>':n?`⏳ ${n} ${n==1?'sopralluogo da inviare':'sopralluoghi da inviare'}`:'✓ Tutto inviato all’ufficio'}${last&&!syncing?` · ultimo invio ${new Date(last).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:''}</p>
+<div class="row2"><button class="btn" id="syncnow"${syncing?' disabled':''}>Invia ora</button><button class="btn" id="disc">Scollega</button></div>`;
+}
+/* link ricevuto dall'operatore: ?op=CODICE&srv=INDIRIZZO */
+async function leggiLink(){
+  let sp;try{sp=new URLSearchParams(location.search)}catch(_){return}
+  const op=sp.get('op'),srv=sp.get('srv');
+  if(!op)return;
+  try{history.replaceState(null,'',location.pathname+location.hash)}catch(_){}
+  try{const j=await collega(srv||SRV,op);note('Benvenuto '+j.name+'! Da ora i sopralluoghi che fai vengono inviati automaticamente all’ufficio.');syncSoon(500);if(view=='vL')renderList()}
+  catch(e){note('Non riesco a collegarmi all’archivio: '+e.message+'. Controlla di avere campo e riapri il link.')}
+}
+async function liberaSpazio(id){
+  const s=await get('sop',id);if(!s)return;
+  const st=await syncState(s);
+  if(st.todo){note('Questo sopralluogo non è ancora arrivato tutto in ufficio. Aspetta che l’invio sia completo.');return}
+  if(!await ask('Il sopralluogo “'+(s.cantiere||'Senza nome')+'” è già in ufficio. Lo tolgo da questo telefono per liberare spazio?','Libera spazio',1))return;
+  for(const p of await fotoDi(id))await del('foto',p.id);
+  await del('sop',id);renderList();
+}
+
+/* ---- amministratore: archivio diviso per operatore ---- */
+function busy(msg){$('dlgc').innerHTML=`<p>${esc(msg)}</p>`;$('dlga').innerHTML='';$('dlg').hidden=false}
+function busyEnd(){if(!dlgRes)$('dlg').hidden=true}
+async function scaricaRemoto(id){
+  busy('Scarico il sopralluogo…');
+  try{
+    const j=await api('getSop',{id}),s=j.sop,meta=s.fotoMeta||[];delete s.fotoMeta;
+    const keep=new Set(meta.map(m=>m.id));
+    for(const p of await fotoDi(id))if(!keep.has(p.id))await del('foto',p.id);
+    let k=0;
+    for(const m of meta){
+      k++;$('dlgc').innerHTML=`<p>Scarico le foto… ${k} di ${meta.length}</p>`;
+      const g=await api('getFoto',{sop:id,id:m.id});
+      await put('foto',{id:m.id,sop:id,blob:b64b(g.b64,g.type),nota:m.nota||'',cer:m.cer||[],qs:m.qs||{},us:m.us||{},cat:m.cat||'rif',ts:m.ts||0,sent:1});
+    }
+    s.sentMod=s.mod||Date.now();s.mod=s.sentMod;s.remote={owner:j.owner||''};s.delf=[];s.nf=meta.length;
+    await put('sop',s);busyEnd();return s;
+  }catch(e){busyEnd();note('Non riesco a scaricare: '+e.message);return null}
+}
+async function apriRemoto(id,mod){
+  const loc=await get('sop',id);
+  if(!(loc&&(loc.mod||0)>=(mod||0)))if(!await scaricaRemoto(id))return;
+  go('sop/'+id);
+}
+async function archiviaRemoto(id,mod){
+  let s=await get('sop',id);
+  if(!(s&&(s.mod||0)>=(mod||0)))s=await scaricaRemoto(id);
+  if(!s)return;
+  busy('Preparo lo ZIP con foto, verbale e tabella…');
+  try{
+    const files=await zipFilesFor(s);
+    files.push({name:'tabella.csv',blob:csvBlob(await csvRowsFor(s))});
+    await renderRep(s);const h=await reportHtml();if(h)files.push({name:'verbale.html',blob:new Blob([h],{type:'text/html'})});
+    const z=await makeZip(files);busyEnd();
+    await esporta(fname(s)+'_completo.zip',z);
+  }catch(e){busyEnd();note('Non riesco a preparare lo ZIP: '+e.message);return}
+  if(!await ask('Hai salvato lo ZIP sul PC? Ora tolgo il sopralluogo “'+(s.cantiere||'Senza nome')+'” da Google Drive e da questo PC per liberare spazio.','Togli da Drive',1))return;
+  busy('Tolgo da Drive…');
+  try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  catch(e){busyEnd();note('Non riesco a togliere da Drive: '+e.message)}
+}
+const dOra=t=>t?new Date(t).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+async function renderArch(){
+  $('vA').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><button class="bk" data-go="arch">Aggiorna</button></div><main><h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint">Carico l’elenco dall’archivio…</p></main>`;
+  if(!isAdmin()){$('vA').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
+  let j;try{j=await api('list')}catch(e){$('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
+  if(view!='vA')return;
+  const g={};j.sops.forEach(x=>{(g[x.ownerName||'—']=g[x.ownerName||'—']||[]).push(x)});
+  const names=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it'));
+  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?'':`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div>`}</div>`;
+  $('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1>
+${names.length?names.map(n=>{const a=g[n].sort((x,y)=>(x.archived?1:0)-(y.archived?1:0)||(y.recv||0)-(x.recv||0)),att=a.filter(x=>!x.archived).length;return `<section class="card"><h2>${esc(n)} <span class="cnt">${att||''}</span></h2>${a.map(card).join('')}</section>`}).join(''):'<p class="hint">Nessun sopralluogo ricevuto finora.</p>'}
+<button class="btn wide" data-go="ops">👥 Gestisci operatori</button>`;
+}
+async function renderOps(){
+  $('vO').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
+  if(!isAdmin()){$('vO').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
+  let j;try{j=await api('ops')}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
+  if(view!='vO')return;
+  const ops=j.ops.sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
+  $('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1>
+<section class="card"><h2>Nuovo operatore</h2><label class="fl">Nome e cognome<input id="opn" placeholder="es. Mario Rossi" autocomplete="off"></label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>
+${ops.length?ops.map(o=>{const l=opLink(o.code);return `<section class="card op${o.active?'':' off'}"><h2>${esc(o.name)} ${o.active?'':'<span class="cnt">disattivato</span>'}</h2>
+<p class="meta" style="margin:0 0 8px">Codice: <b class="opc">${esc(o.code)}</b></p>
+${o.active?`<div class="row2"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
+<button class="btn wide ${o.active?'dng':''}" data-otg="${esc(o.code)}" data-oa="${o.active?0:1}" style="margin-top:8px">${o.active?'Disattiva accesso':'Riattiva accesso'}</button></section>`}).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo qui sopra.</p>'}`;
+}
+const opLink=code=>location.origin+location.pathname+'?op='+encodeURIComponent(code)+'&srv='+encodeURIComponent(SRV);
+const opMsg=(n,code)=>`Ciao ${n}, questo è il tuo accesso all’app dei sopralluoghi:\n${opLink(code)}\n\nAprilo dal telefono con Chrome o Safari e aggiungilo alla schermata Home. Il tuo codice è ${code}.`;
+async function copia(t){try{await navigator.clipboard.writeText(t);note('Link copiato: incollalo dove vuoi (messaggio, email…).')}catch(_){dlgOpen(`<h3>Copia il link</h3><textarea class="nt" rows="5" readonly onfocus="this.select()">${esc(t)}</textarea>`,[['Chiudi','pri','1']])}}
+window.addEventListener('online',()=>syncSoon(500));
+setInterval(()=>{if(!document.hidden)syncSoon(0)},90000);
+
 async function ripristina(file){
   try{
     const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.sop))throw 0;
@@ -541,7 +715,7 @@ ${fld('committente','Committente','Nome o ragione sociale')}
 <div class="row2">${fld('ctel','Telefono committente','','tel','tel')}${fld('cmail','Email committente','','email','email')}</div>
 ${fld('ref','Referente del committente','Nome e cognome')}
 <div class="row2">${fld('rtel','Telefono referente','','tel','tel')}${fld('rmail','Email referente','','email','email')}</div>
-${fld('tecnico','Tecnico che ha svolto il sopralluogo','Nome e cognome')}
+<div class="row2">${fld('tecnico','Tecnico che ha svolto il sopralluogo','Nome e cognome')}${fld('ttel','Cellulare del tecnico','','tel','tel')}</div>
 ${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
 </section>
@@ -744,7 +918,7 @@ async function addFoto(files,cid,cat){
   const s=cur;setStatus('Salvo foto…');
   try{for(const f of files){const b=await shrink(f);await put('foto',{id:uid(),sop:s.id,blob:b,nota:'',cer:cid?[cid]:[],cat:cat||'rif',ts:Date.now()})}}
   catch(e){note('Non riesco a salvare la foto: memoria del browser piena?')}
-  if(cur===s){await renderPh();setStatus('Salvato ✓')}
+  if(cur===s){save();await renderPh();setStatus('Salvato ✓')}
 }
 let ovF=null,ovU=null,ovDirty=false;
 function paintOvQ(){
@@ -763,7 +937,7 @@ function paintOvk(){
   $('ovk').innerHTML=`<span class="lb">${none?'<b style="color:#ffb4a8">Foto senza codice.</b> Tocca una voce per collegarla:':'Voci collegate a questa foto. Tocca per collegare <b>✓</b> o scollegare:'}</span>`+cur.cer.map(x=>{const on=(ovF.cer||[]).includes(x.id);return `<button class="${isH(x.c)?'h':''}" data-ok="${x.id}" aria-pressed="${on}">${on?'✓ ':''}${esc(lbl(cur,x))}</button>`}).join('')+`<button id="ovnew" class="ovs">🔍 ${cur.cer.length?'Altro codice':'Cerca il codice'}</button>`+(none?'':`<button id="ovclr" class="ovs">✕ Scollega tutti</button>`);
 }
 let ovList=[];
-async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;if(ovF.qs){for(const k in ovF.qs)if(!(ovF.cer||[]).includes(k)||!String(ovF.qs[k]).trim())delete ovF.qs[k]}if(ovF.us){for(const k in ovF.us)if(!(ovF.cer||[]).includes(k))delete ovF.us[k]}await put('foto',ovF);ovDirty=false}}
+async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;if(ovF.qs){for(const k in ovF.qs)if(!(ovF.cer||[]).includes(k)||!String(ovF.qs[k]).trim())delete ovF.qs[k]}if(ovF.us){for(const k in ovF.us)if(!(ovF.cer||[]).includes(k))delete ovF.us[k]}await put('foto',ovF);ovDirty=false;if(cur&&ovF.sop===cur.id)save()}}
 $('ovqs').addEventListener('input',e=>{const t=e.target;if(!ovF||t.dataset.pq==null)return;ovF.qs=ovF.qs||{};ovF.qs[t.dataset.pq]=t.value;ovDirty=true});
 $('ovqs').addEventListener('change',e=>{const t=e.target;if(!ovF||t.dataset.pu==null)return;ovF.us=ovF.us||{};ovF.us[t.dataset.pu]=t.value;ovDirty=true;lastU=t.value;try{localStorage.setItem('cer_u',lastU)}catch(_){}});
 $('ovlink').onclick=async()=>{if(!ovF||!cur)return;const f=ovF;
@@ -797,12 +971,13 @@ const csvQ=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
 const csvBlob=rows=>new Blob(['﻿'+rows.map(r=>r.map(csvQ).join(';')).join('\r\n')],{type:'text/csv'});
 const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);return 'foto_'+String(i+1).padStart(2,'0')+(k.length?'_CER_'+k.join('_'):cs.length?'_CER_da_assegnare':'')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg')};
 const fotoNums=(f,id)=>f.map((p,i)=>(p.cer||[]).includes(id)?i+1:0).filter(Boolean);
-async function csv(s){
+async function csv(s){esporta(fname(s)+'.csv',csvBlob(await csvRowsFor(s)))}
+async function csvRowsFor(s){
   const f=split(await fotoDi(s.id)).gen,co=v=>v==null||v===''?'':String(v).replace('.',',');
-  const rows=[['Cantiere','Luogo','Committente','Telefono committente','Email committente','Referente','Telefono referente','Email referente','Tecnico','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità totale','Unità','Quantità per foto','Note','Foto n.','File foto']];
-  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],et=entTot(x,f),pq=photoQ(f,x),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',et.n?et.txt:(num(x.q)!=null?co(num(x.q)):x.q),et.n?Object.keys(et.m).join(' + '):x.u,pq.list.map(o=>'foto '+(o.i+1)+': '+co(o.v)+' '+o.u).join('; '),x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
-  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','','']);
-  esporta(fname(s)+'.csv',csvBlob(rows));
+  const rows=[['Cantiere','Luogo','Committente','Telefono committente','Email committente','Referente','Telefono referente','Email referente','Tecnico','Cellulare tecnico','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità totale','Unità','Quantità per foto','Note','Foto n.','File foto']];
+  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],et=entTot(x,f),pq=photoQ(f,x),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',s.ttel||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',et.n?et.txt:(num(x.q)!=null?co(num(x.q)):x.q),et.n?Object.keys(et.m).join(' + '):x.u,pq.list.map(o=>'foto '+(o.i+1)+': '+co(o.v)+' '+o.u).join('; '),x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
+  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',s.ttel||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','','']);
+  return rows;
 }
 /* ZIP (senza compressione: le JPEG sono già compresse) */
 const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
@@ -824,17 +999,21 @@ async function makeZip(files){
   return new Blob([...parts,...cen,e],{type:'application/zip'});
 }
 async function zipFoto(s){
-  const all_=await fotoDi(s.id);if(!all_.length){note('Questo sopralluogo non ha foto.');return}
-  const {gen:f,acc:fa,sf:fs}=split(all_);
+  if(!(await fotoDi(s.id)).length){note('Questo sopralluogo non ha foto.');return}
   setStatus('Preparo lo ZIP…');
+  const z=await makeZip(await zipFilesFor(s));setStatus('Salvato ✓');
+  esporta(fname(s)+'_foto.zip',z);
+}
+async function zipFilesFor(s){
+  const all_=await fotoDi(s.id);
+  const {gen:f,acc:fa,sf:fs}=split(all_);
   const files=f.map((p,i)=>({name:fotoName(s,p,i),blob:p.blob}));
   const el=[['File foto','Foto n.','Sezione','Codici CER','Descrizioni','Quantità presunta','Didascalia']];
   f.forEach((p,i)=>{const cs=codesOf(s,p);el.push([files[i].name,i+1,'Rifiuti',cs.map(x=>lbl(s,x)).join(', '),cs.map(x=>{const r=RM.get(x.c);return r?r[1]:''}).join(' | '),cs.filter(x=>pqv(p,x)!=null).map(x=>pqTxt(p,x)+(cs.length>1?' ('+lbl(s,x)+')':'')).join('; '),p.nota||''])});
   fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg');files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','','',p.nota||''])});
   files.push({name:'elenco_foto.csv',blob:csvBlob(el)});
   if((s.sfn||'').trim())files.push({name:'stato_di_fatto_note.txt',blob:new Blob([s.sfn],{type:'text/plain'})});
-  const z=await makeZip(files);setStatus('Salvato ✓');
-  esporta(fname(s)+'_foto.zip',z);
+  return files;
 }
 async function elimina(){
   if(!await ask('Eliminare questo sopralluogo con tutte le sue foto? Non si può annullare.','Elimina',1))return;
@@ -882,12 +1061,16 @@ const PRINT_CSS=`@page{size:A4;margin:0}
 }`;
 function setPrintCss(){let st=document.getElementById('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}st.textContent=PRINT_CSS}
 async function scaricaReport(){
-  const a=document.querySelector('#vR .rep');if(!a||!repSop)return;
+  const html=await reportHtml();if(!html)return;
+  esporta('verbale_'+fname(repSop).replace(/^sopralluogo_/,'')+'.html',new Blob([html],{type:'text/html'}));
+}
+async function reportHtml(){
+  const a=document.querySelector('#vR .rep');if(!a||!repSop)return '';
   const c=a.cloneNode(true);
   for(const im of c.querySelectorAll('img')){try{im.src=await b2d(await (await fetch(im.getAttribute('src'))).blob())}catch(_){}}
   let css='';try{for(const sh of document.styleSheets)for(const r of sh.cssRules)if(r.selectorText&&r.selectorText.includes('.rep'))css+=r.cssText+'\n'}catch(_){}
   const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}'+PRINT_CSS+'\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
-  esporta('verbale_'+fname(repSop).replace(/^sopralluogo_/,'')+'.html',new Blob([html],{type:'text/html'}));
+  return html;
 }
 async function renderRep(s){
   repSop=s;setPrintCss();const pdt=dIt(s.data)||dIt(today());
@@ -940,7 +1123,7 @@ ${s.luogo?`<p class="cv-l">${esc(s.luogo)}</p>`:''}
 <div class="cv-g">
 ${blk('Committente',s.committente,ln('Tel.',s.ctel)+ln('Email',s.cmail))}
 ${blk('Referente del committente',s.ref,ln('Tel.',s.rtel)+ln('Email',s.rmail))}
-${blk('Sopralluogo','',ln('Data',dIt(s.data))+ln('Tecnico',s.tecnico))}
+${blk('Sopralluogo','',ln('Data',dIt(s.data))+ln('Tecnico',s.tecnico)+ln('Cell.',s.ttel))}
 ${s.gps?`<div class="cv-b"><h3>Posizione</h3><p>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` <span class="cv-lb">±${s.gps.acc} m</span>`:''}</p><p><a href="${maps(s.gps)}">Apri in Google Maps</a></p></div>`:''}
 </div>
 ${(s.note||'').trim()?`<div class="cv-n"><h3>Note</h3><p>${esc(s.note).replace(/\n/g,'<br>')}</p></div>`:''}
@@ -990,17 +1173,28 @@ $('ovp').onclick=()=>ovGo(-1);$('ovx').onclick=()=>ovGo(1);
 let tx0=null;
 $('ovi').addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});
 $('ovi').addEventListener('touchend',e=>{if(tx0==null)return;const dx=e.changedTouches[0].clientX-tx0;tx0=null;if(Math.abs(dx)>50)ovGo(dx<0?1:-1)});
-document.addEventListener('keydown',e=>{if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(false)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;await del('foto',ovF.id);closePh(false)};
+document.addEventListener('keydown',e=>{if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(false)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;const id=ovF.id;await del('foto',id);if(cur&&ovF.sop===cur.id){cur.delf=(cur.delf||[]).concat(id);save()}closePh(false)};
 $('tga').onclick=()=>{if(pick){pickDone(null);return}const id=target;target=null;go(id?'sop/'+id:'sop')};
 
 document.addEventListener('click',e=>{
   const t=e.target;
   const dr=t.closest('[data-dr]');if(dr){dlgClose(dr.dataset.dr);return}
   if(t.id=='dlg'){dlgClose('');return}
-  const g=t.closest('[data-go]');
-  if(g){e.preventDefault();go(g.dataset.go);return}
+  if(t.dataset.free||t.dataset.free2){/* gestiti sotto, prima della navigazione */}
+  else{const g=t.closest('[data-go]');
+  if(g){e.preventDefault();go(g.dataset.go);return}}
   /* sopralluoghi */
   if(t.id=='nuovo'){nuovo();return}
+  if(t.dataset.free){e.stopPropagation();liberaSpazio(t.dataset.free);return}
+  if(t.dataset.free2){(async()=>{if(!await ask('Tolgo la copia scaricata da questo PC? In ufficio resta su Google Drive.','Togli copia',1))return;for(const p of await fotoDi(t.dataset.free2))await del('foto',p.id);await del('sop',t.dataset.free2);renderList()})();return}
+  if(t.id=='syncnow'){syncAll();return}
+  if(t.id=='disc'){(async()=>{if(!await ask('Scollegare questo dispositivo dall’archivio dell’ufficio? I sopralluoghi restano sul dispositivo.','Scollega',1))return;scollega();renderList()})();return}
+  if(t.id=='conn'){(async()=>{t.disabled=true;t.textContent='Collego…';try{const j=await collega($('csrv').value,$('ccode').value);note('Collegato come '+j.name+(j.role=='admin'?' (amministratore)':'')+'.');syncSoon(300);renderList()}catch(err){note(err.message);t.disabled=false;t.textContent='Collega'}})();return}
+  if(t.dataset.ra){apriRemoto(t.dataset.ra,+t.dataset.rm);return}
+  if(t.dataset.rz){archiviaRemoto(t.dataset.rz,+t.dataset.rm);return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const j=await api('addOp',{name:n});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b> · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
+  if(t.dataset.otg){(async()=>{const on=t.dataset.oa=='1';if(!on&&!await ask('Disattivare questo operatore? Non potrà più inviare sopralluoghi. Quelli già inviati restano.','Disattiva',1))return;try{await api('setOp',{op:t.dataset.otg,active:on});renderOps()}catch(err){note(err.message)}})();return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
   if(t.id=='mpo'){openMap();return}
@@ -1014,7 +1208,7 @@ document.addEventListener('click',e=>{
     const v=await dlgOpen(`<h3>Sposta ${ids.length} foto in…</h3>`+cur.cer.map(x=>`<button class="it sl" data-dr="${x.id}"><div class="slt">${esc(lbl(cur,x))}</div>${x.c&&RM.get(x.c)?`<div class="meta">${esc(RM.get(x.c)[1])}</div>`:''}</button>`).join('')+`<button class="btn pri wide" data-dr="new" style="margin-top:6px">+ Nuova voce (codice da assegnare)</button>`,[['Annulla','','']]);
     if(!v||!cur)return;let id=v;if(v=='new'){id=addRow('').id;save();renderCer()}
     for(const pid of ids){const p=await get('foto',pid);if(!p)continue;p.cer=[id];p.cat='rif';await put('foto',p)}
-    renderPh()})();return}
+    save();renderPh()})();return}
   if(t.id=='ovclr'&&ovF){ovF.cer=[];ovDirty=true;paintOvk();return}
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
@@ -1042,7 +1236,7 @@ document.addEventListener('click',e=>{
   const it=t.closest('[data-c]');
   if(it)it.classList.toggle('o');
 });
-route();
+route();leggiLink();syncSoon(1500);
 </script>
 </body>
 </html>
