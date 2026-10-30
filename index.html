@@ -97,6 +97,15 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .gpsp{border:1.5px dashed var(--ac);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:15px}
 .gpsp b{font-variant-numeric:tabular-nums}
 .gpsp a{color:var(--ac)}
+.mt i{position:absolute;left:2px;right:2px;bottom:2px;font-size:10px;font-style:normal;font-weight:700;background:rgba(0,0,0,.7);color:#fff;border-radius:4px;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mth{flex-basis:100%;font-size:12px!important;margin:0!important}
+.qr input.ro{background:var(--sf);border-style:dashed;font-weight:700}
+.qh{font-size:13px;color:var(--mut);margin-top:4px}
+.qh:empty{display:none}
+.ovqty{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 10px}
+.ovqty label{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px}
+.ovqty label span{flex:1;min-width:0}
+.ovqty input{width:110px;font:inherit;font-size:18px;padding:8px 10px;border-radius:10px;border:2px solid #fff;background:#fff;color:#111;text-align:right}
 .unc{border:1.5px dashed var(--hz);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .unc h3{margin:0;font-size:16px;color:var(--hz);display:flex;align-items:center;gap:8px}
 .lnk{color:var(--ac);text-decoration:underline;cursor:pointer;white-space:nowrap}
@@ -161,7 +170,7 @@ textarea{resize:vertical}
 .sl{padding:13px 14px}
 .slt{font-size:19px;font-weight:700;overflow-wrap:anywhere}
 .meta{font-size:13px;color:var(--mut);margin-top:4px}
-#ov{position:fixed;inset:0;z-index:30;background:rgba(10,14,16,.97);display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#ov{position:fixed;inset:0;z-index:30;background:#0b1013;display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
 #ovi{width:100%;height:100%;object-fit:contain;display:block}
 .ovw{position:relative;flex:1;min-height:0;touch-action:pan-y}
 .ova{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:34px;line-height:1}
@@ -183,6 +192,8 @@ textarea{resize:vertical}
 .rep .tb th,.rep .tb td{border-bottom:1px solid #ccc;padding:6px 5px;text-align:left;vertical-align:top}
 .rep .tb th{font-size:13px;color:#555}
 .rep .r{text-align:right}.rep .nw{white-space:nowrap}
+.rep h3.rg{font-size:15px;margin:16px 0 8px;break-after:avoid;page-break-after:avoid}
+.rep h3.rg span{font-weight:400;color:#555}
 .rep .pg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .rep figure{margin:0;break-inside:avoid;page-break-inside:avoid}
 .rep figure img{width:100%;max-height:9cm;object-fit:contain;background:#f0f0f0;display:block}
@@ -229,6 +240,7 @@ textarea{resize:vertical}
 <div class="ovt"><div id="ovh" class="ovh"></div><button id="ovq" class="ovq">Annulla</button></div>
 <div class="ovw"><img id="ovi" alt=""><button class="ova l" id="ovp" aria-label="Foto precedente">‹</button><button class="ova r" id="ovx" aria-label="Foto successiva">›</button></div>
 <div id="ovk" class="ovk"></div>
+<div id="ovqs" class="ovqty" hidden></div>
 <textarea id="ovn" rows="2" placeholder="Didascalia (es. cumulo lato nord, big bag n. 3…)"></textarea>
 <div id="ovm" class="ovk"></div>
 <div class="row2"><button class="btn dng" id="ovd">Elimina foto</button><button class="btn pri" id="ovc">Salva e chiudi</button></div>
@@ -335,7 +347,10 @@ const maps=g=>`https://www.google.com/maps?q=${g.lat},${g.lon}`;
 const slug=s=>(s||'sopralluogo').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,40)||'sopralluogo';
 const fname=s=>'sopralluogo_'+slug(s.cantiere)+'_'+(s.data||today());
 let lastU='kg';try{lastU=localStorage.getItem('cer_u')||'kg'}catch(_){}
-function totali(s){const m={};s.cer.forEach(x=>{const v=num(x.q);if(v!=null)m[x.u]=(m[x.u]||0)+v});return m}
+/* quantità presunte per foto: p.qs = {idVoce: '12,5'} */
+function photoQ(f,x){const list=[];(f||[]).forEach((p,i)=>{if(!(p.cer||[]).includes(x.id))return;const v=num(p.qs&&p.qs[x.id]);if(v!=null)list.push({i,v})});return{n:list.length,sum:list.reduce((a,b)=>a+b.v,0),list}}
+function effQ(x,f){const pq=photoQ(f,x);return pq.n?pq.sum:num(x.q)}
+function totali(s,f){const m={};s.cer.forEach(x=>{const v=effQ(x,f);if(v!=null)m[x.u]=(m[x.u]||0)+v});return m}
 const totTxt=m=>Object.keys(m).map(u=>fn(m[u])+' '+u).join(' + ');
 function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
 async function esporta(name,blob){
@@ -444,7 +459,7 @@ ${a.length?a.map(s=>`<button class="it sl" data-go="sop/${s.id}"><div class="slt
 <section class="card" style="margin-top:18px"><h2>Backup</h2><p class="hint">Sopralluoghi e foto restano salvati solo in questo browser, su questo dispositivo. Fai un backup ogni tanto per non perderli o per spostarli su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
 }
-const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
+const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();
   await put('sop',s);go('sop/'+s.id);
@@ -469,7 +484,7 @@ const ACC=[['mezzi','Accesso mezzi',['Libero','Limitato','Non carrabile']],['mez
 const ACCM=Object.fromEntries(ACC.map(a=>[a[0],a]));
 const asel=(k,l)=>`<label class="fl">${l}<select data-a="${k}"><option value=""></option>${ACCM[k][2].map(o=>`<option${cur.acc[k]==o?' selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
 const afld=(k,l,dec,ph)=>`<label class="fl">${l}<input data-a="${k}"${dec?' inputmode="decimal"':''} placeholder="${esc(ph||'')}" value="${esc(cur.acc[k])}"></label>`;
-const fld=(k,l,ph,type)=>`<label class="fl">${l}<input data-k="${k}" type="${type||'text'}" placeholder="${esc(ph||'')}" value="${esc(cur[k])}"></label>`;
+const fld=(k,l,ph,type,im)=>`<label class="fl">${l}<input data-k="${k}" type="${type||'text'}"${im?` inputmode="${im}" autocomplete="off"`:''} placeholder="${esc(ph||'')}" value="${esc(cur[k]==null?'':cur[k])}"></label>`;
 function renderEdit(){
   const s=cur;
   $('vE').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><span id="sv" class="sv"></span></div>
@@ -479,8 +494,10 @@ function renderEdit(){
 <section class="card"><h2>Dati del cantiere</h2>
 ${fld('cantiere','Cantiere','es. Demolizione capannone')}
 ${fld('luogo','Luogo / indirizzo','Via, numero civico, comune')}
-${fld('committente','Committente','')}
-<div class="row2">${fld('data','Data','','date')}${fld('tecnico','Tecnico','')}</div>
+${fld('committente','Committente','Nome o ragione sociale')}
+<div class="row2">${fld('ctel','Telefono committente','','tel','tel')}${fld('cmail','Email committente','','email','email')}</div>
+${fld('tecnico','Tecnico che ha svolto il sopralluogo','Nome e cognome')}
+${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
 </section>
 <section class="card"><h2>Posizione GPS</h2>
@@ -492,7 +509,7 @@ ${fld('committente','Committente','')}
 </section>
 <section class="card"><h2>Rifiuti e codici CER <span id="nc" class="cnt"></span><button class="opn" id="of" data-go="gal/${s.id}/rif" hidden>Foto ›</button></h2>
 <p class="hint" style="margin:0 2px 10px">Aggiungi una voce per ogni rifiuto e scatta le foto dentro la voce. Il codice puoi sceglierlo subito o assegnarlo dopo.</p>
-<div id="unc" class="unc" hidden><h3>Da classificare <span id="nf" class="cnt"></span></h3><p class="hint">Tocca una foto per assegnarle il codice CER.</p><div id="phs" class="grid"></div></div>
+<div id="unc" class="unc" hidden><h3>Foto senza voce CER <span id="nf" class="cnt"></span></h3><p class="hint">Queste foto non sono collegate a nessuna voce. Toccane una per collegarla, oppure spostale tutte insieme.</p><div id="phs" class="grid"></div><button class="btn wide" id="uncall" style="margin-top:8px">Sposta tutte in una voce…</button></div>
 <div id="cers"></div>
 <button class="btn pri wide big" id="addc">+ Aggiungi CER</button>
 <div id="tot" class="tot"></div>
@@ -631,7 +648,8 @@ function renderCer(){
 <div class="ds sm">${r?esc(r[1]):'Scatta pure le foto: il codice lo assegni quando lo sai.'}</div>
 ${x.c?'':`<button class="btn pri wide" data-chg="${i}" style="margin-top:8px">🔍 Assegna codice CER</button>`}
 <div class="cfr"><div class="cfs" id="cf${x.id}"></div><label class="btn sm2 pri">📷 Foto<input type="file" accept="image/*" capture="environment" hidden data-phc="${x.id}"></label><label class="btn sm2" aria-label="Foto dalla galleria">🖼<input type="file" accept="image/*" multiple hidden data-phc="${x.id}"></label></div>
-<div class="qr"><input data-q="${i}" inputmode="decimal" placeholder="Quantità" value="${esc(x.q)}"><select data-u="${i}" aria-label="Unità di misura">${UN.map(u=>`<option${u==x.u?' selected':''}>${u}</option>`).join('')}</select></div>
+<div class="qr"><input data-q="${i}" data-qid="${x.id}" inputmode="decimal" placeholder="Quantità" value="${esc(x.q)}"><select data-u="${i}" aria-label="Unità di misura">${UN.map(u=>`<option${u==x.u?' selected':''}>${u}</option>`).join('')}</select></div>
+<div class="qh" id="qh${x.id}"></div>
 <input class="nt" data-n="${i}" placeholder="Note (stato fisico, ubicazione, contenitore…)" value="${esc(x.n)}"></div>`}).join('')
     :'<p class="hint" style="margin-bottom:4px">Nessun rifiuto ancora. Premi “+ Aggiungi CER”.</p>';
   renderTot();paintLinks();
@@ -643,11 +661,15 @@ function paintLinks(){
   if(!cur)return;
   cur.cer.forEach(x=>{const el=$('cf'+x.id);if(!el)return;
     const ps=[];fotos.forEach((p,i)=>{if((p.cer||[]).includes(x.id)&&umap[p.id])ps.push([p,i])});
-    el.innerHTML=ps.length?`<button class="opn cc" data-go="gal/${cur.id}/c:${x.id}">${ps.length} foto ›</button>`+ps.map(([p,i])=>`<button class="mt" data-pf="${p.id}" aria-label="Foto ${i+1}"><img src="${umap[p.id]}" alt=""><span>${i+1}</span></button>`).join(''):'<span class="hint">Nessuna foto collegata</span>';
+    el.innerHTML=ps.length?`<button class="opn cc" data-go="gal/${cur.id}/c:${x.id}">${ps.length} foto ›</button>`+ps.map(([p,i])=>{const q=p.qs&&p.qs[x.id]&&num(p.qs[x.id])!=null?fn(num(p.qs[x.id])):'';return `<button class="mt" data-pf="${p.id}" aria-label="Foto ${i+1}"><img src="${umap[p.id]}" alt=""><span>${i+1}</span>${q?`<i>${esc(q)} ${esc(x.u)}</i>`:''}</button>`}).join('')+(ps.length?`<span class="hint mth">Tocca una foto per indicarne la quantità presunta.</span>`:''):'<span class="hint">Nessuna foto collegata</span>';
+    const pq=photoQ(fotos,x),inp=document.querySelector(`[data-qid="${x.id}"]`),h=$('qh'+x.id);
+    if(inp){if(pq.n){inp.readOnly=true;inp.value=fn(pq.sum);inp.classList.add('ro')}else{inp.readOnly=false;inp.classList.remove('ro');if(inp.value!==String(x.q||'')&&document.activeElement!==inp)inp.value=x.q||''}}
+    if(h)h.innerHTML=pq.n?`Totale dalle foto (${pq.n} ${pq.n==1?'foto':'foto'}): <b>${esc(fn(pq.sum))} ${esc(x.u)}</b>`:'';
   });
+  renderTot();
 }
 function renderTot(){
-  const m=totali(cur),nh=cur.cer.filter(x=>{const r=RM.get(x.c);return r&&r[2]}).length,t=totTxt(m);
+  const m=totali(cur,fotos),nh=cur.cer.filter(x=>{const r=RM.get(x.c);return r&&r[2]}).length,t=totTxt(m);
   $('tot').innerHTML=cur.cer.length?`<b>${cur.cer.length}</b> ${cur.cer.length==1?'codice':'codici'}${nh?` (${nh} pericolos${nh==1?'o':'i'})`:''}${t?' · Totale: <b>'+esc(t)+'</b>':''}`:'';
 }
 async function renderPh(){
@@ -680,15 +702,22 @@ async function addFoto(files,cid,cat){
   if(cur===s){await renderPh();setStatus('Salvato ✓')}
 }
 let ovF=null,ovU=null,ovDirty=false;
+function paintOvQ(){
+  const box=$('ovqs'),k=catOf(ovF),ids=k=='rif'?(ovF.cer||[]):[];
+  box.hidden=!ids.length;if(!ids.length){box.innerHTML='';return}
+  box.innerHTML=ids.map(id=>{const x=cur.cer.find(y=>y.id==id);if(!x)return '';return `<label><span>Quantità presunta in questa foto<br><b>${esc(lbl(cur,x))}</b></span><input data-pq="${id}" inputmode="decimal" placeholder="0" value="${esc((ovF.qs&&ovF.qs[id])||'')}"> ${esc(x.u)}</label>`}).join('');
+}
 function paintOvk(){
   const k=catOf(ovF);
   $('ovm').innerHTML='<span class="lb">Sezione:</span>'+CATS.map(c=>`<button data-cat="${c[0]}" aria-pressed="${c[0]==k}">${c[1]}</button>`).join('');
+  paintOvQ();
   if(k!='rif'){$('ovk').innerHTML='';return}
   const none=!(ovF.cer||[]).length;
   $('ovk').innerHTML=`<span class="lb">${none?'<b style="color:#ffb4a8">Foto senza codice.</b> Tocca una voce per collegarla:':'Voci collegate a questa foto. Tocca per collegare <b>✓</b> o scollegare:'}</span>`+cur.cer.map(x=>{const on=(ovF.cer||[]).includes(x.id);return `<button class="${isH(x.c)?'h':''}" data-ok="${x.id}" aria-pressed="${on}">${on?'✓ ':''}${esc(lbl(cur,x))}</button>`}).join('')+`<button id="ovnew" class="ovs">🔍 ${cur.cer.length?'Altro codice':'Cerca il codice'}</button>`+(none?'':`<button id="ovclr" class="ovs">✕ Scollega tutti</button>`);
 }
 let ovList=[];
-async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;await put('foto',ovF);ovDirty=false}}
+async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;if(ovF.qs){for(const k in ovF.qs)if(!(ovF.cer||[]).includes(k)||!String(ovF.qs[k]).trim())delete ovF.qs[k]}await put('foto',ovF);ovDirty=false}}
+$('ovqs').addEventListener('input',e=>{const t=e.target;if(!ovF||t.dataset.pq==null)return;ovF.qs=ovF.qs||{};ovF.qs[t.dataset.pq]=t.value;ovDirty=true});
 async function ovGo(d){
   if(!ovF)return;const j=ovList.indexOf(ovF.id)+d;if(j<0||j>=ovList.length)return;
   await savePh();if(ovU)URL.revokeObjectURL(ovU);openPh(ovList[j],ovList);
@@ -718,9 +747,9 @@ const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);r
 const fotoNums=(f,id)=>f.map((p,i)=>(p.cer||[]).includes(id)?i+1:0).filter(Boolean);
 async function csv(s){
   const f=split(await fotoDi(s.id)).gen,co=v=>v==null||v===''?'':String(v).replace('.',',');
-  const rows=[['Cantiere','Luogo','Committente','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità','Unità','Note','Foto n.','File foto']];
-  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],n=num(x.q),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',n!=null?co(n):x.q,x.u,x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
-  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','']);
+  const rows=[['Cantiere','Luogo','Committente','Telefono committente','Email committente','Tecnico','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità totale','Unità','Quantità per foto','Note','Foto n.','File foto']];
+  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],n=effQ(x,f),pq=photoQ(f,x),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',n!=null?co(n):x.q,x.u,pq.list.map(o=>'foto '+(o.i+1)+': '+co(o.v)).join('; '),x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
+  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','','']);
   esporta(fname(s)+'.csv',csvBlob(rows));
 }
 /* ZIP (senza compressione: le JPEG sono già compresse) */
@@ -747,9 +776,9 @@ async function zipFoto(s){
   const {gen:f,acc:fa,sf:fs}=split(all_);
   setStatus('Preparo lo ZIP…');
   const files=f.map((p,i)=>({name:fotoName(s,p,i),blob:p.blob}));
-  const el=[['File foto','Foto n.','Sezione','Codici CER','Descrizioni','Didascalia']];
-  f.forEach((p,i)=>{const cs=codesOf(s,p);el.push([files[i].name,i+1,'Rifiuti',cs.map(x=>lbl(s,x)).join(', '),cs.map(x=>{const r=RM.get(x.c);return r?r[1]:''}).join(' | '),p.nota||''])});
-  fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg');files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','',p.nota||''])});
+  const el=[['File foto','Foto n.','Sezione','Codici CER','Descrizioni','Quantità presunta','Didascalia']];
+  f.forEach((p,i)=>{const cs=codesOf(s,p);el.push([files[i].name,i+1,'Rifiuti',cs.map(x=>lbl(s,x)).join(', '),cs.map(x=>{const r=RM.get(x.c);return r?r[1]:''}).join(' | '),cs.filter(x=>p.qs&&num(p.qs[x.id])!=null).map(x=>fn(num(p.qs[x.id]))+' '+x.u+(cs.length>1?' ('+lbl(s,x)+')':'')).join('; '),p.nota||''])});
+  fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg');files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','','',p.nota||''])});
   files.push({name:'elenco_foto.csv',blob:csvBlob(el)});
   if((s.sfn||'').trim())files.push({name:'stato_di_fatto_note.txt',blob:new Blob([s.sfn],{type:'text/plain'})});
   const z=await makeZip(files);setStatus('Salvato ✓');
@@ -797,18 +826,26 @@ async function scaricaReport(){
 }
 async function renderRep(s){
   repSop=s;
-  const {gen:f,acc:fa,sf:fs}=split(await fotoDi(s.id)),t=totTxt(totali(s));
+  const {gen:f,acc:fa,sf:fs}=split(await fotoDi(s.id)),t=totTxt(totali(s,f));
   const fig=(p,lab,extra)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<figure><img src="${u}" alt="${lab}"><figcaption><b>${lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
   $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
 <article class="rep">
 <h1>Verbale di sopralluogo</h1>
 <p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
-<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Data',dIt(s.data))}${kv('Tecnico',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
+<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
 ${fs.length||(s.sfn||'').trim()?`<h2>Stato di fatto e accessibilità</h2>${(s.sfn||'').trim()?`<p style="white-space:pre-line;margin:0 0 12px">${esc(s.sfn)}</p>`:''}${fs.length?`<div class="pg">${fs.map((p,i)=>fig(p,'Foto S'+(i+1))).join('')}</div>`:''}`:''}
 <h2>Rifiuti individuati</h2>
-${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th class="r">Quantità</th>${f.length?'<th class="r">Foto</th>':''}</tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),h=r&&r[2];return `<tr><td class="nw"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td class="r nw">${x.q?esc(x.q)+' '+x.u:'—'}</td>${f.length?`<td class="r">${fotoNums(f,x.id).join(', ')||'—'}</td>`:''}</tr>`}).join('')}</tbody></table>
+${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th class="r">Quantità</th>${f.length?'<th class="r">Foto</th>':''}</tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),h=r&&r[2];return `<tr><td class="nw"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}${(()=>{const pq=photoQ(f,x);return pq.n?`<div style="color:#555;font-size:13px">Quantità presunte: ${pq.list.map(o=>'foto '+(o.i+1)+' = '+esc(fn(o.v))+' '+esc(x.u)).join(' · ')}</div>`:''})()}</td><td class="r nw">${(()=>{const v=effQ(x,f);return v!=null?'<b>'+esc(fn(v))+' '+esc(x.u)+'</b>':'—'})()}</td>${f.length?`<td class="r">${fotoNums(f,x.id).join(', ')||'—'}</td>`:''}</tr>`}).join('')}</tbody></table>
 <p style="font-size:13px;color:#555">${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'* rifiuto pericoloso. ':''}${t?'Totale: '+esc(t):''}</p>`:'<p>Nessun codice registrato.</p>'}
-${f.length?`<h2>Documentazione fotografica dei rifiuti</h2><div class="pg">${f.map((p,i)=>fig(p,'Foto '+(i+1),codesOf(s,p).length?' · CER '+codesOf(s,p).map(x=>lbl(s,x)).join(', '):'')).join('')}</div>`:''}
+${f.length?(()=>{
+  const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
+  const cap=(p,i,x)=>{const q=x&&p.qs&&num(p.qs[x.id])!=null?' · '+fn(num(p.qs[x.id]))+' '+x.u:'';const altri=codesOf(s,p).filter(y=>!x||y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(p.qs&&num(p.qs[y.id])!=null?' ('+fn(num(p.qs[y.id]))+' '+y.u+')':'')).join(', '):'')};
+  let h='<h2>Documentazione fotografica dei rifiuti</h2>';
+  s.cer.forEach(x=>{const ps=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===x.id);if(!ps.length)return;const r=RM.get(x.c),v=effQ(x,f);
+    h+=`<h3 class="rg">${esc(lbl(s,x))}${r?' — '+esc(r[1]):''}${v!=null?` <span>· totale ${esc(fn(v))} ${esc(x.u)}</span>`:''}</h3><div class="pg">${ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,i,x))).join('')}</div>`});
+  const nc=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===null);
+  if(nc.length)h+=`<h3 class="rg">Foto non attribuite a CER</h3><div class="pg">${nc.map(([p,i])=>fig(p,'Foto '+(i+1),'')).join('')}</div>`;
+  return h})():''}
 </article>`;
 }
 
@@ -870,6 +907,12 @@ document.addEventListener('click',e=>{
   if(t.id=='addc'){(async()=>{if(!cur)return;const x=addRow('');renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
   const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER',x.c?'✕ Togli il codice: torna “Codice da assegnare”':'');if(c==null||!cur||c===x.c)return;x.c=c;renderCer();renderPh();save()})();return}
   const ub=t.closest('[data-use]');if(ub&&pick){pickDone(ub.dataset.use);return}
+  if(t.id=='uncall'&&cur){(async()=>{
+    const ids=fotos.filter(p=>!codesOf(cur,p).length).map(p=>p.id);if(!ids.length)return;
+    const v=await dlgOpen(`<h3>Sposta ${ids.length} foto in…</h3>`+cur.cer.map(x=>`<button class="it sl" data-dr="${x.id}"><div class="slt">${esc(lbl(cur,x))}</div>${x.c&&RM.get(x.c)?`<div class="meta">${esc(RM.get(x.c)[1])}</div>`:''}</button>`).join('')+`<button class="btn pri wide" data-dr="new" style="margin-top:6px">+ Nuova voce (codice da assegnare)</button>`,[['Annulla','','']]);
+    if(!v||!cur)return;let id=v;if(v=='new'){id=addRow('').id;save();renderCer()}
+    for(const pid of ids){const p=await get('foto',pid);if(!p)continue;p.cer=[id];p.cat='rif';await put('foto',p)}
+    renderPh()})();return}
   if(t.id=='ovclr'&&ovF){ovF.cer=[];ovDirty=true;paintOvk();return}
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
