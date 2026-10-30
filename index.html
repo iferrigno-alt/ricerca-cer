@@ -138,6 +138,8 @@ textarea{resize:vertical}
 .mt span{position:absolute;left:2px;top:2px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:0 5px;border-radius:99px}
 .btn.sm2{flex:none;padding:8px 10px;font-size:15px}
 .ovh{color:#fff;font-size:15px;font-weight:600}
+.ovt{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ovq{flex:none;font:inherit;font-size:15px;font-weight:600;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.6);border-radius:99px;padding:6px 14px}
 .ovmv{font:inherit;font-size:14px;background:none;border:0;color:#cfe;text-decoration:underline;padding:2px 0;align-self:flex-start}
 .ovk{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ovk .lb{color:#ddd;font-size:14px;width:100%}
@@ -159,7 +161,7 @@ textarea{resize:vertical}
 .sl{padding:13px 14px}
 .slt{font-size:19px;font-weight:700;overflow-wrap:anywhere}
 .meta{font-size:13px;color:var(--mut);margin-top:4px}
-#ov{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.9);display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#ov{position:fixed;inset:0;z-index:30;background:rgba(10,14,16,.97);display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
 #ovi{width:100%;height:100%;object-fit:contain;display:block}
 .ovw{position:relative;flex:1;min-height:0;touch-action:pan-y}
 .ova{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:12px;background:rgba(0,0,0,.45);color:#fff;font-size:34px;line-height:1}
@@ -224,12 +226,12 @@ textarea{resize:vertical}
 </div>
 <div id="dlg" class="dlg" hidden><div class="dlgb" role="dialog" aria-modal="true"><div id="dlgc"></div><div class="dlga" id="dlga"></div></div></div>
 <div id="ov" hidden>
-<div id="ovh" class="ovh"></div>
+<div class="ovt"><div id="ovh" class="ovh"></div><button id="ovq" class="ovq">Annulla</button></div>
 <div class="ovw"><img id="ovi" alt=""><button class="ova l" id="ovp" aria-label="Foto precedente">‹</button><button class="ova r" id="ovx" aria-label="Foto successiva">›</button></div>
 <div id="ovk" class="ovk"></div>
 <textarea id="ovn" rows="2" placeholder="Didascalia (es. cumulo lato nord, big bag n. 3…)"></textarea>
 <div id="ovm" class="ovk"></div>
-<div class="row2"><button class="btn dng" id="ovd">Elimina foto</button><button class="btn pri" id="ovc">Fatto</button></div>
+<div class="row2"><button class="btn dng" id="ovd">Elimina foto</button><button class="btn pri" id="ovc">Salva e chiudi</button></div>
 </div>
 
 <button id="fab" data-go="sop" hidden><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>Sopralluoghi</button>
@@ -269,7 +271,7 @@ function findCodes(raw,res){
 function render(){
   const raw=$('q').value.trim(),L=$('list'),I=$('info');
   $('tg').hidden=!pick&&!target;
-  if(pick){$('tgt').innerHTML='<b>'+esc(pick.title)+'</b><br>Cerca o apri un capitolo, tocca il codice e premi “Usa questo codice”.';$('tgb').hidden=!pick.blank}
+  if(pick){$('tgt').innerHTML='<b>'+esc(pick.title)+'</b><br>Cerca o apri un capitolo, tocca il codice e premi “Usa questo codice”.';$('tgb').hidden=!pick.blank;if(pick.blank)$('tgb').textContent=pick.blank}
   else{$('tgb').hidden=true;if(target)$('tgt').innerHTML='Aggiungi a: <b>'+esc(targetName||'sopralluogo')+'</b>'}
   $('cc').hidden=!chap;if(chap)$('cc').textContent=(chap.length==2?'Cap. '+chap:'Voce '+chap.slice(0,2)+' '+chap.slice(2))+' ✕';
   if(!raw&&!chap&&flt=='all'){
@@ -374,7 +376,7 @@ let DLp=null;const dlCap=()=>DLp||(DLp=inClaude?Promise.resolve(window.claude.us
 let pick=null;
 function pickCode(title,blank){
   if(pick)pickDone(null);
-  pick={res:null,title:title||'Scegli il codice CER',blank:!!blank,y:scrollY,ov:!$('ov').hidden,from:view};
+  pick={res:null,title:title||'Scegli il codice CER',blank:blank||'',y:scrollY,ov:!$('ov').hidden,from:view};
   const p=new Promise(ok=>{pick.res=ok});
   if(pick.ov)$('ov').hidden=true;
   $('q').value='';chap='';flt='all';showAll=false;shown=60;sync();
@@ -683,7 +685,7 @@ function paintOvk(){
   $('ovm').innerHTML='<span class="lb">Sezione:</span>'+CATS.map(c=>`<button data-cat="${c[0]}" aria-pressed="${c[0]==k}">${c[1]}</button>`).join('');
   if(k!='rif'){$('ovk').innerHTML='';return}
   const none=!(ovF.cer||[]).length;
-  $('ovk').innerHTML=`<span class="lb">${none?'<b style="color:#ffb4a8">Da classificare.</b> Tocca il codice CER di questa foto:':'Codici CER di questa foto (tocca per togliere o aggiungere):'}</span>`+cur.cer.map(x=>`<button class="${isH(x.c)?'h':''}" data-ok="${x.id}" aria-pressed="${(ovF.cer||[]).includes(x.id)}">${esc(lbl(cur,x))}</button>`).join('')+`<button id="ovnew" class="ovs">🔍 ${cur.cer.length?'Altro codice':'Cerca il codice'}</button>`;
+  $('ovk').innerHTML=`<span class="lb">${none?'<b style="color:#ffb4a8">Foto senza codice.</b> Tocca una voce per collegarla:':'Voci collegate a questa foto. Tocca per collegare <b>✓</b> o scollegare:'}</span>`+cur.cer.map(x=>{const on=(ovF.cer||[]).includes(x.id);return `<button class="${isH(x.c)?'h':''}" data-ok="${x.id}" aria-pressed="${on}">${on?'✓ ':''}${esc(lbl(cur,x))}</button>`}).join('')+`<button id="ovnew" class="ovs">🔍 ${cur.cer.length?'Altro codice':'Cerca il codice'}</button>`+(none?'':`<button id="ovclr" class="ovs">✕ Scollega tutti</button>`);
 }
 let ovList=[];
 async function savePh(){if(ovF&&(ovDirty||$('ovn').value!==(ovF.nota||''))){ovF.nota=$('ovn').value;await put('foto',ovF);ovDirty=false}}
@@ -693,7 +695,7 @@ async function ovGo(d){
 }
 async function openPh(id,list){
   if(list)ovList=list;
-  ovF=await get('foto',id);if(!ovF||!cur)return;ovDirty=false;
+  ovF=await get('foto',id);if(!ovF||!cur)return;ovDirty=false;ovAdded=[];
   ovF.cer=(ovF.cer||[]).filter(k=>cur.cer.some(x=>x.id==k));
   const k=catOf(ovF);
   $('ovh').textContent=k=='acc'?'Foto accessibilità A'+(fotosAcc.findIndex(p=>p.id==id)+1):k=='sf'?'Stato di fatto e accessibilità S'+(fotosSf.findIndex(p=>p.id==id)+1):'Foto rifiuti '+(fotos.findIndex(p=>p.id==id)+1);
@@ -702,8 +704,11 @@ async function openPh(id,list){
   $('ovp').hidden=pos<=0;$('ovx').hidden=pos<0||pos>=ovList.length-1;
   ovU=URL.createObjectURL(ovF.blob);$('ovi').src=ovU;$('ovn').value=ovF.nota||'';paintOvk();$('ov').hidden=false;
 }
+let ovAdded=[];
 async function closePh(salva){
   if(salva)await savePh();
+  else if(ovAdded.length&&cur){const f=await fotoDi(cur.id),used=new Set(f.flatMap(p=>p.cer||[]));const n=cur.cer.length;cur.cer=cur.cer.filter(x=>!ovAdded.includes(x.id)||used.has(x.id)||x.q||x.n);if(cur.cer.length!=n){save();if(view=='vE')renderCer()}}
+  ovAdded=[];
   $('ov').hidden=true;$('ovi').removeAttribute('src');if(ovU)URL.revokeObjectURL(ovU);ovF=ovU=null;
   if(cur)renderPh();
 }
@@ -841,11 +846,12 @@ $('vE').addEventListener('change',e=>{
 });
 $('vL').addEventListener('change',e=>{if(e.target.id=='rst'){const f=e.target.files[0];e.target.value='';if(f)ripristina(f)}});
 $('ovc').onclick=()=>closePh(true);
+$('ovq').onclick=()=>closePh(false);
 $('ovp').onclick=()=>ovGo(-1);$('ovx').onclick=()=>ovGo(1);
 let tx0=null;
 $('ovi').addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});
 $('ovi').addEventListener('touchend',e=>{if(tx0==null)return;const dx=e.changedTouches[0].clientX-tx0;tx0=null;if(Math.abs(dx)>50)ovGo(dx<0?1:-1)});
-document.addEventListener('keydown',e=>{if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(true)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;await del('foto',ovF.id);closePh(false)};
+document.addEventListener('keydown',e=>{if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(false)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;await del('foto',ovF.id);closePh(false)};
 $('tga').onclick=()=>{if(pick){pickDone(null);return}const id=target;target=null;go(id?'sop/'+id:'sop')};
 
 document.addEventListener('click',e=>{
@@ -862,9 +868,10 @@ document.addEventListener('click',e=>{
   if(t.id=='gpss'&&gpsPend&&cur){cur.gps=gpsPend;gpsPend=null;stopGps();$('gpsb').disabled=false;$('gpsp').hidden=true;updGps();save();return}
   if(t.id=='gpsc'){gpsPend=null;stopGps();$('gpsp').hidden=true;if(cur){$('gpsb').disabled=false;updGps()}return}
   if(t.id=='addc'){(async()=>{if(!cur)return;const x=addRow('');renderCer();renderPh();save();const el=$('cf'+x.id);if(el)el.closest('.cr').scrollIntoView({block:'center'});})();return}
-  const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER');if(!c||!cur)return;x.c=c;renderCer();renderPh();save()})();return}
+  const chg=t.closest('[data-chg]');if(chg&&cur){const x=cur.cer[+chg.dataset.chg];(async()=>{const c=await pickCode(x.c?'Cambia codice CER':'Assegna codice CER',x.c?'✕ Togli il codice: torna “Codice da assegnare”':'');if(c==null||!cur||c===x.c)return;x.c=c;renderCer();renderPh();save()})();return}
   const ub=t.closest('[data-use]');if(ub&&pick){pickDone(ub.dataset.use);return}
-  if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
+  if(t.id=='ovclr'&&ovF){ovF.cer=[];ovDirty=true;paintOvk();return}
+  if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
   if(t.id=='zip'){flush();zipFoto(cur);return}
   const ct=t.closest('[data-cat]');
