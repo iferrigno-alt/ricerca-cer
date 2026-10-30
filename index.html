@@ -696,7 +696,7 @@ async function renderPh(){
   $('gb').textContent='🖼 Galleria foto per sezione e codice CER'+(f.length?' ('+f.length+')':'');
   fotos.forEach(p=>mk(p));
   const unc=fotos.map((p,i)=>[p,i]).filter(([p])=>!codesOf(s,p).length);
-  $('unc').hidden=!unc.length;
+  $('unc').hidden=true;
   $('phs').innerHTML=unc.map(([p,i])=>`<button class="th" data-pf="${p.id}"><img src="${umap[p.id]}" alt="Foto ${i+1}" loading="lazy"><span>${i+1}</span>${p.nota?'<i>✎</i>':''}<b class="no">senza CER</b></button>`).join('');
   $('ns').textContent=fotosSf.length||'';
   $('phsf').innerHTML=fotosSf.map((p,i)=>`<button class="th" data-pf="${p.id}"><img src="${mk(p)}" alt="Foto stato di fatto S${i+1}" loading="lazy"><span>S${i+1}</span>${p.nota?'<i>✎</i>':''}</button>`).join('');
@@ -819,7 +819,6 @@ async function renderGal(){
   const th=(p,lab)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<button class="th" data-pf="${p.id}"><img src="${u}" alt="Foto ${lab}" loading="lazy"><span>${lab}</span>${p.nota?'<i>✎</i>':''}</button>`};
   const G=[['sf','Stato di fatto e accessibilità',esc(s.sfn||''),fotosSf,(p,i)=>th(p,'S'+(i+1)),'']];
   s.cer.forEach(x=>{const r=RM.get(x.c);G.push(['c:'+x.id,x.c?`CER ${fmt(x.c)}${isH(x.c)?'*<span class="hb">pericoloso</span>':''}`:esc(lbl(s,x)),esc(r?r[1]:'')+(x.q?' · <b>'+esc(x.q)+' '+x.u+'</b>':''),fotos.filter(p=>(p.cer||[]).includes(x.id)),p=>th(p,String(nr.get(p.id))),'Nessuna foto collegata a questo codice.'])});
-  G.push(['nocer','Rifiuti senza codice CER','Apri la foto e tocca il codice giusto per collegarla.',fotos.filter(p=>!codesOf(s,p).length),p=>th(p,String(nr.get(p.id))),'']);
   G.push(['rif','Tutte le foto dei rifiuti','',fotos,(p,i)=>th(p,String(i+1)),'']);
   let h='';
   if(one){
