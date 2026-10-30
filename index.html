@@ -197,6 +197,30 @@ textarea{resize:vertical}
 .rep .ph .gk{font-weight:800}
 .rep .ph .gtot{font-size:14px;margin-top:3px}
 .rep .seg{font-weight:400;color:#666;font-size:13px}
+.rep .cv{display:flex;flex-direction:column;gap:18px}
+.rep .cv-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:6px solid #0b6577;padding-top:10px}
+.rep .cv-k{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#0b6577}
+.rep .cv-dt{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.rep .cv-t{font-size:32px;line-height:1.15;margin:14px 0 0;text-wrap:balance;overflow-wrap:anywhere}
+.rep .cv-l{font-size:17px;color:#444;margin:-10px 0 0}
+.rep .cv-g{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;border-top:1px solid #ccc;padding-top:16px}
+.rep .cv-b h3,.rep .cv-n h3,.rep .cv-i h3{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#0b6577;margin:0 0 5px}
+.rep .cv-b p,.rep .cv-n p{margin:0 0 2px;font-size:14px;overflow-wrap:anywhere}
+.rep .cv-nm{font-weight:700;font-size:15px!important}
+.rep .cv-lb{color:#777;font-size:12px;margin-right:6px}
+.rep .cv-n{border-top:1px solid #ccc;padding-top:12px}
+.rep .cv-s{display:flex;flex-wrap:wrap;gap:0;border:1.5px solid #0b6577;border-radius:6px}
+.rep .cv-s>div{flex:1 1 90px;padding:10px 14px;border-left:1px solid #cfdde1}
+.rep .cv-s>div:first-child{border-left:0}
+.rep .cv-s b{display:block;font-size:22px;line-height:1.2;color:#0b6577;font-variant-numeric:tabular-nums}
+.rep .cv-s span{font-size:12px;color:#555}
+.rep .cv-s .cv-tq{flex:2 1 160px}
+.rep .cv-s .cv-tq b{font-size:17px}
+.rep .cv-i{margin-top:auto}
+.rep .cv-ir{display:flex;align-items:baseline;gap:6px;font-size:14px;padding:3px 0}
+.rep .cv-ir i{flex:1;border-bottom:1px dotted #999;transform:translateY(-4px)}
+.rep .cv-ir span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:480px){.rep .cv-g{grid-template-columns:1fr}.rep .cv-t{font-size:26px}}
 .rep h1{font-size:22px;margin:0 0 4px}
 .rep h2{font-size:17px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #0b6577}
 .rep .tb tr,.rep .kv tr,.rep figure{break-inside:avoid;page-break-inside:avoid}
@@ -852,7 +876,9 @@ const PRINT_CSS=`@page{size:A4;margin:0}
  .rep .page:last-child{break-after:auto;page-break-after:auto}
  .rep .pf{position:absolute;right:14mm;bottom:8mm;margin:0}
  .rep figure img{height:68mm;max-height:none}
- .rep .page.p1 .kv{font-size:14px}
+ .rep .page.p1 .cv{height:262mm}
+ .rep .cv-g{grid-template-columns:1fr 1fr!important}
+ .rep .cv-t{font-size:34px!important}
 }`;
 function setPrintCss(){let st=document.getElementById('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}st.textContent=PRINT_CSS}
 async function scaricaReport(){
@@ -871,17 +897,15 @@ async function renderRep(s){
   const chunk=(a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o.length?o:[[]]};
   const lines=t=>String(t||'').split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/80)),0);
   const pages=[];
-  /* 1. verbale */
-  pages.push({c:'p1',h:`<h1>Verbale di sopralluogo</h1>
-<p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
-<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>`});
+  /* 1. frontespizio: compilato alla fine, quando si conoscono le pagine */
+  pages.push({c:'p1',h:''});
   /* 2. stato di fatto e accessibilità */
   const sfn=(s.sfn||'').trim();
   if(fs.length||sfn){
     const nl=lines(sfn),first=nl>12?2:nl>4?4:6;
     const its=fs.map((p,i)=>fig(p,'Foto S'+(i+1)));
     const ch=[its.slice(0,first),...chunk(its.slice(first),6).filter(x=>x.length)];
-    ch.forEach((c,k)=>pages.push({h:`<div class="ph"><h2>Stato di fatto e accessibilità${k?' <span class="seg">(segue)</span>':''}</h2></div>${!k&&sfn?`<p style="white-space:pre-line;margin:0 0 12px">${esc(sfn)}</p>`:''}${grid(c)}`}));
+    ch.forEach((c,k)=>pages.push({sec:k?'':'Stato di fatto e accessibilità',h:`<div class="ph"><h2>Stato di fatto e accessibilità${k?' <span class="seg">(segue)</span>':''}</h2></div>${!k&&sfn?`<p style="white-space:pre-line;margin:0 0 12px">${esc(sfn)}</p>`:''}${grid(c)}`}));
   }
   /* 3. rifiuti individuati (tabella divisa su più pagine se serve) */
   const thead='<thead><tr><th>Codice CER</th><th>Descrizione</th><th>Foto e quantità presunte</th><th class="r">Totale</th></tr></thead>';
@@ -891,17 +915,38 @@ async function renderRep(s){
     return {u,h:`<tr><td class="nw kc"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}</td><td>${fq||'—'}</td><td class="r nw">${et.txt?'<b>'+esc(et.txt)+'</b>':'—'}</td></tr>`}});
   const rp=[];let cur_=[],sum=0;rows.forEach(r=>{if(cur_.length&&sum+r.u>34){rp.push(cur_);cur_=[];sum=0}cur_.push(r.h);sum+=r.u});if(cur_.length||!rp.length)rp.push(cur_);
   const haz=s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]});
-  rp.forEach((c,k)=>pages.push({h:`<div class="ph"><h2>Rifiuti individuati${k?' <span class="seg">(segue)</span>':''}</h2></div>${s.cer.length?`<table class="tb">${thead}<tbody>${c.join('')}</tbody></table>${k==rp.length-1&&haz?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}`}));
+  rp.forEach((c,k)=>pages.push({sec:k?'':'Rifiuti individuati',h:`<div class="ph"><h2>Rifiuti individuati${k?' <span class="seg">(segue)</span>':''}</h2></div>${s.cer.length?`<table class="tb">${thead}<tbody>${c.join('')}</tbody></table>${k==rp.length-1&&haz?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}`}));
   /* 4. una sezione per ogni CER: 6 foto per pagina, intestazione e totale ripetuti */
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
   const cap=(p,x)=>{const q=pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
   s.cer.forEach(x=>{const ps=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===x.id);if(!ps.length)return;const r=RM.get(x.c),tt=entTot(x,f).txt;
-    chunk(ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,x))),6).forEach(c=>pages.push({h:`<div class="ph"><div><span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}</div>${tt?`<div class="gtot">Totale presunto: <b>${esc(tt)}</b></div>`:''}</div>${grid(c)}`}))});
+    chunk(ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,x))),6).forEach((c,k)=>pages.push({sec:k?'':'CER '+lbl(s,x),cer:1,h:`<div class="ph"><div><span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}</div>${tt?`<div class="gtot">Totale presunto: <b>${esc(tt)}</b></div>`:''}</div>${grid(c)}`}))});
   /* 5. totale complessivo */
   const m=totali(s,f),us=Object.keys(m);
-  if(us.length)pages.push({h:`<div class="ph"><h2>Totale complessivo</h2></div><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
+  if(us.length)pages.push({sec:'Totale complessivo',h:`<div class="ph"><h2>Totale complessivo</h2></div><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
   <p style="font-size:13px;color:#555">Somma delle quantità di tutti i codici CER del sopralluogo, distinta per unità di misura.</p>`});
   const T=pages.length;
+  /* frontespizio */
+  const ln=(l,v)=>v&&String(v).trim()?`<p><span class="cv-lb">${l}</span>${esc(v)}</p>`:'';
+  const blk=(t,nm,body)=>(nm&&String(nm).trim())||body?`<div class="cv-b"><h3>${t}</h3>${nm&&String(nm).trim()?`<p class="cv-nm">${esc(nm)}</p>`:''}${body}</div>`:'';
+  const nh=s.cer.filter(x=>isH(x.c)).length,nc=s.cer.length,nf=f.length+fs.length;
+  const idx=[];pages.forEach((p,i)=>{if(p.sec)idx.push([p.sec,i+1])});
+  const cerP=pages.map((p,i)=>p.cer?i+1:0).filter(Boolean);
+  const idxRows=[];idx.forEach(([t,n])=>{if(t.startsWith('CER ')){if(!idxRows.some(r=>r[0]=='Documentazione fotografica per codice CER'))idxRows.push(['Documentazione fotografica per codice CER',cerP[0]+(cerP.length>1?'–'+cerP[cerP.length-1]:'')]);}else idxRows.push([t,String(n)])});
+  pages[0].h=`<div class="cv">
+<div class="cv-top"><span class="cv-k">Verbale di sopralluogo</span><span class="cv-dt">${esc(pdt)}</span></div>
+<h1 class="cv-t">${esc(s.cantiere||'Sopralluogo')}</h1>
+${s.luogo?`<p class="cv-l">${esc(s.luogo)}</p>`:''}
+<div class="cv-g">
+${blk('Committente',s.committente,ln('Tel.',s.ctel)+ln('Email',s.cmail))}
+${blk('Referente del committente',s.ref,ln('Tel.',s.rtel)+ln('Email',s.rmail))}
+${blk('Sopralluogo','',ln('Data',dIt(s.data))+ln('Tecnico',s.tecnico))}
+${s.gps?`<div class="cv-b"><h3>Posizione</h3><p>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` <span class="cv-lb">±${s.gps.acc} m</span>`:''}</p><p><a href="${maps(s.gps)}">Apri in Google Maps</a></p></div>`:''}
+</div>
+${(s.note||'').trim()?`<div class="cv-n"><h3>Note</h3><p>${esc(s.note).replace(/\n/g,'<br>')}</p></div>`:''}
+<div class="cv-s"><div><b>${nc}</b><span>${nc==1?'codice CER':'codici CER'}</span></div><div><b>${nh}</b><span>${nh==1?'pericoloso':'pericolosi'}</span></div><div><b>${nf}</b><span>foto</span></div>${us.length?`<div class="cv-tq"><b>${us.map(u=>esc(fn(m[u])+' '+u)).join('<br>')}</b><span>quantità presunta totale</span></div>`:''}</div>
+${idxRows.length?`<div class="cv-i"><h3>Contenuto</h3>${idxRows.map(([t,n])=>`<div class="cv-ir"><span>${esc(t)}</span><i></i><span>pag. ${n}</span></div>`).join('')}</div>`:''}
+</div>`;
   $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
 <article class="rep">${pages.map((p,i)=>`<section class="page ${p.c||''}">${p.h}<div class="pf">Pagina ${i+1} di ${T}<br>${esc(pdt)}</div></section>`).join('')}</article>`;
 }
