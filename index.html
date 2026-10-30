@@ -200,6 +200,12 @@ textarea{resize:vertical}
 .rep .tb th{font-size:13px;color:#555}
 .rep .r{text-align:right}
 .rep .tt{max-width:420px}
+.rep table.grp{width:100%;border-collapse:collapse;margin-top:26px;break-before:page;page-break-before:always}
+.rep table.grp>thead th{text-align:left;font-size:15px;font-weight:600;padding:0 0 6px;border-bottom:2px solid #0b6577}
+.rep table.grp>thead .gk{font-weight:800}
+.rep table.grp>tbody td{padding:8px 0 0;vertical-align:top}
+.rep table.grp>tbody tr{break-inside:avoid;page-break-inside:avoid}
+.rep .gtot{font-size:15px}
 @media (max-width:600px){.rep{padding:16px 12px}.rep .tb{font-size:13px}.rep .tb th,.rep .tb td{padding:6px 3px}.rep .tb .nw{white-space:normal}.rep .tb .kc{white-space:nowrap}}.rep .nw{white-space:nowrap}
 .rep h3.rg{font-size:15px;margin:16px 0 8px;break-after:avoid;page-break-after:avoid}
 .rep h3.rg span{font-weight:400;color:#555}
@@ -862,11 +868,12 @@ ${s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]})?'<p style="font-size:13px;
 ${f.length?(()=>{
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
   const cap=(p,i,x)=>{const q=x&&pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>!x||y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
-  let h='<h2>Documentazione fotografica dei rifiuti</h2>';
+  /* ogni gruppo: nuova pagina; l'intestazione del CER si ripete su ogni pagina (thead), il totale solo all'inizio */
+  const grp=(title,tot,items)=>{let rows='';for(let k=0;k<items.length;k+=2)rows+=`<tr><td><div class="pg">${items.slice(k,k+2).join('')}</div></td></tr>`;
+    return `<table class="grp"><thead><tr><th>${title}</th></tr></thead><tbody>${tot?`<tr><td class="gtot">Totale presunto: <b>${esc(tot)}</b></td></tr>`:''}${rows}</tbody></table>`};
+  let h='';
   s.cer.forEach(x=>{const ps=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===x.id);if(!ps.length)return;const r=RM.get(x.c),tt=entTot(x,f).txt;
-    h+=`<h3 class="rg">${esc(lbl(s,x))}${r?' — '+esc(r[1]):''}${tt?` <span>· totale ${esc(tt)}</span>`:''}</h3><div class="pg">${ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,i,x))).join('')}</div>`});
-  const nc=f.map((p,i)=>[p,i]).filter(([p])=>home.get(p.id)===null);
-  if(nc.length)h+=`<h3 class="rg">Foto non attribuite a CER</h3><div class="pg">${nc.map(([p,i])=>fig(p,'Foto '+(i+1),'')).join('')}</div>`;
+    h+=grp(`<span class="gk">${esc(lbl(s,x))}</span>${r?' — '+esc(r[1]):''}`,tt,ps.map(([p,i])=>fig(p,'Foto '+(i+1),cap(p,i,x))))});
   return h})():''}
 ${(()=>{const m=totali(s,f),us=Object.keys(m);if(!us.length)return '';
   return `<h2>Totale complessivo</h2><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
