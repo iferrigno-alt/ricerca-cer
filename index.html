@@ -602,7 +602,8 @@ async function leggiLink(){
   const op=sp.get('op'),srv=sp.get('srv');
   if(!op)return;
   try{history.replaceState(null,'',location.pathname+location.hash)}catch(_){}
-  try{const j=await collega(srv||SRV,op);note('Benvenuto '+j.name+'! Da ora i sopralluoghi che fai vengono inviati automaticamente all’ufficio.');syncSoon(500);if(view=='vL')renderList()}
+  const gia=linked()&&CODE===op;
+  try{const j=await collega(srv||SRV,op);if(!gia)note('Benvenuto '+j.name+'! Da ora i sopralluoghi che fai vengono inviati automaticamente all’ufficio.');syncSoon(500);if(view=='vL'||view=='vS')route()}
   catch(e){note('Non riesco a collegarmi all’archivio: '+e.message+'. Controlla di avere campo e riapri il link.')}
 }
 async function liberaSpazio(id){
