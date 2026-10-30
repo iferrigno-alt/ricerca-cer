@@ -469,7 +469,7 @@ ${a.length?a.map(s=>`<button class="it sl" data-go="sop/${s.id}"><div class="slt
 <section class="card" style="margin-top:18px"><h2>Backup</h2><p class="hint">Sopralluoghi e foto restano salvati solo in questo browser, su questo dispositivo. Fai un backup ogni tanto per non perderli o per spostarli su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
 }
-const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
+const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();
   await put('sop',s);go('sop/'+s.id);
@@ -506,6 +506,8 @@ ${fld('cantiere','Cantiere','es. Demolizione capannone')}
 ${fld('luogo','Luogo / indirizzo','Via, numero civico, comune')}
 ${fld('committente','Committente','Nome o ragione sociale')}
 <div class="row2">${fld('ctel','Telefono committente','','tel','tel')}${fld('cmail','Email committente','','email','email')}</div>
+${fld('ref','Referente del committente','Nome e cognome')}
+<div class="row2">${fld('rtel','Telefono referente','','tel','tel')}${fld('rmail','Email referente','','email','email')}</div>
 ${fld('tecnico','Tecnico che ha svolto il sopralluogo','Nome e cognome')}
 ${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
@@ -764,9 +766,9 @@ const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);r
 const fotoNums=(f,id)=>f.map((p,i)=>(p.cer||[]).includes(id)?i+1:0).filter(Boolean);
 async function csv(s){
   const f=split(await fotoDi(s.id)).gen,co=v=>v==null||v===''?'':String(v).replace('.',',');
-  const rows=[['Cantiere','Luogo','Committente','Telefono committente','Email committente','Tecnico','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità totale','Unità','Quantità per foto','Note','Foto n.','File foto']];
-  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],et=entTot(x,f),pq=photoQ(f,x),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',et.n?et.txt:(num(x.q)!=null?co(num(x.q)):x.q),et.n?Object.keys(et.m).join(' + '):x.u,pq.list.map(o=>'foto '+(o.i+1)+': '+co(o.v)+' '+o.u).join('; '),x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
-  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','','']);
+  const rows=[['Cantiere','Luogo','Committente','Telefono committente','Email committente','Referente','Telefono referente','Email referente','Tecnico','Data','Latitudine','Longitudine','Codice CER','Pericoloso','Descrizione','Quantità totale','Unità','Quantità per foto','Note','Foto n.','File foto']];
+  s.cer.forEach(x=>{const r=RM.get(x.c),h=r&&r[2],et=entTot(x,f),pq=photoQ(f,x),fn_=fotoNums(f,x.id);rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),lbl(s,x),x.c?(h?'sì':'no'):'',r?r[1]:'',et.n?et.txt:(num(x.q)!=null?co(num(x.q)):x.q),et.n?Object.keys(et.m).join(' + '):x.u,pq.list.map(o=>'foto '+(o.i+1)+': '+co(o.v)+' '+o.u).join('; '),x.n,fn_.join(', '),fn_.map(k=>fotoName(s,f[k-1],k-1)).join(', ')])});
+  if(!s.cer.length)rows.push([s.cantiere,s.luogo,s.committente,s.ctel||'',s.cmail||'',s.ref||'',s.rtel||'',s.rmail||'',s.tecnico||'',dIt(s.data),co(s.gps&&s.gps.lat),co(s.gps&&s.gps.lon),'','','','','','','','','']);
   esporta(fname(s)+'.csv',csvBlob(rows));
 }
 /* ZIP (senza compressione: le JPEG sono già compresse) */
@@ -849,7 +851,7 @@ async function renderRep(s){
 <article class="rep">
 <h1>Verbale di sopralluogo</h1>
 <p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
-<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
+<table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
 ${fs.length||(s.sfn||'').trim()?`<h2>Stato di fatto e accessibilità</h2>${(s.sfn||'').trim()?`<p style="white-space:pre-line;margin:0 0 12px">${esc(s.sfn)}</p>`:''}${fs.length?`<div class="pg">${fs.map((p,i)=>fig(p,'Foto S'+(i+1))).join('')}</div>`:''}`:''}
 <h2>Rifiuti individuati</h2>
 ${s.cer.length?`<table class="tb"><thead><tr><th>Codice CER</th><th>Descrizione</th><th class="r">Quantità</th>${f.length?'<th class="r">Foto</th>':''}</tr></thead><tbody>${s.cer.map(x=>{const r=RM.get(x.c),h=r&&r[2];return `<tr><td class="nw"><b>${esc(lbl(s,x))}</b></td><td>${esc(r?r[1]:'')}${x.n?`<div style="color:#555;font-size:13px">${esc(x.n)}</div>`:''}${(()=>{const pq=photoQ(f,x);return pq.n?`<div style="color:#555;font-size:13px">Quantità presunte: ${pq.list.map(o=>'foto '+(o.i+1)+' = '+esc(fn(o.v))+' '+esc(o.u)).join(' · ')}</div>`:''})()}</td><td class="r nw">${(()=>{const t=entTot(x,f).txt;return t?'<b>'+esc(t)+'</b>':'—'})()}</td>${f.length?`<td class="r">${fotoNums(f,x.id).join(', ')||'—'}</td>`:''}</tr>`}).join('')}</tbody></table>
