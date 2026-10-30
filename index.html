@@ -192,6 +192,8 @@ textarea{resize:vertical}
 .rep{background:#fff;color:#111;max-width:800px;margin:12px auto 30px;padding:22px 20px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .rep h1{font-size:22px;margin:0 0 4px}
 .rep h2{font-size:17px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #0b6577}
+.rep h2{break-before:page;page-break-before:always;break-after:avoid;page-break-after:avoid}
+.rep .tb tr,.rep .kv tr,.rep figure{break-inside:avoid;page-break-inside:avoid}
 .rep .sub{color:#555;font-size:13px;margin:0 0 14px}
 .rep table{width:100%;border-collapse:collapse}
 .rep .kv th{text-align:left;width:32%;vertical-align:top;color:#555;font-weight:600;padding:5px 10px 5px 0}
@@ -200,6 +202,10 @@ textarea{resize:vertical}
 .rep .tb th{font-size:13px;color:#555}
 .rep .r{text-align:right}
 .rep .tt{max-width:420px}
+.rep table.pgw{width:100%;border-collapse:collapse}
+.rep table.pgw>*>tr>td{padding:0}
+.rep .pgsp{height:0}
+.rep .pg1f{display:none}
 .rep table.grp{width:100%;border-collapse:collapse;margin-top:26px;break-before:page;page-break-before:always}
 .rep table.grp>thead th{text-align:left;font-size:15px;font-weight:600;padding:0 0 6px;border-bottom:2px solid #0b6577}
 .rep table.grp>thead .gk{font-weight:800}
@@ -214,13 +220,17 @@ textarea{resize:vertical}
 .rep figure img{width:100%;max-height:9cm;object-fit:contain;background:#f0f0f0;display:block}
 .rep figcaption{font-size:13px;color:#444;margin-top:3px}
 .rep a{color:#0b6577}
-@page{margin:14mm}
+@page{size:A4;margin:0}
 @media print{
+ .rep .pgsp{height:12mm}
+ .rep tfoot .pgsp{height:16mm}
+ .rep .pg1f{display:block;position:absolute;top:286.2mm;right:14mm;font:11px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:#555;text-align:right}
+ .rep{padding:0 14mm!important}
  .np,#fab,#mw,#dlg,#vS,#vL,#vE,#vG,#ov{display:none!important}
  :root{padding:0}
  body,#vR{background:#fff;padding:0;min-height:0}
  body::before{display:none}
- .rep{margin:0;padding:0;max-width:none;box-shadow:none}
+ .rep{margin:0;max-width:none;box-shadow:none}
 }
 </style>
 </head>
@@ -842,20 +852,23 @@ async function renderGal(){
 const accRows=s=>ACC.filter(a=>s.acc&&String(s.acc[a[0]]||'').trim()).map(a=>[a[1],s.acc[a[0]]+(typeof a[2]=='string'?' '+a[2]:'')]);
 const kv=(k,v)=>v?`<tr><th>${k}</th><td>${esc(v).replace(/\n/g,'<br>')}</td></tr>`:'';
 let repSop=null;
+/* margine 0 sulla prima pagina: il browser non stampa titolo e indirizzo su nessuna pagina; numero di pagina e data in basso a destra */
+const pageCss=d=>`@page{size:A4;margin:0 0 14mm 0;@bottom-right{content:"Pagina " counter(page) "\\A ${d}";white-space:pre;text-align:right;vertical-align:middle;padding-right:14mm;font:11px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:#555}}@page:first{margin:0}`;
+function setPageCss(d){let st=document.getElementById('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}st.textContent=pageCss(d)}
 async function scaricaReport(){
   const a=document.querySelector('#vR .rep');if(!a||!repSop)return;
   const c=a.cloneNode(true);
   for(const im of c.querySelectorAll('img')){try{im.src=await b2d(await (await fetch(im.getAttribute('src'))).blob())}catch(_){}}
   let css='';try{for(const sh of document.styleSheets)for(const r of sh.cssRules)if(r.selectorText&&r.selectorText.includes('.rep'))css+=r.cssText+'\n'}catch(_){}
-  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}@page{margin:14mm}@media print{.rep{margin:0!important;padding:0!important;box-shadow:none!important;max-width:none!important}}\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
+  const html='<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verbale di sopralluogo - '+esc(repSop.cantiere||'')+'</title><style>body{margin:0;background:#fff}'+pageCss(dIt(repSop.data)||dIt(today()))+'@media print{.rep{margin:0!important;padding:0 14mm!important;box-shadow:none!important;max-width:none!important}.rep .pgsp{height:12mm!important}.rep tfoot .pgsp{height:16mm!important}.rep .pg1f{display:block!important;position:absolute;top:286.2mm;right:14mm;font:11px/1.35 system-ui,sans-serif;color:#555;text-align:right}}\n'+css+'</style></head><body>'+c.outerHTML+'</body></html>';
   esporta('verbale_'+fname(repSop).replace(/^sopralluogo_/,'')+'.html',new Blob([html],{type:'text/html'}));
 }
 async function renderRep(s){
-  repSop=s;
+  repSop=s;const pdt=dIt(s.data)||dIt(today());setPageCss(pdt);
   const {gen:f,acc:fa,sf:fs}=split(await fotoDi(s.id)),t=totTxt(totali(s,f));
   const fig=(p,lab,extra)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<figure><img src="${u}" alt="${lab}"><figcaption><b>${lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
   $('vR').innerHTML=`<div class="top np"><button class="bk" data-go="sop/${s.id}">‹ Indietro</button><span style="display:flex;gap:8px"><button class="btn" id="rdl">Scarica</button>${inClaude?'':'<button class="btn pri" id="prt">Stampa / PDF</button>'}</span></div>
-<article class="rep">
+<article class="rep"><div class="pg1f">Pagina 1<br>${esc(pdt)}</div><table class="pgw"><thead><tr><td><div class="pgsp"></div></td></tr></thead><tfoot><tr><td><div class="pgsp"></div></td></tr></tfoot><tbody><tr><td>
 <h1>Verbale di sopralluogo</h1>
 <p class="sub">${esc(s.cantiere||'')}${s.data?' · '+dIt(s.data):''}</p>
 <table class="kv">${kv('Cantiere',s.cantiere)}${kv('Luogo',s.luogo)}${kv('Committente',s.committente)}${kv('Telefono committente',s.ctel)}${kv('Email committente',s.cmail)}${kv('Referente del committente',s.ref)}${kv('Telefono referente',s.rtel)}${kv('Email referente',s.rmail)}${kv('Data',dIt(s.data))}${kv('Tecnico che ha svolto il sopralluogo',s.tecnico)}${s.gps?`<tr><th>Coordinate GPS</th><td>${s.gps.lat}, ${s.gps.lon}${s.gps.acc?` (±${s.gps.acc} m)`:''}<br><a href="${maps(s.gps)}">Apri in Google Maps</a></td></tr>`:''}${kv('Note',s.note)}</table>
@@ -878,7 +891,7 @@ ${f.length?(()=>{
 ${(()=>{const m=totali(s,f),us=Object.keys(m);if(!us.length)return '';
   return `<h2>Totale complessivo</h2><table class="tb tt"><thead><tr><th>Unità di misura</th><th class="r">Quantità presunta totale</th></tr></thead><tbody>${us.map(u=>`<tr><td>${esc(u)}</td><td class="r nw"><b>${esc(fn(m[u]))} ${esc(u)}</b></td></tr>`).join('')}</tbody></table>
   <p style="font-size:13px;color:#555">Somma delle quantità di tutti i codici CER del sopralluogo, distinta per unità di misura.</p>`})()}
-</article>`;
+</td></tr></tbody></table></article>`;
 }
 
 /* ============ AGGIUNTA CER DALLA RICERCA ============ */
