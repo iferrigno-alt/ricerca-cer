@@ -187,6 +187,9 @@ textarea{resize:vertical}
 .tot{margin-top:12px;font-size:15px}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
+.srch input{font-size:17px}
+.it[hidden]{display:none}
+.opr{position:relative;padding-right:34px}.opr .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--mut)}
 .slt{font-size:19px;font-weight:700;overflow-wrap:anywhere}
 .meta{font-size:13px;color:var(--mut);margin-top:4px}
 #ov{position:fixed;inset:0;z-index:30;background:#0b1013;display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
@@ -457,6 +460,12 @@ async function shrink(file){
 
 /* ============ FINESTRE DI DIALOGO (nella pagina, funzionano ovunque) ============ */
 let dlgRes=null;
+document.addEventListener('input',e=>{
+  if(e.target.id==='aq'){ARCQ=e.target.value;drawArchRes()}
+  if(e.target.id==='lq'){LQ=e.target.value;filtraLista()}
+});
+let LQ='';
+function filtraLista(){const q=normq(LQ).trim().split(/\s+/).filter(Boolean);let n=0;document.querySelectorAll('#vL [data-lq]').forEach(el=>{const ok=q.every(w=>el.dataset.lq.includes(w));el.hidden=!ok;if(ok)n++});const h=$('lqn');if(h)h.textContent=q.length?(n?n+(n==1?' trovato':' trovati'):'Nessun sopralluogo con questo nome'):''}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value}
   /* scegliere l'operatore basta: chiede subito conferma e assegna */
   if(e.target&&e.target.id==='asss'&&e.target.value&&!(cur&&cur.ass&&cur.ass.code===e.target.value))assegna()});
@@ -473,7 +482,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-14';
+const APPVER='2026.11.02-15';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -539,7 +548,7 @@ async function route(){
   }else if(a=='rep'&&id){
     const s=await get('sop',id);if(!s){go('sop');return}
     if(s.sfn==null)s.sfn=(s.acc&&s.acc.note)||'';cur=null;show('vR');renderRep(s);
-  }else if(a=='arch'){cur=null;show('vA');renderArch()}
+  }else if(a=='arch'){cur=null;const k=view=='vA';show('vA');renderArch(k)}
   else if(a=='ops'){cur=null;show('vO');renderOps()}
   else if(a=='sop'){cur=null;show('vL');renderList()}
   else{cur=null;show('vS');$('tg').hidden=!target;if(target)$('tgt').innerHTML='Aggiungi a: <b>'+esc(targetName||'sopralluogo')+'</b>';render()}
@@ -563,11 +572,12 @@ async function renderList(){
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
 ${isAdmin()&&!inClaude?`<div class="row2" style="margin-bottom:12px"><button class="btn pri" data-go="arch">🗂 Lavori degli operatori</button><button class="btn" data-go="ops">👥 Operatori</button></div>`:''}
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':(ONAME&&linked()?'di <b>'+esc(ONAME)+'</b> · ':'')}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.revoked?' · ⚠ riassegnato dall’ufficio a un altro operatore':y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
+${a.length>1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
+${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0" data-lq="${esc(normq([s.cantiere,s.luogo,s.committente,s.ref,s.tecnico,dIt(s.data),s.remote&&s.remote.owner].join(' ')))}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':(ONAME&&linked()?'di <b>'+esc(ONAME)+'</b> · ':'')}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.revoked?' · ⚠ riassegnato dall’ufficio a un altro operatore':y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
 <section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
 <section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
-  syncUI();
+  syncUI();if(LQ)filtraLista();
 }
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
@@ -779,7 +789,7 @@ async function archiviaRemoto(id,mod){
   }catch(e){busyEnd();note('Non riesco a preparare lo ZIP: '+e.message);return}
   if(!await ask((dove==='dir'?'ZIP salvato nella cartella '+dir.name+'. ':'Hai salvato lo ZIP sul PC? ')+'Ora sposto “'+(s.cantiere||'Senza nome')+'” negli archiviati: sparisce dagli elenchi e dai telefoni, ma potrai sempre rivederlo, ripristinarlo o eliminarlo definitivamente.','Archivia'))return;
   busy('Archivio…');
-  try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch(1)}
   catch(e){busyEnd();note('Non riesco a togliere da Drive: '+e.message)}
 }
 const dOra=t=>t?new Date(t).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
@@ -787,13 +797,13 @@ let SHOWARC=false;
 async function eliminaRemoto(id,nome){
   if(!await ask('Eliminare definitivamente “'+nome+'” dall’archivio? Dati e foto vengono tolti da Google Drive (finiscono nel cestino di Drive) e da questo PC, e non si potrà più rivedere dall’app. Se vuoi solo toglierlo dall’elenco usa “Archivia”.','Elimina definitivamente',1))return;
   busy('Elimino dall’archivio…');
-  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch(1)}
   catch(e){busyEnd();note('Non riesco a eliminare: '+e.message)}
 }
 async function eliminaDefinitivo(id,nome){
   if(!await ask('Eliminare definitivamente “'+nome+'”? Sparisce dall’elenco degli archiviati e non si potrà più vedere né ripristinare dall’app.','Elimina definitivamente',1))return;
   busy('Elimino…');
-  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch(1)}
   catch(e){busyEnd();note('Non riesco a eliminare: '+e.message)}
 }
 async function ripristinaRemoto(id,nome){
@@ -802,21 +812,51 @@ async function ripristinaRemoto(id,nome){
   try{await api('restore',{id});busyEnd();SHOWARC=false;await apriRemoto(id,Date.now()+1)}
   catch(e){busyEnd();note('Non riesco a ripristinarlo: '+e.message)}
 }
-async function renderArch(){
-  $('vA').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><button class="bk" data-go="arch">Aggiorna</button></div><main><h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint">Carico l’elenco dall’archivio…</p></main>`;
+let ARCJ=null,ARCOP=null,ARCQ='';
+const normq=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+async function renderArch(keep){
+  if(!keep){ARCOP=null;ARCQ=''}
+  $('vA').innerHTML=`<div class="top"><button class="bk" id="aback">‹ Sopralluoghi</button><button class="bk" id="arcref">Aggiorna</button></div><main><h1 class="lt">Lavori degli operatori</h1><p class="hint">Carico l’elenco dall’archivio…</p></main>`;
   if(!isAdmin()){$('vA').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
-  let j;try{j=await api('list')}catch(e){$('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
+  let j;try{j=await api('list')}catch(e){$('vA').querySelector('main').innerHTML=`<h1 class="lt">Lavori degli operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vA')return;
-  const nArc=j.sops.filter(x=>x.archived).length;
-  const g={};j.sops.filter(x=>SHOWARC||!x.archived).forEach(x=>{(g[x.ownerName||'—']=g[x.ownerName||'—']||[]).push(x)});
-  const names=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it'));
-  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?`<div class="row2" style="margin-top:8px"><button class="btn pri" data-rv="${esc(x.id)}">👁 Visualizza</button><button class="btn" data-rr="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">↩ Ripristina</button></div><button class="btn dng wide" style="margin-top:8px" data-rp="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`:`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`}</div>`;
-  $('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1>
-${names.length?names.map(n=>{const a=g[n].sort((x,y)=>(x.archived?1:0)-(y.archived?1:0)||(y.recv||0)-(x.recv||0)),att=a.filter(x=>!x.archived).length;return `<section class="card"><h2>${esc(n)} <span class="cnt">${att||''}</span></h2>${a.map(card).join('')}</section>`}).join(''):'<p class="hint">Nessun sopralluogo ricevuto finora.</p>'}
-${nArc?`<button class="btn wide" data-sarc="1">${SHOWARC?'Nascondi':'Mostra'} archiviati (${nArc})</button>`:''}
+  ARCJ=j;drawArch();
+}
+function arcCard(x,who){return `<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${who?'di <b>'+esc(x.ownerName||'—')+'</b> · ':''}${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?`<div class="row2" style="margin-top:8px"><button class="btn pri" data-rv="${esc(x.id)}">👁 Visualizza</button><button class="btn" data-rr="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">↩ Ripristina</button></div><button class="btn dng wide" style="margin-top:8px" data-rp="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`:`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`}</div>`}
+function drawArch(){
+  const j=ARCJ;if(!j||view!='vA')return;
+  $('aback').textContent=ARCOP!=null?'‹ Operatori':'‹ Sopralluoghi';
+  $('vA').querySelector('main').innerHTML=`<h1 class="lt">${ARCOP!=null?esc(ARCOP):'Lavori degli operatori'}</h1>
+<label class="fl srch">Cerca sopralluogo<input id="aq" type="search" placeholder="Cantiere, luogo, operatore…" value="${esc(ARCQ)}" autocomplete="off"></label>
+<div id="ares"></div>
 <button class="btn wide" data-go="ops">👥 Gestisci operatori</button>
 ${FSOK()?`<button class="lnk2" id="zipdir" style="margin-top:6px">📁 Cartella dove salvo gli ZIP: <b id="zipdn">…</b> (cambia)</button>`:''}`;
   if($('zipdn'))dirGet().then(h=>{if($('zipdn'))$('zipdn').textContent=h?h.name:'non ancora scelta'});
+  drawArchRes();
+}
+function drawArchRes(){
+  const j=ARCJ,box=$('ares');if(!j||!box)return;
+  const ord=(x,y)=>(x.archived?1:0)-(y.archived?1:0)||(y.recv||0)-(x.recv||0);
+  const q=normq(ARCQ).trim();
+  if(q){
+    const r=j.sops.filter(x=>q.split(/\s+/).every(w=>normq([x.cantiere,x.luogo,x.ownerName,dIt(x.data)].join(' ')).includes(w))).sort(ord);
+    box.innerHTML=r.length?`<p class="hint">${r.length} ${r.length==1?'sopralluogo trovato':'sopralluoghi trovati'}</p>`+r.map(x=>arcCard(x,1)).join(''):'<p class="hint">Nessun sopralluogo con questo nome.</p>';
+    return;
+  }
+  if(ARCOP!=null){
+    const all=j.sops.filter(x=>(x.ownerName||'—')===ARCOP),nArc=all.filter(x=>x.archived).length;
+    const a=all.filter(x=>SHOWARC||!x.archived).sort(ord);
+    box.innerHTML=(a.length?a.map(x=>arcCard(x)).join(''):'<p class="hint">Nessun sopralluogo'+(nArc?' attivo':'')+'.</p>')+(nArc?`<button class="btn wide" data-sarc="1">${SHOWARC?'Nascondi':'Mostra'} archiviati (${nArc})</button>`:'');
+    return;
+  }
+  /* prima pagina: elenco operatori */
+  const g={};
+  (j.ops||[]).filter(o=>o.active).forEach(o=>{g[o.name]=g[o.name]||[]});
+  j.sops.forEach(x=>{const n=x.ownerName||'—';(g[n]=g[n]||[]).push(x)});
+  if(ONAME&&!g[ONAME])g[ONAME]=[];
+  const names=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it'));
+  box.innerHTML=names.length?names.map(n=>{const att=g[n].filter(x=>!x.archived).length,arc=g[n].length-att,last=Math.max(0,...g[n].filter(x=>!x.archived).map(x=>x.recv||0));
+    return `<div class="it sl opr" data-aop="${esc(n)}" role="button" tabindex="0"><div class="slt">${esc(n)}${n===ONAME?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${att} ${att==1?'sopralluogo attivo':'sopralluoghi attivi'}${arc?' · '+arc+' archiviati':''}${last?' · ultimo ricevuto '+dOra(last):''}</div><span class="chev">›</span></div>`}).join(''):'<p class="hint">Nessun operatore ancora.</p>';
 }
 async function renderOps(){
   $('vO').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
@@ -1377,7 +1417,10 @@ document.addEventListener('click',e=>{
   if(t.dataset.rr){ripristinaRemoto(t.dataset.rr,t.dataset.rn);return}
   if(t.dataset.rv){(async()=>{const s=await scaricaRemoto(t.dataset.rv);if(s)go('rep/'+s.id)})();return}
   if(t.dataset.rp){eliminaDefinitivo(t.dataset.rp,t.dataset.rn);return}
-  if(t.dataset.sarc){SHOWARC=!SHOWARC;renderArch();return}
+  if(t.dataset.sarc){SHOWARC=!SHOWARC;drawArchRes();return}
+  {const op=t.closest&&t.closest('[data-aop]');if(op){ARCOP=op.dataset.aop;ARCQ='';SHOWARC=false;drawArch();scrollTo(0,0);return}}
+  if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
+  if(t.id=='arcref'){renderArch(1);return}
   if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
   if(t.dataset.oad){(async()=>{const on=t.dataset.ov=='1';if(!await ask(on?'Rendere amministratore questo operatore? Vedrà i sopralluoghi di tutti e potrà gestire gli operatori.':'Togliere i diritti di amministratore? Tornerà a vedere e inviare solo i suoi sopralluoghi.',on?'Rendi amministratore':'Togli diritti',on?0:1))return;try{await api('setOp',{op:t.dataset.oad,admin:on});renderOps()}catch(err){note(err.message)}})();return}
