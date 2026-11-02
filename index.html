@@ -195,6 +195,7 @@ textarea{resize:vertical}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
 .srch input{font-size:17px}
+.okk{color:#1a7f37;font-weight:600}.wrn{color:var(--hz);font-weight:600}
 .opd{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}.opd dt{color:var(--mut)}.opd dd{margin:0;overflow-wrap:anywhere}.opd .lk{font-size:13px;color:var(--mut)}
 .it[hidden]{display:none}
 .opr{position:relative;padding-right:34px}.opr .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--mut)}
@@ -491,7 +492,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-20';
+const APPVER='2026.11.02-21';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -634,6 +635,8 @@ async function backup(){
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}return null};
 const DEFAULT_SRV='https://script.google.com/macros/s/AKfycbysQFOFahQghYSZ5-pqfMUjQWyHITzPIN5Mq66cZAlolFvMgDSSpzR8-SRUlICdYtdaPg/exec';
 let nameOk=0;
+const devName=()=>{const u=navigator.userAgent||'';return /iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Windows/.test(u)?'PC Windows':/Mac/.test(u)?'Mac':'altro dispositivo'};
+async function segnaInvio(code,via){try{await api('setOp',{op:code,sent:{via}});const o=OPS&&OPS.find(x=>x.code===code);if(o){o.sent={ts:Date.now(),via};o.nsent=(o.nsent||0)+1}if(view=='vO')drawOps()}catch(_){}}
 let SRV=LS('cer_srv')||DEFAULT_SRV,CODE=LS('cer_code')||'',ROLE=LS('cer_role')||'',ONAME=LS('cer_name')||'',syncErr='',syncing=false,syncAgain=false,syncTm;
 const isAdmin=()=>ROLE==='admin'&&!!SRV&&!!CODE;
 const linked=()=>!!SRV&&!!CODE&&!!ROLE;
@@ -648,7 +651,7 @@ async function api(action,data){
 }
 async function collega(srv,code){
   const oS=SRV,oC=CODE;SRV=srv.trim();CODE=code.trim();
-  try{const j=await api('ping');ROLE=j.role;ONAME=j.name;LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
+  try{const j=await api('ping',{dev:devName()});ROLE=j.role;ONAME=j.name;LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
   catch(e){SRV=oS;CODE=oC;throw e}
 }
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
@@ -717,7 +720,7 @@ async function syncAll(){
   if(navigator.onLine===false){syncErr='Nessuna connessione: invio appena torna il segnale';syncUI();return}
   syncing=true;syncErr='';syncUI();
   try{
-    if(!nameOk){const j=await api('ping');nameOk=1;if(j.name&&j.name!==ONAME){ONAME=j.name;ROLE=j.role;LS('cer_name',ONAME);LS('cer_role',ROLE);if(view=='vL')route()}}
+    if(!nameOk){const j=await api('ping',{dev:devName()});nameOk=1;if(j.name&&j.name!==ONAME){ONAME=j.name;ROLE=j.role;LS('cer_name',ONAME);LS('cer_role',ROLE);if(view=='vL')route()}}
     await flush();
     for(const s0 of await all('sop')){
       const fo=await fotoDi(s0.id),unsent=fo.filter(p=>!p.sent),dels=(s0.delf||[]).slice();
@@ -921,17 +924,19 @@ function drawOps(){
 <dt>Accesso</dt><dd>${o.active?'✓ Attivo':'✕ Disattivato'}</dd>
 <dt>Codice</dt><dd><b class="opc">${esc(o.code)}</b></dd>
 ${o.created?`<dt>Creato il</dt><dd>${esc(dOra(o.created))}</dd>`:''}
+<dt>Invio link</dt><dd>${o.sent?`<span class="okk">✓ Inviato</span> il ${esc(dOra(o.sent.ts))} (${esc(o.sent.via||'')})${o.nsent>1?' · '+o.nsent+' invii':''}`:'<span class="wrn">⚠ Non ancora inviato</span>'}</dd>
+<dt>Accesso</dt><dd>${o.firstSeen?`<span class="okk">✓ Ha aperto l’app</span> la prima volta il ${esc(dOra(o.firstSeen))}<br>Ultimo accesso: ${esc(dOra(o.lastSeen))}${o.dev?' da '+esc(o.dev):''}`:'<span class="wrn">⚠ Non ha ancora aperto il link</span>'}</dd>
 <dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
 <dt>Link di accesso</dt><dd class="lk">${esc(opLink(o.code))}</dd>
 </dl>
-${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
+${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" data-owa="${esc(o.code)}" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>${o.sent?'':`<button class="lnk2" data-oman="${esc(o.code)}">Gliel’ho mandato in un altro modo: segna come inviato</button>`}`:''}
 ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
 <button class="btn pri wide big" style="margin-top:12px" data-oed="${esc(o.code)}">✏️ Modifica</button>
 </section>`;return;
   }
   m.innerHTML=`<h1 class="lt">Operatori</h1>
 <button class="btn pri wide big" id="opnew">+ Nuovo operatore</button>
-${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}</div><div class="meta">${o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
+${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}</div><div class="meta">${o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.firstSeen?'✓ collegato · ':o.sent?'link inviato, non ancora aperto · ':'⚠ link non inviato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
 }
 async function modificaOp(code){
   const o=OPS.find(x=>x.code===code);if(!o)return;
@@ -1506,8 +1511,10 @@ document.addEventListener('click',e=>{
   {const op=t.closest&&t.closest('[data-aop]');if(op){ARCOP=op.dataset.aop;ARCQ='';SHOWARC=false;drawArch();scrollTo(0,0);return}}
   if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
   if(t.id=='arcref'){renderArch(1);return}
-  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
-  if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank');segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.dataset.ocp){copia(opLink(t.dataset.ocp));segnaInvio(t.dataset.ocp,'link copiato');return}
+  if(t.dataset.owa){segnaInvio(t.dataset.owa,'WhatsApp');return}
+  if(t.dataset.oman){segnaInvio(t.dataset.oman,'segnato a mano');return}
   {const os=t.closest&&t.closest('[data-osel]');if(os){OPSEL=os.dataset.osel;OPNEW=false;drawOps();scrollTo(0,0);return}}
   if(t.id=='opnew'){OPNEW=true;drawOps();return}
   if(t.id=='oback'){if(OPSEL||OPNEW){OPSEL=null;OPNEW=false;drawOps()}else go('sop');return}
