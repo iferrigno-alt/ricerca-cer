@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-34';
+const APPVER='2026.11.02-35';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -601,7 +601,7 @@ async function renderList(fromSrv){
   const cardR=e=>`<div class="it sl" data-rl="${esc(e.id)}" data-rm="${e.mod||0}" role="button" tabindex="0" data-lq="${esc(normq([e.cantiere,e.luogo,e.committente,e.ref,e.ownerName,dIt(e.data)].join(' ')))}"><div class="slt">${esc(e.cantiere||'Senza nome')}</div><div class="ds sm">${esc([e.luogo,dIt(e.data)].filter(Boolean).join(' · '))}</div><div class="meta">di <b>${esc(e.ownerName||'—')}</b> · ${e.ass&&e.ass.by?'📌 assegnato da <b>'+esc(e.ass.by)+'</b> · ':''}${e.ncer||0} ${e.ncer==1?'codice':'codici'} CER · ${e.nfoto||0} foto · ✓ in ufficio</div></div>`;
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button>${adm?`<span class="sv">${LSRV?'':'Carico i sopralluoghi di tutti…'}</span>`:''}</div><main><h1 class="lt">Sopralluoghi</h1>
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${items.length>1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente, referente, operatore…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
+${1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente, referente, operatore…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
 ${items.length?items.map(x=>x.s?cardL(x.s):cardR(x.e)).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
 <section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
 <section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
