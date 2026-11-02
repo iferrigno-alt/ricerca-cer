@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-27';
+const APPVER='2026.11.02-28';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -979,7 +979,7 @@ async function modificaOp(code){
 <label class="fl">Nome e cognome<input id="edn" value="${esc(o.name)}" autocomplete="off"></label>
 <label class="ck"><input type="checkbox" id="eda"${o.admin?' checked':''}> Amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label>
 <label class="ck"><input type="checkbox" id="edo"${o.active?' checked':''}> Accesso attivo (se lo togli non può più usare l’app né inviare sopralluoghi)</label>
-<p class="hint">Il link e il codice restano gli stessi. Nei sopralluoghi già fatti il campo “Tecnico” resta com’era.</p>
+<p class="hint">Il link e il codice restano gli stessi. Se cambi il nome, diventa il nuovo “Tecnico” in tutti i suoi sopralluoghi, anche in quelli già fatti e archiviati.</p>
 <button class="btn dng wide" data-dr="del" style="margin-top:6px">🗑 Elimina operatore</button>`,[['Annulla','',''],['Salva','pri','1']]);
   if(v==='del'){eliminaOp(o);return}
   if(v!=='1')return;
