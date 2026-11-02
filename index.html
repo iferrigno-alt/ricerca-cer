@@ -410,6 +410,33 @@ function entTot(x,f){const pq=photoQ(f,x),m={};if(pq.n)pq.list.forEach(o=>{m[o.u
 function totali(s,f){const m={};s.cer.forEach(x=>{const t=entTot(x,f).m;for(const u in t)m[u]=(m[u]||0)+t[u]});return m}
 const totTxt=m=>Object.keys(m).map(u=>fn(m[u])+' '+u).join(' + ');
 function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
+/* ---- PC: gli ZIP vanno direttamente nella cartella scelta (es. Desktop\SOPRALLUOGHI ZIPPATI) ---- */
+const FSOK=()=>!inClaude&&'showDirectoryPicker' in window&&!matchMedia('(pointer:coarse)').matches;
+function dirDB(){return new Promise((ok,ko)=>{const r=indexedDB.open('cer-dir',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)})}
+async function dirGet(){try{const d=await dirDB();return await new Promise(ok=>{const q=d.transaction('h').objectStore('h').get('zip');q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)})}catch(_){return null}}
+async function dirSet(h){try{const d=await dirDB();await new Promise(ok=>{const tx=d.transaction('h','readwrite');h?tx.objectStore('h').put(h,'zip'):tx.objectStore('h').delete('zip');tx.oncomplete=ok;tx.onerror=ok})}catch(_){}}
+async function scegliDirZip(){
+  if(!FSOK())return null;
+  if(await dlgOpen('<h3>Cartella per gli ZIP</h3><p>Nella finestra che si apre scegli la cartella <b>SOPRALLUOGHI ZIPPATI</b> sul Desktop e premi “Seleziona cartella”, poi “Modifica file” / “Consenti”. Da quel momento gli ZIP finiscono lì da soli.</p>',[['Annulla','',''],['Scegli cartella','pri','1']])!=='1')return null;
+  try{const h=await showDirectoryPicker({id:'zipcer',mode:'readwrite',startIn:'desktop'});await dirSet(h);return h}catch(_){return null}
+}
+/* da chiamare SUBITO al clic (il browser chiede il permesso solo durante un clic) */
+async function dirZipPronta(){
+  if(!FSOK())return null;
+  let h=await dirGet();
+  if(!h)return await scegliDirZip();
+  try{
+    if(await h.queryPermission({mode:'readwrite'})==='granted')return h;
+    if(await h.requestPermission({mode:'readwrite'})==='granted')return h;
+  }catch(_){}
+  if(await dlgOpen('<p>Per salvare gli ZIP nella cartella <b>'+esc(h.name)+'</b> serve il tuo permesso.</p>',[['Annulla','',''],['Consenti','pri','1']])!=='1')return null;
+  try{if(await h.requestPermission({mode:'readwrite'})==='granted')return h}catch(_){}
+  return null;
+}
+async function salvaZip(dir,name,blob){
+  if(dir){try{const fh=await dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();return 'dir'}catch(e){note('Non riesco a scrivere nella cartella '+dir.name+': '+e.message+'. Lo scarico normalmente.')}}
+  await esporta(name,blob);return 'dl';
+}
 async function esporta(name,blob){
   const dc=await dlCap();
   if(dc){try{await dc.save({filename:name,data:blob})}catch(e){if(!e||e.code!='declined')note('Non riesco a salvare il file qui. Riprova tra poco.')}return}
@@ -444,7 +471,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-9';
+const APPVER='2026.11.02-12';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -635,7 +662,7 @@ async function pulisciChiusi(){
     if(!s.sentMod||(s.mod||0)>s.sentMod||(s.delf||[]).length||(cur&&cur.id===s.id))continue;
     if((await fotoDi(s.id)).some(p=>!p.sent))continue;
     if(++n>25)break;
-    try{await api('getSop',{id:s.id})}catch(e){if(e.code==='non trovato'||e.code==='non autorizzato')await togliLocale(s.id);else if(!e.code)break}
+    try{const j=await api('getSop',{id:s.id});if(j.archived)await togliLocale(s.id)}catch(e){if(e.code==='non trovato'||e.code==='non autorizzato')await togliLocale(s.id);else if(!e.code)break}
   }
 }
 async function syncAll(){
@@ -736,6 +763,7 @@ async function apriRemoto(id,mod){
   go('sop/'+id);
 }
 async function archiviaRemoto(id,mod){
+  const dir=await dirZipPronta();
   let s=await get('sop',id);
   if(!(s&&(s.mod||0)>=(mod||0)))s=await scaricaRemoto(id);
   if(!s)return;
@@ -745,20 +773,32 @@ async function archiviaRemoto(id,mod){
     files.push({name:'tabella.csv',blob:csvBlob(await csvRowsFor(s))});
     await renderRep(s);const h=await reportHtml();if(h)files.push({name:'verbale.html',blob:new Blob([h],{type:'text/html'})});
     const z=await makeZip(files);busyEnd();
-    await esporta(fname(s)+'_completo.zip',z);
+    var dove=await salvaZip(dir,fname(s)+'_completo.zip',z);
   }catch(e){busyEnd();note('Non riesco a preparare lo ZIP: '+e.message);return}
-  if(!await ask('Hai salvato lo ZIP sul PC? Ora tolgo il sopralluogo “'+(s.cantiere||'Senza nome')+'” da Google Drive e da questo PC per liberare spazio.','Togli da Drive',1))return;
-  busy('Tolgo da Drive…');
+  if(!await ask((dove==='dir'?'ZIP salvato nella cartella '+dir.name+'. ':'Hai salvato lo ZIP sul PC? ')+'Ora sposto “'+(s.cantiere||'Senza nome')+'” negli archiviati: sparisce dagli elenchi e dai telefoni, ma potrai sempre rivederlo, ripristinarlo o eliminarlo definitivamente.','Archivia'))return;
+  busy('Archivio…');
   try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
   catch(e){busyEnd();note('Non riesco a togliere da Drive: '+e.message)}
 }
 const dOra=t=>t?new Date(t).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
 let SHOWARC=false;
 async function eliminaRemoto(id,nome){
-  if(!await ask('Eliminare definitivamente “'+nome+'” dall’archivio? Dati e foto vengono tolti da Google Drive (finiscono nel cestino di Drive) e da questo PC. Non viene salvato nessuno ZIP.','Elimina',1))return;
+  if(!await ask('Eliminare definitivamente “'+nome+'” dall’archivio? Dati e foto vengono tolti da Google Drive (finiscono nel cestino di Drive) e da questo PC, e non si potrà più rivedere dall’app. Se vuoi solo toglierlo dall’elenco usa “Archivia”.','Elimina definitivamente',1))return;
   busy('Elimino dall’archivio…');
-  try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
   catch(e){busyEnd();note('Non riesco a eliminare: '+e.message)}
+}
+async function eliminaDefinitivo(id,nome){
+  if(!await ask('Eliminare definitivamente “'+nome+'”? Sparisce dall’elenco degli archiviati e non si potrà più vedere né ripristinare dall’app.','Elimina definitivamente',1))return;
+  busy('Elimino…');
+  try{await api('purge',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  catch(e){busyEnd();note('Non riesco a eliminare: '+e.message)}
+}
+async function ripristinaRemoto(id,nome){
+  if(!await ask('Ripristinare “'+nome+'”? Torna nell’elenco come prima, con dati e foto, e lo apro.','Ripristina'))return;
+  busy('Ripristino da Google Drive…');
+  try{await api('restore',{id});busyEnd();SHOWARC=false;await apriRemoto(id,Date.now()+1)}
+  catch(e){busyEnd();note('Non riesco a ripristinarlo: '+e.message)}
 }
 async function renderArch(){
   $('vA').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><button class="bk" data-go="arch">Aggiorna</button></div><main><h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint">Carico l’elenco dall’archivio…</p></main>`;
@@ -768,11 +808,13 @@ async function renderArch(){
   const nArc=j.sops.filter(x=>x.archived).length;
   const g={};j.sops.filter(x=>SHOWARC||!x.archived).forEach(x=>{(g[x.ownerName||'—']=g[x.ownerName||'—']||[]).push(x)});
   const names=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it'));
-  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?'':`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina dall’archivio</button>`}</div>`;
+  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?`<div class="row2" style="margin-top:8px"><button class="btn pri" data-rv="${esc(x.id)}">👁 Visualizza</button><button class="btn" data-rr="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">↩ Ripristina</button></div><button class="btn dng wide" style="margin-top:8px" data-rp="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`:`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`}</div>`;
   $('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1>
 ${names.length?names.map(n=>{const a=g[n].sort((x,y)=>(x.archived?1:0)-(y.archived?1:0)||(y.recv||0)-(x.recv||0)),att=a.filter(x=>!x.archived).length;return `<section class="card"><h2>${esc(n)} <span class="cnt">${att||''}</span></h2>${a.map(card).join('')}</section>`}).join(''):'<p class="hint">Nessun sopralluogo ricevuto finora.</p>'}
 ${nArc?`<button class="btn wide" data-sarc="1">${SHOWARC?'Nascondi':'Mostra'} archiviati (${nArc})</button>`:''}
-<button class="btn wide" data-go="ops">👥 Gestisci operatori</button>`;
+<button class="btn wide" data-go="ops">👥 Gestisci operatori</button>
+${FSOK()?`<button class="lnk2" id="zipdir" style="margin-top:6px">📁 Cartella dove salvo gli ZIP: <b id="zipdn">…</b> (cambia)</button>`:''}`;
+  if($('zipdn'))dirGet().then(h=>{if($('zipdn'))$('zipdn').textContent=h?h.name:'non ancora scelta'});
 }
 async function renderOps(){
   $('vO').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
@@ -1136,9 +1178,10 @@ async function makeZip(files){
 }
 async function zipFoto(s){
   if(!(await fotoDi(s.id)).length){note('Questo sopralluogo non ha foto.');return}
+  const dir=await dirZipPronta();
   setStatus('Preparo lo ZIP…');
   const z=await makeZip(await zipFilesFor(s));setStatus('Salvato ✓');
-  esporta(fname(s)+'_foto.zip',z);
+  if(await salvaZip(dir,fname(s)+'_foto.zip',z)==='dir')note('ZIP salvato nella cartella '+dir.name+'.');
 }
 async function zipFilesFor(s){
   const all_=await fotoDi(s.id);
@@ -1329,6 +1372,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.ra){apriRemoto(t.dataset.ra,+t.dataset.rm);return}
   if(t.dataset.rz){archiviaRemoto(t.dataset.rz,+t.dataset.rm);return}
   if(t.dataset.rx){eliminaRemoto(t.dataset.rx,t.dataset.rn);return}
+  if(t.dataset.rr){ripristinaRemoto(t.dataset.rr,t.dataset.rn);return}
+  if(t.dataset.rv){(async()=>{const s=await scaricaRemoto(t.dataset.rv);if(s)go('rep/'+s.id)})();return}
+  if(t.dataset.rp){eliminaDefinitivo(t.dataset.rp,t.dataset.rn);return}
   if(t.dataset.sarc){SHOWARC=!SHOWARC;renderArch();return}
   if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
@@ -1358,6 +1404,7 @@ document.addEventListener('click',e=>{
   if(ok&&ovF){const k=ok.dataset.ok;ovF.cer=ovF.cer||[];ovF.cer=ovF.cer.includes(k)?ovF.cer.filter(x=>x!=k):ovF.cer.concat(k);ovDirty=true;paintOvk();return}
   if(t.id=='dels'){elimina();return}
   if(t.id=='assb'){assegna();return}
+  if(t.id=='zipdir'||(t.closest&&t.closest('#zipdir'))){(async()=>{const h=await scegliDirZip();if(h&&$('zipdn'))$('zipdn').textContent=h.name})();return}
   if(t.id=='prt'){print();return}
   if(t.id=='rdl'){scaricaReport();return}
   if(t.dataset.dc!=null){const i=+t.dataset.dc,x=cur.cer[i];(async()=>{if(!await ask('Togliere la voce '+lbl(cur,x)+' da questo sopralluogo? Le sue foto restano tra quelle da classificare.','Togli',1))return;const k=cur.cer.indexOf(x);if(k<0)return;cur.cer.splice(k,1);renderCer();save();for(const p of fotos){if((p.cer||[]).includes(x.id)){p.cer=p.cer.filter(y=>y!=x.id);await put('foto',p)}}renderPh()})();return}
