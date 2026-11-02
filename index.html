@@ -444,7 +444,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-5';
+const APPVER='2026.11.02-6';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -644,6 +644,8 @@ async function syncAll(){
     await flush();
     for(const s0 of await all('sop')){
       const fo=await fotoDi(s0.id),unsent=fo.filter(p=>!p.sent),dels=(s0.delf||[]).slice();
+      /* una scheda appena aperta e ancora vuota non va in ufficio */
+      if(!s0.sentMod&&!fo.length&&!(s0.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s0[k]||'').trim()))continue;
       if((s0.sentMod||0)>=(s0.mod||0)&&!unsent.length&&!dels.length)continue;
       const snap=s0.mod||0;
       const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0}))});
