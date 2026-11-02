@@ -117,6 +117,9 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .arc.done{opacity:.6}
 a.btn{text-decoration:none}
 .op.off{opacity:.7}
+.ck{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--mut);margin:0 0 10px}
+.ck input{margin-top:3px;width:18px;height:18px;flex:none}
+.cnt.adm{background:var(--ac);color:var(--acf)}
 .opc{font-variant-numeric:tabular-nums;letter-spacing:.04em}
 #vA .card,#vO .card{margin-bottom:12px}
 #vA .it{cursor:default}
@@ -601,7 +604,7 @@ async function leggiLink(){
   let sp;try{sp=new URLSearchParams(location.search)}catch(_){return}
   const op=sp.get('op'),srv=sp.get('srv');
   if(!op)return;
-  try{history.replaceState(null,'',location.pathname+location.hash)}catch(_){}
+  /* il link resta nella barra: se l'operatore aggiunge l'app alla schermata Home (iPhone), l'icona si ricollega da sola */
   const gia=linked()&&CODE===op;
   try{const j=await collega(srv||SRV,op);if(!gia)note('Benvenuto '+j.name+'! Da ora i sopralluoghi che fai vengono inviati automaticamente all’ufficio.');syncSoon(500);if(view=='vL'||view=='vS')route()}
   catch(e){note('Non riesco a collegarmi all’archivio: '+e.message+'. Controlla di avere campo e riapri il link.')}
@@ -676,10 +679,11 @@ async function renderOps(){
   if(view!='vO')return;
   const ops=j.ops.sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
   $('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1>
-<section class="card"><h2>Nuovo operatore</h2><label class="fl">Nome e cognome<input id="opn" placeholder="es. Mario Rossi" autocomplete="off"></label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>
-${ops.length?ops.map(o=>{const l=opLink(o.code);return `<section class="card op${o.active?'':' off'}"><h2>${esc(o.name)} ${o.active?'':'<span class="cnt">disattivato</span>'}</h2>
+<section class="card"><h2>Nuovo operatore</h2><label class="fl">Nome e cognome<input id="opn" placeholder="es. Mario Rossi" autocomplete="off"></label><label class="ck"><input type="checkbox" id="opadm"> È un amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>
+${ops.length?ops.map(o=>{const l=opLink(o.code);return `<section class="card op${o.active?'':' off'}"><h2>${esc(o.name)} ${o.admin?'<span class="cnt adm">amministratore</span>':''} ${o.active?'':'<span class="cnt">disattivato</span>'}</h2>
 <p class="meta" style="margin:0 0 8px">Codice: <b class="opc">${esc(o.code)}</b></p>
 ${o.active?`<div class="row2"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
+${o.active?`<button class="btn wide" data-oad="${esc(o.code)}" data-ov="${o.admin?0:1}" style="margin-top:8px">${o.admin?'Togli i diritti di amministratore':'Rendi amministratore'}</button>`:''}
 <button class="btn wide ${o.active?'dng':''}" data-otg="${esc(o.code)}" data-oa="${o.active?0:1}" style="margin-top:8px">${o.active?'Disattiva accesso':'Riattiva accesso'}</button></section>`}).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo qui sopra.</p>'}`;
 }
 const opLink=code=>location.origin+location.pathname+'?op='+encodeURIComponent(code)+'&srv='+encodeURIComponent(SRV);
@@ -1193,8 +1197,9 @@ document.addEventListener('click',e=>{
   if(t.id=='conn'){(async()=>{t.disabled=true;t.textContent='Collego…';try{const j=await collega($('csrv').value,$('ccode').value);note('Collegato come '+j.name+(j.role=='admin'?' (amministratore)':'')+'.');syncSoon(300);renderList()}catch(err){note(err.message);t.disabled=false;t.textContent='Collega'}})();return}
   if(t.dataset.ra){apriRemoto(t.dataset.ra,+t.dataset.rm);return}
   if(t.dataset.rz){archiviaRemoto(t.dataset.rz,+t.dataset.rm);return}
-  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const j=await api('addOp',{name:n});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b> · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
+  if(t.dataset.oad){(async()=>{const on=t.dataset.ov=='1';if(!await ask(on?'Rendere amministratore questo operatore? Vedrà i sopralluoghi di tutti e potrà gestire gli operatori.':'Togliere i diritti di amministratore? Tornerà a vedere e inviare solo i suoi sopralluoghi.',on?'Rendi amministratore':'Togli diritti',on?0:1))return;try{await api('setOp',{op:t.dataset.oad,admin:on});renderOps()}catch(err){note(err.message)}})();return}
   if(t.dataset.otg){(async()=>{const on=t.dataset.oa=='1';if(!on&&!await ask('Disattivare questo operatore? Non potrà più inviare sopralluoghi. Quelli già inviati restano.','Disattiva',1))return;try{await api('setOp',{op:t.dataset.otg,active:on});renderOps()}catch(err){note(err.message)}})();return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
