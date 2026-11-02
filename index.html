@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-31';
+const APPVER='2026.11.02-32';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -619,8 +619,11 @@ async function nuovo(){
   const prev=loc.map(x=>({id:x.id,cantiere:x.cantiere,luogo:x.luogo,data:x.data,mod:x.mod,chi:x.remote?x.remote.owner:''}))
     .concat(isAdmin()&&LSRV?LSRV.filter(e=>!e.archived&&!ids.has(e.id)&&(e.cantiere||e.luogo)).map(e=>({id:e.id,cantiere:e.cantiere,luogo:e.luogo,data:e.data,mod:e.mod,chi:e.ownerName,r:1})):[])
     .sort((x,y)=>(y.mod||0)-(x.mod||0));
-  if(prev.length){
-    const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3><p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
+  let AO=null;if(isAdmin()&&!inClaude){try{AO=assOpts(await api('ops'))}catch(_){}}
+  const assSel=AO?`<label class="fl">Assegna a<select id="cpa">${AO.map(o=>`<option value="${esc(o.code)}"${o.self?' selected':''}>${assLbl(o)}</option>`).join('')}</select></label>`:'';
+  let opA=null;
+  if(prev.length||AO){
+    const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3>${assSel}${prev.length?`<p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
 <label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}">${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data),x.chi&&'di '+x.chi].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
 <div id="cpo" class="cpo" hidden>
 <label class="chk"><input type="checkbox" id="cp1" checked> Cantiere, luogo e committente con contatti</label>
@@ -632,9 +635,10 @@ async function nuovo(){
 <label class="chk"><input type="radio" name="cpc" value="f"> Codici CER con foto e quantità</label>
 <label class="chk" style="margin-top:6px"><input type="checkbox" id="cp7"> Foto dello stato di fatto e accessibilità</label>
 <label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label>
-<p class="hint">Il tecnico è chi crea il sopralluogo. La data diventa quella di oggi.</p></div>`,[['Annulla','',''],['Crea','pri','1']]);
+<p class="hint">Il tecnico è chi riceve il sopralluogo. La data diventa quella di oggi.</p></div>`:''}`,[['Annulla','',''],['Crea','pri','1']]);
     if(v!=='1')return;
-    const pid=$('cpf').value,on=k=>$(k).checked,cpc=(document.querySelector('input[name=cpc]:checked')||{}).value||'',
+    if(AO&&$('cpa')){opA=AO.find(o=>o.code===$('cpa').value)||null;if(opA&&opA.self)opA=null}
+    const pid=$('cpf')?$('cpf').value:'',on=k=>!!($(k)&&$(k).checked),cpc=(document.querySelector('input[name=cpc]:checked')||{}).value||'',
       o={c1:on('cp1'),c2:on('cp2'),c3:on('cp3'),c5:on('cp5'),c7:on('cp7')};
     let src=null;
     if(pid){src=await get('sop',pid);if(!src){src=await scaricaRemoto(pid);if(!src)return}}
@@ -657,7 +661,20 @@ async function nuovo(){
       }
     }
   }
+  if(opA){s.ass={code:opA.code,name:opA.name,ts:Date.now(),by:ONAME||'Amministratore'};s.tecnico=opA.name;s.ttel=opA.tel||''}
   await put('sop',s);go('sop/'+s.id);
+  if(opA)assegnaNuovo(s.id,opA);
+}
+/* assegna subito il nuovo sopralluogo: la copia resta qui per completarlo, l'operatore lo riceve sul telefono */
+async function assegnaNuovo(id,o){
+  try{
+    while(syncing)await new Promise(r=>setTimeout(r,300));
+    await syncAll();if(syncErr)throw new Error(syncErr);
+    await api('assign',{id,op:o.code});
+    const x=await get('sop',id);if(x){x.remote={owner:o.name};await put('sop',x)}
+    if(cur&&cur.id===id){cur.remote={owner:o.name};if($('asss'))caricaAss()}
+    note('Assegnato a '+o.name+': lo troverà sul telefono. Puoi continuare a compilarlo qui, le modifiche gli arrivano.');
+  }catch(e){note('Il sopralluogo è creato ma non riesco ad assegnarlo ora: '+e.message+'. Riprova dal riquadro “Assegna a un operatore”.')}
 }
 const b2d=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)});
 async function backup(){
@@ -696,7 +713,7 @@ async function collega(srv,code){
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
 const b2b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=ko;r.readAsDataURL(b)});
 const b64b=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||'image/jpeg'})};
-const vuoto=(s,fo)=>!s.sentMod&&!fo.length&&!(s.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s[k]||'').trim());
+const vuoto=(s,fo)=>!s.ass&&!s.sentMod&&!fo.length&&!(s.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s[k]||'').trim());
 async function syncState(s){const fo=await fotoDi(s.id);if(vuoto(s,fo))return{todo:0,unsent:0,done:false,empty:true};if(s.revoked)return{todo:0,unsent:0,done:false,revoked:true};const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
 function syncSoon(ms){if(!linked()||inClaude)return;clearTimeout(syncTm);syncTm=setTimeout(syncAll,ms==null?2500:ms)}
 /* toglie dal telefono i sopralluoghi che l'ufficio ha già archiviato o eliminato */
@@ -1102,14 +1119,18 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
   updGps();renderCer();renderPh();if(inClaude)$("mpo").hidden=true;
   if($('asss'))caricaAss();
 }
+/* elenco completo per assegnare: operatori, amministratori e amministratore principale */
+function assOpts(j){
+  const ops=(j.ops||[]).filter(o=>o.active).map(o=>Object.assign({},o,{self:o.code===CODE}));
+  if(j.main)ops.push({code:'__main',name:j.main.name,tel:j.main.tel||'',main:true,self:!!j.main.me});
+  return ops.sort((a,b)=>a.name.localeCompare(b.name,'it'));
+}
+const assLbl=o=>esc(o.name)+(o.main?' (amministratore principale)':o.admin?' (amministratore)':'')+(o.self?' — tu':'');
 async function caricaAss(){
   const s=cur,sel=$('asss'),inf=$('assi');if(!sel)return;
   inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':'')+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
   try{const j=await api('ops');if(cur!==s||!$('asss'))return;
-    /* tutti: operatori, amministratori e l'amministratore principale */
-    const ops=(j.ops||[]).filter(o=>o.active).map(o=>Object.assign({},o,{self:o.code===CODE}));
-    if(j.main)ops.push({code:'__main',name:j.main.name,tel:j.main.tel||'',main:true,self:!!j.main.me});
-    ops.sort((a,b)=>a.name.localeCompare(b.name,'it'));
+    const ops=assOpts(j);
     const isSel=o=>s.ass&&(s.ass.code===o.code||(o.self&&s.ass.code===CODE));
     sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}" data-tel="${esc(o.tel||'')}" data-self="${o.self?1:0}" data-nm="${esc(o.name)}"${isSel(o)?' selected':''}>${esc(o.name)}${o.main?' (amministratore principale)':o.admin?' (amministratore)':''}${o.self?' — tu':''}</option>`).join('');
   }catch(e){sel.innerHTML='<option value="">Elenco non disponibile</option>';inf.textContent=e.message}
