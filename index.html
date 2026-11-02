@@ -441,7 +441,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-2';
+const APPVER='2026.11.02-3';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -560,7 +560,7 @@ async function api(action,data){
   try{r=await fetch(SRV,{method:'POST',body:JSON.stringify(Object.assign({action,code:CODE},data||{}))})}
   catch(_){throw new Error('Nessuna connessione con l’archivio')}
   let j;try{j=await r.json()}catch(_){throw new Error('Risposta non valida dall’archivio: controlla l’indirizzo')}
-  if(!j.ok){const m={codice:'Codice non valido o operatore disattivato',archiviato:'Sopralluogo già archiviato in ufficio','non autorizzato':'Questo sopralluogo appartiene a un altro operatore'};throw new Error(m[j.err]||j.err||'Errore dell’archivio')}
+  if(!j.ok){const m={codice:'Codice non valido o operatore disattivato',archiviato:'Sopralluogo già archiviato in ufficio','non autorizzato':'Questo sopralluogo appartiene a un altro operatore'};const er=new Error(m[j.err]||j.err||'Errore dell’archivio');er.code=j.err;throw er}
   return j;
 }
 async function collega(srv,code){
@@ -573,6 +573,24 @@ const b2b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(St
 const b64b=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||'image/jpeg'})};
 async function syncState(s){const fo=await fotoDi(s.id);const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
 function syncSoon(ms){if(!linked()||inClaude)return;clearTimeout(syncTm);syncTm=setTimeout(syncAll,ms==null?2500:ms)}
+/* toglie dal telefono i sopralluoghi che l'ufficio ha già archiviato o eliminato */
+async function togliLocale(id){
+  if(cur&&cur.id===id)return;
+  for(const p of await fotoDi(id))await del('foto',p.id);
+  await del('sop',id);
+  if(view=='vL'||view=='vS')route();
+}
+async function pulisciChiusi(){
+  const last=+(LS('cer_chk')||0);if(Date.now()-last<15*60000)return;
+  LS('cer_chk',String(Date.now()));
+  let n=0;
+  for(const s of await all('sop')){
+    if(!s.sentMod||(s.mod||0)>s.sentMod||(s.delf||[]).length||(cur&&cur.id===s.id))continue;
+    if((await fotoDi(s.id)).some(p=>!p.sent))continue;
+    if(++n>25)break;
+    try{await api('getSop',{id:s.id})}catch(e){if(e.code==='non trovato')await togliLocale(s.id);else if(!e.code)break}
+  }
+}
 async function syncAll(){
   if(!linked()||inClaude)return;
   if(syncing){syncAgain=true;return}
@@ -586,7 +604,8 @@ async function syncAll(){
       const snap=s0.mod||0;
       const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0}))});
       delete sop.sentMod;delete sop.delf;delete sop.remote;
-      await api('putSop',{sop});
+      try{await api('putSop',{sop})}
+      catch(e){if(e.code==='archiviato'){await togliLocale(s0.id);continue}throw e}
       for(const p of unsent){
         await api('putFoto',{sop:s0.id,id:p.id,type:(p.blob&&p.blob.type)||'image/jpeg',b64:await b2b64(p.blob)});
         const fr=await get('foto',p.id);if(fr){fr.sent=1;await put('foto',fr)}
@@ -598,6 +617,7 @@ async function syncAll(){
       if(cur&&cur.id===s0.id){cur.sentMod=snap;cur.delf=(cur.delf||[]).filter(x=>!dels.includes(x))}
     }
     LS('cer_last',String(Date.now()));
+    await pulisciChiusi();
   }catch(e){syncErr=e.message||String(e)}
   syncing=false;syncUI();
   if(syncAgain){syncAgain=false;syncSoon(800)}
