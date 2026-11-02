@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-25';
+const APPVER='2026.11.02-26';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -915,6 +915,7 @@ async function renderOps(keep){
   let j,l=null;try{[j,l]=await Promise.all([api('ops'),api('list').catch(()=>null)])}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vO')return;
   /* anche l'amministratore principale compare tra gli operatori */
+  if(j.main)j.ops.push({code:'__main',name:j.main.name,admin:true,active:true,main:true,me:j.main.me});
   const codes=new Set(j.ops.map(o=>o.code));
   OPS=j.ops.map(o=>{const s=l?l.sops.filter(x=>o.main?(x.ownerName===o.name&&!codes.has(x.owner)):x.owner===o.code):[];return Object.assign(o,{natt:s.filter(x=>!x.archived).length,narc:s.filter(x=>x.archived).length,last:Math.max(0,...s.map(x=>x.recv||0))})})
     .sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
