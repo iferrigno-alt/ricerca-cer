@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-26';
+const APPVER='2026.11.02-27';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -647,6 +647,10 @@ async function backup(){
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}return null};
 const DEFAULT_SRV='https://script.google.com/macros/s/AKfycbysQFOFahQghYSZ5-pqfMUjQWyHITzPIN5Mq66cZAlolFvMgDSSpzR8-SRUlICdYtdaPg/exec';
 let nameOk=0;
+/* WhatsApp: sul PC apre l'app installata (anche WhatsApp Business), sul telefono wa.me */
+const isPC=()=>!matchMedia('(pointer:coarse)').matches;
+const waUrl=txt=>(isPC()?'whatsapp://send?text=':'https://wa.me/?text=')+encodeURIComponent(txt);
+function apriWA(txt){const u=waUrl(txt);if(isPC())location.href=u;else window.open(u,'_blank')}
 const devName=()=>{const u=navigator.userAgent||'';return /iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Windows/.test(u)?'PC Windows':/Mac/.test(u)?'Mac':'altro dispositivo'};
 async function segnaInvio(code,via){try{await api('setOp',{op:code,sent:{via}});const o=OPS&&OPS.find(x=>x.code===code);if(o){o.sent={ts:Date.now(),via};o.nsent=(o.nsent||0)+1}if(view=='vO')drawOps()}catch(_){}}
 let SRV=LS('cer_srv')||DEFAULT_SRV,CODE=LS('cer_code')||'',ROLE=LS('cer_role')||'',ONAME=LS('cer_name')||'',syncErr='',syncing=false,syncAgain=false,syncTm;
@@ -941,7 +945,7 @@ function drawOps(){
 <dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
 ${o.me?`<dt>Il tuo link</dt><dd class="lk">${esc(opLink(CODE))}</dd>`:''}
 </dl>
-${o.me?`<p class="hint" style="margin-top:10px">Apri questo link anche sul tuo cellulare: vedrai l’app esattamente come sul PC, con gli stessi sopralluoghi.</p><div class="row2"><button class="btn" data-ocp2="1">Copia il mio link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent('Accesso amministratore app sopralluoghi:\n'+opLink(CODE))}" target="_blank" rel="noopener">Mandalo su WhatsApp</a></div>`:''}
+${o.me?`<p class="hint" style="margin-top:10px">Apri questo link anche sul tuo cellulare: vedrai l’app esattamente come sul PC, con gli stessi sopralluoghi.</p><div class="row2"><button class="btn" data-ocp2="1">Copia il mio link</button><a class="btn" href="${waUrl('Accesso amministratore app sopralluoghi:\n'+opLink(CODE))}"${isPC()?'':' target="_blank" rel="noopener"'}>Mandalo su WhatsApp</a></div>`:''}
 ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
 <p class="hint" style="margin-top:10px">Il nome e il codice dell’amministratore principale non si modificano da qui.</p>
 </section>`;return;
@@ -960,7 +964,7 @@ ${o.created?`<dt>Creato il</dt><dd>${esc(dOra(o.created))}</dd>`:''}
 <dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
 <dt>Link di accesso</dt><dd class="lk">${esc(opLink(o.code))}</dd>
 </dl>
-${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" data-owa="${esc(o.code)}" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>${o.sent?'':`<button class="lnk2" data-oman="${esc(o.code)}">Gliel’ho mandato in un altro modo: segna come inviato</button>`}`:''}
+${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" data-owa="${esc(o.code)}" href="${waUrl(opMsg(o.name,o.code))}"${isPC()?'':' target="_blank" rel="noopener"'}>Invia su WhatsApp</a></div>${o.sent?'':`<button class="lnk2" data-oman="${esc(o.code)}">Gliel’ho mandato in un altro modo: segna come inviato</button>`}`:''}
 ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
 <button class="btn pri wide big" style="margin-top:12px" data-oed="${esc(o.code)}">✏️ Modifica</button>
 </section>`;return;
@@ -1544,7 +1548,7 @@ document.addEventListener('click',e=>{
   {const op=t.closest&&t.closest('[data-aop]');if(op){ARCOP=op.dataset.aop;ARCQ='';SHOWARC=false;drawArch();scrollTo(0,0);return}}
   if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
   if(t.id=='arcref'){renderArch(1);return}
-  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank');segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){apriWA(opMsg(n,j.code));segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp2){copia(opLink(CODE));return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));segnaInvio(t.dataset.ocp,'link copiato');return}
   if(t.dataset.owa){segnaInvio(t.dataset.owa,'WhatsApp');return}
