@@ -188,6 +188,7 @@ textarea{resize:vertical}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
 .srch input{font-size:17px}
+.opd{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}.opd dt{color:var(--mut)}.opd dd{margin:0;overflow-wrap:anywhere}.opd .lk{font-size:13px;color:var(--mut)}
 .it[hidden]{display:none}
 .opr{position:relative;padding-right:34px}.opr .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--mut)}
 .slt{font-size:19px;font-weight:700;overflow-wrap:anywhere}
@@ -482,7 +483,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-16';
+const APPVER='2026.11.02-17';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -858,28 +859,69 @@ function drawArchRes(){
   box.innerHTML=names.length?names.map(n=>{const att=g[n].filter(x=>!x.archived).length,arc=g[n].length-att,last=Math.max(0,...g[n].filter(x=>!x.archived).map(x=>x.recv||0));
     return `<div class="it sl opr" data-aop="${esc(n)}" role="button" tabindex="0"><div class="slt">${esc(n)}${n===ONAME?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${att} ${att==1?'sopralluogo attivo':'sopralluoghi attivi'}${arc?' · '+arc+' archiviati':''}${last?' · ultimo ricevuto '+dOra(last):''}</div><span class="chev">›</span></div>`}).join(''):'<p class="hint">Nessun operatore ancora.</p>';
 }
-async function rinominaOp(code,old){
-  const v=await dlgOpen(`<h3>Cambia nome</h3><label class="fl">Nome e cognome<input id="rnn" value="${esc(old)}" autocomplete="off"></label><p class="hint">Il nuovo nome compare subito nell’elenco, nella sua cartella su Drive e sul suo telefono. Il link e il codice restano gli stessi. Nei sopralluoghi già fatti il campo “Tecnico” resta com’era.</p>`,[['Annulla','',''],['Salva','pri','1']]);
-  const n=($('rnn')&&$('rnn').value||'').trim();
-  if(v!=='1'||!n||n===old)return;
-  busy('Cambio il nome…');
-  try{await api('setOp',{op:code,name:n});busyEnd();renderOps()}
-  catch(e){busyEnd();note('Non riesco a cambiare il nome: '+e.message)}
-}
-async function renderOps(){
-  $('vO').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
+let OPS=null,OPSEL=null,OPNEW=false;
+async function renderOps(keep){
+  if(!keep){OPSEL=null;OPNEW=false}
+  $('vO').innerHTML=`<div class="top"><button class="bk" id="oback">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
   if(!isAdmin()){$('vO').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
-  let j;try{j=await api('ops')}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
+  let j,l=null;try{[j,l]=await Promise.all([api('ops'),api('list').catch(()=>null)])}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vO')return;
-  const ops=j.ops.sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
-  $('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1>
-<section class="card"><h2>Nuovo operatore</h2><label class="fl">Nome e cognome<input id="opn" placeholder="es. Mario Rossi" autocomplete="off"></label><label class="ck"><input type="checkbox" id="opadm"> È un amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>
-${ops.length?ops.map(o=>{const l=opLink(o.code);return `<section class="card op${o.active?'':' off'}"><h2>${esc(o.name)} ${o.admin?'<span class="cnt adm">amministratore</span>':''} ${o.active?'':'<span class="cnt">disattivato</span>'}</h2>
-<p class="meta" style="margin:0 0 8px">Codice: <b class="opc">${esc(o.code)}</b></p>
-${o.active?`<div class="row2"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
-${o.active?`<button class="btn wide" data-oad="${esc(o.code)}" data-ov="${o.admin?0:1}" style="margin-top:8px">${o.admin?'Togli i diritti di amministratore':'Rendi amministratore'}</button>`:''}
-<button class="btn wide" data-orn="${esc(o.code)}" data-onm="${esc(o.name)}" style="margin-top:8px">✏️ Cambia nome</button>
-<button class="btn wide ${o.active?'dng':''}" data-otg="${esc(o.code)}" data-oa="${o.active?0:1}" style="margin-top:8px">${o.active?'Disattiva accesso':'Riattiva accesso'}</button></section>`}).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo qui sopra.</p>'}`;
+  OPS=j.ops.map(o=>{const s=l?l.sops.filter(x=>x.owner===o.code):[];return Object.assign(o,{natt:s.filter(x=>!x.archived).length,narc:s.filter(x=>x.archived).length,last:Math.max(0,...s.map(x=>x.recv||0))})})
+    .sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
+  drawOps();
+}
+function drawOps(){
+  if(view!='vO'||!OPS)return;
+  const m=$('vO').querySelector('main');
+  $('oback').textContent=OPSEL||OPNEW?'‹ Operatori':'‹ Sopralluoghi';
+  if(OPNEW){
+    m.innerHTML=`<h1 class="lt">Nuovo operatore</h1><section class="card"><label class="fl">Nome e cognome<input id="opn" placeholder="es. MARIO ROSSI" autocomplete="off"></label><label class="ck"><input type="checkbox" id="opadm"> È un amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>`;
+    setTimeout(()=>$('opn')&&$('opn').focus(),50);return;
+  }
+  const o=OPSEL&&OPS.find(x=>x.code===OPSEL);
+  if(o){
+    m.innerHTML=`<h1 class="lt">${esc(o.name)}</h1>
+<section class="card op${o.active?'':' off'}"><h2>Scheda operatore</h2>
+<dl class="opd">
+<dt>Nome</dt><dd>${esc(o.name)}</dd>
+<dt>Ruolo</dt><dd>${o.admin?'Amministratore (vede tutti i sopralluoghi e gestisce gli operatori)':'Operatore'}</dd>
+<dt>Accesso</dt><dd>${o.active?'✓ Attivo':'✕ Disattivato'}</dd>
+<dt>Codice</dt><dd><b class="opc">${esc(o.code)}</b></dd>
+${o.created?`<dt>Creato il</dt><dd>${esc(dOra(o.created))}</dd>`:''}
+<dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
+<dt>Link di accesso</dt><dd class="lk">${esc(opLink(o.code))}</dd>
+</dl>
+${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
+${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
+<button class="btn pri wide big" style="margin-top:12px" data-oed="${esc(o.code)}">✏️ Modifica</button>
+</section>`;return;
+  }
+  m.innerHTML=`<h1 class="lt">Operatori</h1>
+<button class="btn pri wide big" id="opnew">+ Nuovo operatore</button>
+${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}</div><div class="meta">${o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
+}
+async function modificaOp(code){
+  const o=OPS.find(x=>x.code===code);if(!o)return;
+  const v=await dlgOpen(`<h3>Modifica operatore</h3>
+<label class="fl">Nome e cognome<input id="edn" value="${esc(o.name)}" autocomplete="off"></label>
+<label class="ck"><input type="checkbox" id="eda"${o.admin?' checked':''}> Amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label>
+<label class="ck"><input type="checkbox" id="edo"${o.active?' checked':''}> Accesso attivo (se lo togli non può più usare l’app né inviare sopralluoghi)</label>
+<p class="hint">Il link e il codice restano gli stessi. Nei sopralluoghi già fatti il campo “Tecnico” resta com’era.</p>
+<button class="btn dng wide" data-dr="del" style="margin-top:6px">🗑 Elimina operatore</button>`,[['Annulla','',''],['Salva','pri','1']]);
+  if(v==='del'){eliminaOp(o);return}
+  if(v!=='1')return;
+  const n=($('edn').value||'').trim()||o.name,adm=$('eda').checked,act=$('edo').checked,ch={op:code};
+  if(n!==o.name)ch.name=n;if(adm!==!!o.admin)ch.admin=adm;if(act!==!!o.active)ch.active=act;
+  if(Object.keys(ch).length==1)return;
+  busy('Salvo le modifiche…');
+  try{await api('setOp',ch);busyEnd();await renderOps(1)}
+  catch(e){busyEnd();note('Non riesco a salvare: '+e.message)}
+}
+async function eliminaOp(o){
+  if(!await ask('Eliminare definitivamente l’operatore “'+o.name+'”? Il suo link smette di funzionare. I sopralluoghi che ha già inviato restano in archivio sotto il suo nome.','Elimina operatore',1))return;
+  busy('Elimino l’operatore…');
+  try{await api('delOp',{op:o.code});busyEnd();OPSEL=null;await renderOps(1)}
+  catch(e){busyEnd();note('Non riesco a eliminarlo: '+e.message)}
 }
 const opLink=code=>location.origin+location.pathname+'?op='+encodeURIComponent(code)+'&srv='+encodeURIComponent(SRV);
 const opMsg=(n,code)=>`Ciao ${n}, questo è il tuo accesso all’app dei sopralluoghi:\n${opLink(code)}\n\nAprilo dal telefono con Chrome o Safari e aggiungilo alla schermata Home. Il tuo codice è ${code}.`;
@@ -1430,11 +1472,13 @@ document.addEventListener('click',e=>{
   {const op=t.closest&&t.closest('[data-aop]');if(op){ARCOP=op.dataset.aop;ARCQ='';SHOWARC=false;drawArch();scrollTo(0,0);return}}
   if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
   if(t.id=='arcref'){renderArch(1);return}
-  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
-  if(t.dataset.orn){rinominaOp(t.dataset.orn,t.dataset.onm);return}
-  if(t.dataset.oad){(async()=>{const on=t.dataset.ov=='1';if(!await ask(on?'Rendere amministratore questo operatore? Vedrà i sopralluoghi di tutti e potrà gestire gli operatori.':'Togliere i diritti di amministratore? Tornerà a vedere e inviare solo i suoi sopralluoghi.',on?'Rendi amministratore':'Togli diritti',on?0:1))return;try{await api('setOp',{op:t.dataset.oad,admin:on});renderOps()}catch(err){note(err.message)}})();return}
-  if(t.dataset.otg){(async()=>{const on=t.dataset.oa=='1';if(!on&&!await ask('Disattivare questo operatore? Non potrà più inviare sopralluoghi. Quelli già inviati restano.','Disattiva',1))return;try{await api('setOp',{op:t.dataset.otg,active:on});renderOps()}catch(err){note(err.message)}})();return}
+  {const os=t.closest&&t.closest('[data-osel]');if(os){OPSEL=os.dataset.osel;OPNEW=false;drawOps();scrollTo(0,0);return}}
+  if(t.id=='opnew'){OPNEW=true;drawOps();return}
+  if(t.id=='oback'){if(OPSEL||OPNEW){OPSEL=null;OPNEW=false;drawOps()}else go('sop');return}
+  if(t.dataset.oed){modificaOp(t.dataset.oed);return}
+  if(t.dataset.aopv){const n=t.dataset.aopv;go('arch');setTimeout(()=>{ARCOP=n;drawArch()},0);return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
   if(t.id=='mpo'){openMap();return}
