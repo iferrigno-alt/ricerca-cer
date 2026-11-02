@@ -491,7 +491,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-19';
+const APPVER='2026.11.02-20';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -683,7 +683,24 @@ async function scaricaAssegnati(){
   }
   if(nuovi.length){if(view=='vL'||view=='vS')route();if($('dlg').hidden)note((nuovi.length==1?'Ti è stato assegnato un nuovo sopralluogo: ':'Ti sono stati assegnati nuovi sopralluoghi: ')+nuovi.join(', ')+'. Lo trovi nell’elenco Sopralluoghi.')}
 }
+/* amministratore: le copie scaricate dagli operatori restano allineate (nome operatore, modifiche, archiviati) */
+async function allineaCopie(){
+  if(!isAdmin())return;
+  const loc=(await all('sop')).filter(s=>s.remote);if(!loc.length)return;
+  const last=+(LS('cer_chk2')||0);if(Date.now()-last<60000)return;LS('cer_chk2',String(Date.now()));
+  const j=await api('list'),ix={};j.sops.forEach(e=>ix[e.id]=e);let ch=false;
+  for(const s of loc){
+    if(cur&&cur.id===s.id)continue;
+    const e=ix[s.id];
+    if(!e||e.archived){await togliLocale(s.id);ch=true;continue}
+    const pulita=(s.mod||0)<=(s.sentMod||0)&&!(s.delf||[]).length&&!(await fotoDi(s.id)).some(p=>!p.sent);
+    if(pulita&&(e.mod||0)>Math.max(s.sentMod||0,s.pullMod||0)){await scaricaRemoto(s.id,true,e.mod);const n=await get('sop',s.id);if(n){n.remote={owner:e.ownerName||''};await put('sop',n)}ch=true;continue}
+    if(e.ownerName&&s.remote.owner!==e.ownerName){s.remote.owner=e.ownerName;await put('sop',s);ch=true}
+  }
+  if(ch&&view=='vL')renderList();
+}
 async function pulisciChiusi(){
+  try{await allineaCopie()}catch(_){}
   const last=+(LS('cer_chk')||0);if(Date.now()-last<15*60000)return;
   LS('cer_chk',String(Date.now()));
   let n=0;
