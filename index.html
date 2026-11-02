@@ -444,7 +444,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-6';
+const APPVER='2026.11.02-7';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -534,7 +534,7 @@ async function renderList(){
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
 ${isAdmin()&&!inClaude?`<div class="row2" style="margin-bottom:12px"><button class="btn pri" data-go="arch">🗂 Lavori degli operatori</button><button class="btn" data-go="ops">👥 Operatori</button></div>`:''}
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':''}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
+${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':(ONAME&&linked()?'di <b>'+esc(ONAME)+'</b> · ':'')}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
 <section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
 <section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
@@ -542,7 +542,7 @@ ${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${
 }
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
-  const s=newSop();
+  const s=newSop();if(ONAME&&linked())s.tecnico=ONAME;
   const prev=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente).sort((x,y)=>(y.mod||0)-(x.mod||0));
   if(prev.length){
     const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3><p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
@@ -560,6 +560,7 @@ async function nuovo(){
       const on=k=>$(k).checked;
       if(on('cp1'))['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
       if(on('cp2'))['ref','rtel','rmail','tecnico','ttel'].forEach(k=>s[k]=src[k]||'');
+      if(!s.tecnico&&ONAME&&linked())s.tecnico=ONAME;
       if(on('cp3')&&src.gps)s.gps=Object.assign({},src.gps);
       if(on('cp4'))s.cer=(src.cer||[]).map(x=>({id:uid(),c:x.c||'',q:'',u:x.u||'',n:x.n||''}));
       if(on('cp5')){s.note=src.note||'';s.sfn=src.sfn||''}
@@ -576,6 +577,7 @@ async function backup(){
 /* ============ ARCHIVIO ONLINE (Google Drive) ============ */
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}return null};
 const DEFAULT_SRV='https://script.google.com/macros/s/AKfycbysQFOFahQghYSZ5-pqfMUjQWyHITzPIN5Mq66cZAlolFvMgDSSpzR8-SRUlICdYtdaPg/exec';
+let nameOk=0;
 let SRV=LS('cer_srv')||DEFAULT_SRV,CODE=LS('cer_code')||'',ROLE=LS('cer_role')||'',ONAME=LS('cer_name')||'',syncErr='',syncing=false,syncAgain=false,syncTm;
 const isAdmin=()=>ROLE==='admin'&&!!SRV&&!!CODE;
 const linked=()=>!!SRV&&!!CODE&&!!ROLE;
@@ -596,7 +598,8 @@ async function collega(srv,code){
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
 const b2b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=ko;r.readAsDataURL(b)});
 const b64b=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||'image/jpeg'})};
-async function syncState(s){const fo=await fotoDi(s.id);const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
+const vuoto=(s,fo)=>!s.sentMod&&!fo.length&&!(s.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s[k]||'').trim());
+async function syncState(s){const fo=await fotoDi(s.id);if(vuoto(s,fo))return{todo:0,unsent:0,done:false,empty:true};const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
 function syncSoon(ms){if(!linked()||inClaude)return;clearTimeout(syncTm);syncTm=setTimeout(syncAll,ms==null?2500:ms)}
 /* toglie dal telefono i sopralluoghi che l'ufficio ha già archiviato o eliminato */
 async function togliLocale(id){
@@ -641,11 +644,12 @@ async function syncAll(){
   if(navigator.onLine===false){syncErr='Nessuna connessione: invio appena torna il segnale';syncUI();return}
   syncing=true;syncErr='';syncUI();
   try{
+    if(!nameOk){const j=await api('ping');nameOk=1;if(j.name&&j.name!==ONAME){ONAME=j.name;ROLE=j.role;LS('cer_name',ONAME);LS('cer_role',ROLE);if(view=='vL')route()}}
     await flush();
     for(const s0 of await all('sop')){
       const fo=await fotoDi(s0.id),unsent=fo.filter(p=>!p.sent),dels=(s0.delf||[]).slice();
       /* una scheda appena aperta e ancora vuota non va in ufficio */
-      if(!s0.sentMod&&!fo.length&&!(s0.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s0[k]||'').trim()))continue;
+      if(vuoto(s0,fo))continue;
       if((s0.sentMod||0)>=(s0.mod||0)&&!unsent.length&&!dels.length)continue;
       const snap=s0.mod||0;
       const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0}))});
