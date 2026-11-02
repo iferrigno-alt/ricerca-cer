@@ -195,7 +195,8 @@ textarea{resize:vertical}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
 .srch input{font-size:17px}
-.okk{color:#1a7f37;font-weight:600}.wrn{color:var(--hz);font-weight:600}
+.okk{color:#1a7f37;font-weight:600}
+.assinfo{margin:-4px 2px 12px;padding:8px 12px;border-radius:10px;background:var(--sf);border:1px solid var(--ln);font-size:14px}.wrn{color:var(--hz);font-weight:600}
 .opd{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}.opd dt{color:var(--mut)}.opd dd{margin:0;overflow-wrap:anywhere}.opd .lk{font-size:13px;color:var(--mut)}
 .it[hidden]{display:none}
 .opr{position:relative;padding-right:34px}.opr .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--mut)}
@@ -492,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-22';
+const APPVER='2026.11.02-25';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -585,17 +586,28 @@ function save(){if(!cur)return;cur.mod=Date.now();dirty=true;setStatus('…');cl
 async function flush(){clearTimeout(st);if(!dirty||!cur)return;dirty=false;try{await put('sop',cur);setStatus('Salvato ✓');syncSoon()}catch(e){setStatus('Errore di salvataggio');dirty=true}}
 
 /* ============ ELENCO SOPRALLUOGHI ============ */
-async function renderList(){
+let LSRV=null;
+async function renderList(fromSrv){
   const a=(await all('sop')).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
   const st={};if(linked()&&!inClaude)for(const x of a)st[x.id]=await syncState(x);
-  $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
+  const adm=isAdmin()&&!inClaude,ix={};
+  if(adm&&LSRV)LSRV.forEach(e=>ix[e.id]=e);
+  /* amministratore: in Sopralluoghi ci sono tutti, anche quelli degli operatori non ancora aperti qui */
+  const loc=new Set(a.map(s=>s.id));
+  const rem=adm&&LSRV?LSRV.filter(e=>!e.archived&&!loc.has(e.id)):[];
+  const items=a.map(s=>({s})).concat(rem.map(e=>({e}))).sort((x,y)=>{const dx=(x.s||x.e).data||'',dy=(y.s||y.e).data||'';return dy.localeCompare(dx)||((y.s||y.e).mod||0)-((x.s||x.e).mod||0)});
+  const owner=s=>s.remote?s.remote.owner:(ix[s.id]&&ix[s.id].ownerName)||(linked()?ONAME:'');
+  const cardL=s=>{const y=st[s.id],ow=owner(s);return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0" data-lq="${esc(normq([s.cantiere,s.luogo,s.committente,s.ref,s.tecnico,dIt(s.data),ow].join(' ')))}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${ow?'di <b>'+esc(ow)+'</b> · ':''}${s.ass?'📌 assegnato'+(s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':' dall’ufficio')+(isAdmin()&&s.ass.name&&s.ass.name!==owner(s)?' a '+esc(s.ass.name):'')+' · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.revoked?' · ⚠ riassegnato dall’ufficio a un altro operatore':y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}</div>`};
+  const cardR=e=>`<div class="it sl" data-rl="${esc(e.id)}" data-rm="${e.mod||0}" role="button" tabindex="0" data-lq="${esc(normq([e.cantiere,e.luogo,e.committente,e.ref,e.ownerName,dIt(e.data)].join(' ')))}"><div class="slt">${esc(e.cantiere||'Senza nome')}</div><div class="ds sm">${esc([e.luogo,dIt(e.data)].filter(Boolean).join(' · '))}</div><div class="meta">di <b>${esc(e.ownerName||'—')}</b> · ${e.ass&&e.ass.by?'📌 assegnato da <b>'+esc(e.ass.by)+'</b> · ':''}${e.ncer||0} ${e.ncer==1?'codice':'codici'} CER · ${e.nfoto||0} foto · ✓ in ufficio</div></div>`;
+  $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button>${adm?`<span class="sv">${LSRV?'':'Carico i sopralluoghi di tutti…'}</span>`:''}</div><main><h1 class="lt">Sopralluoghi</h1>
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${a.length>1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente, referente…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
-${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0" data-lq="${esc(normq([s.cantiere,s.luogo,s.committente,s.ref,s.tecnico,dIt(s.data),s.remote&&s.remote.owner].join(' ')))}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':(ONAME&&linked()?'di <b>'+esc(ONAME)+'</b> · ':'')}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.revoked?' · ⚠ riassegnato dall’ufficio a un altro operatore':y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
+${items.length>1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente, referente, operatore…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
+${items.length?items.map(x=>x.s?cardL(x.s):cardR(x.e)).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
 <section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
 <section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
   syncUI();if(LQ)filtraLista();
+  if(adm&&!fromSrv){try{const j=await api('list');LSRV=j.sops;if(view=='vL'){const y=scrollY,q=$('lq')&&document.activeElement===$('lq');await renderList(1);scrollTo(0,y);if(q&&$('lq')){$('lq').focus();const L=$('lq').value.length;$('lq').setSelectionRange(L,L)}}}catch(_){if(view=='vL'&&$('vL').querySelector('.sv'))$('vL').querySelector('.sv').textContent=''}}
 }
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
@@ -859,7 +871,7 @@ async function renderArch(keep){
   if(view!='vA')return;
   ARCJ=j;drawArch();
 }
-function arcCard(x,who){return `<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div>${x.committente||x.ref?`<div class="ds sm">${esc([x.committente&&'Committente: '+x.committente,x.ref&&'Ref.: '+x.ref].filter(Boolean).join(' · '))}</div>`:''}<div class="meta">${who?'di <b>'+esc(x.ownerName||'—')+'</b> · ':''}${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?`<div class="row2" style="margin-top:8px"><button class="btn pri" data-rv="${esc(x.id)}">👁 Visualizza</button><button class="btn" data-rr="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">↩ Ripristina</button></div><button class="btn dng wide" style="margin-top:8px" data-rp="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`:`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`}</div>`}
+function arcCard(x,who){return `<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div>${x.committente||x.ref?`<div class="ds sm">${esc([x.committente&&'Committente: '+x.committente,x.ref&&'Ref.: '+x.ref].filter(Boolean).join(' · '))}</div>`:''}<div class="meta">${who?'di <b>'+esc(x.ownerName||'—')+'</b> · ':''}${x.ass&&x.ass.by?'📌 assegnato da <b>'+esc(x.ass.by)+'</b> · ':''}${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?`<div class="row2" style="margin-top:8px"><button class="btn pri" data-rv="${esc(x.id)}">👁 Visualizza</button><button class="btn" data-rr="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">↩ Ripristina</button></div><button class="btn dng wide" style="margin-top:8px" data-rp="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`:`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina definitivamente</button>`}</div>`}
 function drawArch(){
   const j=ARCJ;if(!j||view!='vA')return;
   $('aback').textContent=ARCOP!=null?'‹ Operatori':'‹ Sopralluoghi';
@@ -902,8 +914,11 @@ async function renderOps(keep){
   if(!isAdmin()){$('vO').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
   let j,l=null;try{[j,l]=await Promise.all([api('ops'),api('list').catch(()=>null)])}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vO')return;
-  OPS=j.ops.map(o=>{const s=l?l.sops.filter(x=>x.owner===o.code):[];return Object.assign(o,{natt:s.filter(x=>!x.archived).length,narc:s.filter(x=>x.archived).length,last:Math.max(0,...s.map(x=>x.recv||0))})})
+  /* anche l'amministratore principale compare tra gli operatori */
+  const codes=new Set(j.ops.map(o=>o.code));
+  OPS=j.ops.map(o=>{const s=l?l.sops.filter(x=>o.main?(x.ownerName===o.name&&!codes.has(x.owner)):x.owner===o.code):[];return Object.assign(o,{natt:s.filter(x=>!x.archived).length,narc:s.filter(x=>x.archived).length,last:Math.max(0,...s.map(x=>x.recv||0))})})
     .sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
+  OPS.forEach(o=>{if(!o.main&&o.code===CODE)o.me=true});
   drawOps();
 }
 function drawOps(){
@@ -915,6 +930,21 @@ function drawOps(){
     setTimeout(()=>$('opn')&&$('opn').focus(),50);return;
   }
   const o=OPSEL&&OPS.find(x=>x.code===OPSEL);
+  if(o&&o.main){
+    m.innerHTML=`<h1 class="lt">${esc(o.name)}</h1>
+<section class="card op"><h2>Scheda operatore</h2>
+<dl class="opd">
+<dt>Nome</dt><dd>${esc(o.name)}${o.me?' (tu)':''}</dd>
+<dt>Ruolo</dt><dd>Amministratore principale (titolare dell’archivio su Google Drive)</dd>
+<dt>Accesso</dt><dd>✓ Sempre attivo</dd>
+<dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
+${o.me?`<dt>Il tuo link</dt><dd class="lk">${esc(opLink(CODE))}</dd>`:''}
+</dl>
+${o.me?`<p class="hint" style="margin-top:10px">Apri questo link anche sul tuo cellulare: vedrai l’app esattamente come sul PC, con gli stessi sopralluoghi.</p><div class="row2"><button class="btn" data-ocp2="1">Copia il mio link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent('Accesso amministratore app sopralluoghi:\n'+opLink(CODE))}" target="_blank" rel="noopener">Mandalo su WhatsApp</a></div>`:''}
+${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
+<p class="hint" style="margin-top:10px">Il nome e il codice dell’amministratore principale non si modificano da qui.</p>
+</section>`;return;
+  }
   if(o){
     m.innerHTML=`<h1 class="lt">${esc(o.name)}</h1>
 <section class="card op${o.active?'':' off'}"><h2>Scheda operatore</h2>
@@ -936,7 +966,7 @@ ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${es
   }
   m.innerHTML=`<h1 class="lt">Operatori</h1>
 <button class="btn pri wide big" id="opnew">+ Nuovo operatore</button>
-${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}</div><div class="meta">${o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.firstSeen?'✓ collegato · ':o.sent?'link inviato, non ancora aperto · ':'⚠ link non inviato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
+${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}${o.me?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${o.main?'amministratore principale · ':o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.main?'':o.firstSeen?'✓ collegato · ':o.sent?'link inviato, non ancora aperto · ':'⚠ link non inviato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
 }
 async function modificaOp(code){
   const o=OPS.find(x=>x.code===code);if(!o)return;
@@ -987,6 +1017,7 @@ function renderEdit(){
   $('vE').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><span id="sv" class="sv"></span></div>
 <main>
 <h1 id="et">${esc(s.cantiere||'Nuovo sopralluogo')}</h1>
+${s.ass?`<p class="assinfo">📌 Assegnato a <b>${esc(s.ass.name)}</b>${s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':''}${s.ass.ts?' il '+esc(dOra(s.ass.ts)):''}</p>`:''}
 <button class="btn wide" id="gb" data-go="gal/${s.id}" style="margin:0 0 12px">🖼 Galleria foto per sezione e codice CER</button>
 <section class="card"><h2>Dati del cantiere</h2>
 ${fld('cantiere','Cantiere','es. Demolizione capannone')}
@@ -1030,7 +1061,7 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 }
 async function caricaAss(){
   const s=cur,sel=$('asss'),inf=$('assi');if(!sel)return;
-  inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
+  inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':'')+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
   try{const j=await api('ops');if(cur!==s||!$('asss'))return;
     const ops=(j.ops||[]).filter(o=>o.active).sort((a,b)=>a.name.localeCompare(b.name,'it'));
     sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}"${s.ass&&s.ass.code==o.code?' selected':''}>${esc(o.name)}${o.admin?' (amministratore)':''}</option>`).join('')+`<option value="${esc(CODE)}"${s.ass&&s.ass.code==CODE?' selected':''}>Me stesso (sul mio telefono)</option>`;
@@ -1042,7 +1073,7 @@ async function assegna(){
   if(!await ask('Assegnare “'+(s.cantiere||'Senza nome')+'” a '+name+'? Lo troverà sul suo telefono alla prossima apertura dell’app.','Assegna')){caricaAss();return}
   busy('Invio il sopralluogo all’ufficio…');
   try{
-    s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now()};
+    s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now(),by:ONAME||'Amministratore'};
     /* il tecnico diventa l'operatore assegnato; il cellulare del tecnico precedente non vale più */
     s.tecnico=s.ass.name;s.ttel='';save();await flush();
     while(syncing)await new Promise(r=>setTimeout(r,300));
@@ -1502,6 +1533,7 @@ document.addEventListener('click',e=>{
   if(t.id=='disc'){(async()=>{if(!await ask('Scollegare questo dispositivo dall’archivio dell’ufficio? I sopralluoghi restano sul dispositivo.','Scollega',1))return;scollega();renderList()})();return}
   if(t.id=='conn'){(async()=>{t.disabled=true;t.textContent='Collego…';try{const j=await collega($('csrv').value,$('ccode').value);note('Collegato come '+j.name+(j.role=='admin'?' (amministratore)':'')+'.');syncSoon(300);renderList()}catch(err){note(err.message);t.disabled=false;t.textContent='Collega'}})();return}
   if(t.dataset.ra){apriRemoto(t.dataset.ra,+t.dataset.rm);return}
+  {const rl=t.closest&&t.closest('[data-rl]');if(rl){apriRemoto(rl.dataset.rl,+rl.dataset.rm);return}}
   if(t.dataset.rz){archiviaRemoto(t.dataset.rz,+t.dataset.rm);return}
   if(t.dataset.rx){eliminaRemoto(t.dataset.rx,t.dataset.rn);return}
   if(t.dataset.rr){ripristinaRemoto(t.dataset.rr,t.dataset.rn);return}
@@ -1512,6 +1544,7 @@ document.addEventListener('click',e=>{
   if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
   if(t.id=='arcref'){renderArch(1);return}
   if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank');segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.dataset.ocp2){copia(opLink(CODE));return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));segnaInvio(t.dataset.ocp,'link copiato');return}
   if(t.dataset.owa){segnaInvio(t.dataset.owa,'WhatsApp');return}
   if(t.dataset.oman){segnaInvio(t.dataset.oman,'segnato a mano');return}
