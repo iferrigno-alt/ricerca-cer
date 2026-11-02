@@ -190,7 +190,7 @@ textarea{resize:vertical}
 .sm{font-size:14px}
 .qr{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:10px}
 .qr input,.qr select{margin-top:0}
-.nt{margin-top:8px!important;font-size:16px!important}
+.nt{margin-top:8px!important;font-size:16px!important;resize:none;overflow:hidden;line-height:1.35;min-height:44px}
 .tot{margin-top:12px;font-size:15px}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
@@ -477,7 +477,7 @@ document.addEventListener('input',e=>{
 });
 let LQ='';
 function filtraLista(){const q=normq(LQ).trim().split(/\s+/).filter(Boolean);let n=0;document.querySelectorAll('#vL [data-lq]').forEach(el=>{const ok=q.every(w=>el.dataset.lq.includes(w));el.hidden=!ok;if(ok)n++});const h=$('lqn');if(h)h.textContent=q.length?(n?n+(n==1?' trovato':' trovati'):'Nessun sopralluogo con questo nome'):''}
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value;const so=(e.target.selectedOptions[0]||{}).dataset||{};if($('cpx'))$('cpx').hidden=so.solo==='1';if($('cpsolo'))$('cpsolo').hidden=so.solo!=='1'}
   /* scegliere l'operatore basta: chiede subito conferma e assegna */
   if(e.target&&e.target.id==='asss'&&e.target.value&&!(cur&&cur.ass&&cur.ass.code===e.target.value))assegna()});
 function dlgOpen(html,btns){
@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-35';
+const APPVER='2026.11.02-37';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -615,33 +615,41 @@ async function nuovo(){
   const loc=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente);
   /* l'amministratore può partire anche dai sopralluoghi degli operatori */
   if(isAdmin()&&!inClaude&&!LSRV){try{LSRV=(await api('list')).sops}catch(_){}}
+  /* l'operatore può partire dai dati di cantiere e committente di tutti i sopralluoghi (senza foto né CER altrui) */
+  let DATI=[];if(!isAdmin()&&linked()&&!inClaude){try{DATI=(await api('dati')).sops||[]}catch(_){}}
   const ids=new Set(loc.map(x=>x.id));
   const prev=loc.map(x=>({id:x.id,cantiere:x.cantiere,luogo:x.luogo,data:x.data,mod:x.mod,chi:x.remote?x.remote.owner:''}))
     .concat(isAdmin()&&LSRV?LSRV.filter(e=>!e.archived&&!ids.has(e.id)&&(e.cantiere||e.luogo)).map(e=>({id:e.id,cantiere:e.cantiere,luogo:e.luogo,data:e.data,mod:e.mod,chi:e.ownerName,r:1})):[])
+    .concat(DATI.filter(e=>!ids.has(e.id)).map(e=>Object.assign({},e,{solo:1})))
     .sort((x,y)=>(y.mod||0)-(x.mod||0));
   let AO=null;if(isAdmin()&&!inClaude){try{AO=assOpts(await api('ops'))}catch(_){}}
   const assSel=AO?`<label class="fl">Assegna a<select id="cpa">${AO.map(o=>`<option value="${esc(o.code)}"${o.self?' selected':''}>${assLbl(o)}</option>`).join('')}</select></label>`:'';
   let opA=null;
   if(prev.length||AO){
     const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3>${assSel}${prev.length?`<p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
-<label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}">${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data),x.chi&&'di '+x.chi].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
+<label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}"${x.solo?' data-solo="1"':''}>${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data),x.chi&&'di '+x.chi,x.solo&&!x.chi&&x.committente&&'committente '+x.committente].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
 <div id="cpo" class="cpo" hidden>
 <label class="chk"><input type="checkbox" id="cp1" checked> Cantiere, luogo e committente con contatti</label>
 <label class="chk"><input type="checkbox" id="cp2" checked> Referente del committente con contatti</label>
 <label class="chk"><input type="checkbox" id="cp3" checked> Posizione GPS</label>
-<p class="hint" style="margin:8px 2px 2px">Voci CER</p>
+<div id="cpx"><p class="hint" style="margin:8px 2px 2px">Voci CER</p>
 <label class="chk"><input type="radio" name="cpc" value="" checked> Non copiare le voci CER</label>
 <label class="chk"><input type="radio" name="cpc" value="c"> Solo i codici CER, senza foto né quantità</label>
 <label class="chk"><input type="radio" name="cpc" value="f"> Codici CER con foto e quantità</label>
 <label class="chk" style="margin-top:6px"><input type="checkbox" id="cp7"> Foto dello stato di fatto e accessibilità</label>
-<label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label>
+<label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label></div><p class="hint" id="cpsolo" hidden>Da questo sopralluogo si copiano solo i dati del cantiere, del committente, del referente e la posizione.</p>
 <p class="hint">Il tecnico è chi riceve il sopralluogo. La data diventa quella di oggi.</p></div>`:''}`,[['Annulla','',''],['Crea','pri','1']]);
     if(v!=='1')return;
     if(AO&&$('cpa')){opA=AO.find(o=>o.code===$('cpa').value)||null;if(opA&&opA.self)opA=null}
     const pid=$('cpf')?$('cpf').value:'',on=k=>!!($(k)&&$(k).checked),cpc=(document.querySelector('input[name=cpc]:checked')||{}).value||'',
       o={c1:on('cp1'),c2:on('cp2'),c3:on('cp3'),c5:on('cp5'),c7:on('cp7')};
-    let src=null;
-    if(pid){src=await get('sop',pid);if(!src){src=await scaricaRemoto(pid);if(!src)return}}
+    let src=null;const solo=pid&&DATI.find(e=>e.id===pid&&!ids.has(pid));
+    if(solo){const a=solo.ana||{};
+      if(o.c1){s.cantiere=solo.cantiere||'';s.luogo=solo.luogo||'';s.committente=solo.committente||'';s.ctel=a.ctel||'';s.cmail=a.cmail||''}
+      if(o.c2){s.ref=solo.ref||'';s.rtel=a.rtel||'';s.rmail=a.rmail||''}
+      if(o.c3&&a.gps)s.gps=Object.assign({},a.gps);
+    }
+    else if(pid){src=await get('sop',pid);if(!src){src=await scaricaRemoto(pid);if(!src)return}}
     if(src){
       if(o.c1)['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
       if(o.c2)['ref','rtel','rmail'].forEach(k=>s[k]=src[k]||'');
@@ -1123,6 +1131,7 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 </main>`;
   updGps();renderCer();renderPh();if(inClaude)$("mpo").hidden=true;
   if($('asss'))caricaAss();
+  requestAnimationFrame(()=>autoHAll($('vE')));
 }
 /* elenco completo per assegnare: operatori, amministratori e amministratore principale */
 function assOpts(j){
@@ -1272,6 +1281,9 @@ function rileva(){
   },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
   watch.to=setTimeout(gpsEnd,20000);
 }
+/* le note vanno a capo e la casella si allunga con il testo */
+function autoH(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+3)+'px'}
+function autoHAll(root){(root||document).querySelectorAll('textarea.nt,textarea[data-k]').forEach(autoH)}
 function renderCer(){
   const L=$('cers');$('nc').textContent=cur.cer.length||'';
   L.innerHTML=cur.cer.length?cur.cer.map((x,i)=>{const r=RM.get(x.c),h=r&&r[2];
@@ -1283,9 +1295,9 @@ ${x.c?'':`<button class="btn pri wide" data-chg="${i}" style="margin-top:8px">�
 <div class="cfr"><div class="cfs" id="cf${x.id}"></div><label class="btn sm2 pri">📷 Foto<input type="file" accept="image/*" capture="environment" hidden data-phc="${x.id}"></label><label class="btn sm2" aria-label="Foto dalla galleria">🖼<input type="file" accept="image/*" multiple hidden data-phc="${x.id}"></label></div>
 <div class="qr"><input data-q="${i}" data-qid="${x.id}" inputmode="decimal" placeholder="Quantità" value="${esc(x.q)}"><select data-u="${i}" aria-label="Unità di misura">${UN.map(u=>`<option${u==x.u?' selected':''}>${u}</option>`).join('')}</select></div>
 <div class="qh" id="qh${x.id}"></div>
-<input class="nt" data-n="${i}" placeholder="Note (stato fisico, ubicazione, contenitore…)" value="${esc(x.n)}"></div>`}).join('')
+<textarea class="nt" data-n="${i}" rows="1" placeholder="Note (stato fisico, ubicazione, contenitore…)">${esc(x.n)}</textarea></div>`}).join('')
     :'<p class="hint" style="margin-bottom:4px">Nessun rifiuto ancora. Premi “+ Aggiungi CER”.</p>';
-  renderTot();paintLinks();
+  renderTot();paintLinks();requestAnimationFrame(()=>autoHAll($('cers')));
 }
 const lbl=(s,x)=>{if(x.c)return fmt(x.c)+(isH(x.c)?'*':'');const b=s.cer.filter(y=>!y.c);return 'Codice da assegnare'+(b.length>1?' ('+(b.indexOf(x)+1)+')':'')};
 const codesOf=(s,p)=>(p.cer||[]).map(id=>s.cer.find(x=>x.id==id)).filter(Boolean);
@@ -1575,10 +1587,10 @@ async function addCer(c){
 $('vE').addEventListener('input',e=>{
   const t=e.target,d=t.dataset;if(!cur)return;
   if(d.a){cur.acc[d.a]=t.value;save()}
-  else if(d.k){cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';save()}
+  else if(d.k){if(t.tagName==='TEXTAREA')autoH(t);cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';save()}
   else if(t.id=='lat'||t.id=='lon'){stopGps();$('gpsb').disabled=false;const a=num($('lat').value),b=num($('lon').value);cur.gps=(a!=null&&b!=null&&Math.abs(a)<=90&&Math.abs(b)<=180)?{lat:a,lon:b,acc:null,man:1,ts:Date.now()}:null;updGps(true);save()}
   else if(d.q!=null){cur.cer[+d.q].q=t.value;renderTot();save()}
-  else if(d.n!=null){cur.cer[+d.n].n=t.value;save()}
+  else if(d.n!=null){cur.cer[+d.n].n=t.value;autoH(t);save()}
 });
 $('vE').addEventListener('change',e=>{
   const t=e.target,d=t.dataset;if(!cur)return;
