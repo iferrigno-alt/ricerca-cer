@@ -195,7 +195,7 @@ textarea{resize:vertical}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
 .srch input{font-size:17px}
-.okk{color:#1a7f37;font-weight:600}
+.okk{color:#1a7f37;font-weight:600}.mut{color:var(--mut)}
 .assinfo{margin:-4px 2px 12px;padding:8px 12px;border-radius:10px;background:var(--sf);border:1px solid var(--ln);font-size:14px}.wrn{color:var(--hz);font-weight:600}
 .opd{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}.opd dt{color:var(--mut)}.opd dd{margin:0;overflow-wrap:anywhere}.opd .lk{font-size:13px;color:var(--mut)}
 .it[hidden]{display:none}
@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-28';
+const APPVER='2026.11.02-29';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -611,7 +611,7 @@ ${items.length?items.map(x=>x.s?cardL(x.s):cardR(x.e)).join(''):'<p class="hint"
 }
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
-  const s=newSop();if(ONAME&&linked())s.tecnico=ONAME;
+  const s=newSop();if(ONAME&&linked()){s.tecnico=ONAME;s.ttel=LS('cer_tel')||''}
   const prev=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente).sort((x,y)=>(y.mod||0)-(x.mod||0));
   if(prev.length){
     const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3><p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
@@ -629,7 +629,7 @@ async function nuovo(){
       const on=k=>$(k).checked;
       if(on('cp1'))['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
       if(on('cp2'))['ref','rtel','rmail','tecnico','ttel'].forEach(k=>s[k]=src[k]||'');
-      if(!s.tecnico&&ONAME&&linked())s.tecnico=ONAME;
+      if(!s.tecnico&&ONAME&&linked()){s.tecnico=ONAME;s.ttel=LS('cer_tel')||''}
       if(on('cp3')&&src.gps)s.gps=Object.assign({},src.gps);
       if(on('cp4'))s.cer=(src.cer||[]).map(x=>({id:uid(),c:x.c||'',q:'',u:x.u||'',n:x.n||''}));
       if(on('cp5')){s.note=src.note||'';s.sfn=src.sfn||''}
@@ -649,8 +649,9 @@ const DEFAULT_SRV='https://script.google.com/macros/s/AKfycbysQFOFahQghYSZ5-pqfM
 let nameOk=0;
 /* WhatsApp: sul PC apre l'app installata (anche WhatsApp Business), sul telefono wa.me */
 const isPC=()=>!matchMedia('(pointer:coarse)').matches;
-const waUrl=txt=>(isPC()?'whatsapp://send?text=':'https://wa.me/?text=')+encodeURIComponent(txt);
-function apriWA(txt){const u=waUrl(txt);if(isPC())location.href=u;else window.open(u,'_blank')}
+const telWA=tel=>{let d=String(tel||'').replace(/[^\d+]/g,'');if(d.startsWith('+'))d=d.slice(1);else if(d.startsWith('00'))d=d.slice(2);else if(d&&(d.length<=10))d='39'+d;return d};
+const waUrl=(txt,tel)=>{const p=telWA(tel);return isPC()?'whatsapp://send?'+(p?'phone='+p+'&':'')+'text='+encodeURIComponent(txt):'https://wa.me/'+p+'?text='+encodeURIComponent(txt)};
+function apriWA(txt,tel){const u=waUrl(txt,tel);if(isPC())location.href=u;else window.open(u,'_blank')}
 const devName=()=>{const u=navigator.userAgent||'';return /iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Windows/.test(u)?'PC Windows':/Mac/.test(u)?'Mac':'altro dispositivo'};
 async function segnaInvio(code,via){try{await api('setOp',{op:code,sent:{via}});const o=OPS&&OPS.find(x=>x.code===code);if(o){o.sent={ts:Date.now(),via};o.nsent=(o.nsent||0)+1}if(view=='vO')drawOps()}catch(_){}}
 let SRV=LS('cer_srv')||DEFAULT_SRV,CODE=LS('cer_code')||'',ROLE=LS('cer_role')||'',ONAME=LS('cer_name')||'',syncErr='',syncing=false,syncAgain=false,syncTm;
@@ -667,7 +668,7 @@ async function api(action,data){
 }
 async function collega(srv,code){
   const oS=SRV,oC=CODE;SRV=srv.trim();CODE=code.trim();
-  try{const j=await api('ping',{dev:devName()});ROLE=j.role;ONAME=j.name;LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
+  try{const j=await api('ping',{dev:devName()});ROLE=j.role;ONAME=j.name;if(j.tel!=null)LS('cer_tel',j.tel);LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
   catch(e){SRV=oS;CODE=oC;throw e}
 }
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
@@ -736,7 +737,7 @@ async function syncAll(){
   if(navigator.onLine===false){syncErr='Nessuna connessione: invio appena torna il segnale';syncUI();return}
   syncing=true;syncErr='';syncUI();
   try{
-    if(!nameOk){const j=await api('ping',{dev:devName()});nameOk=1;if(j.name&&j.name!==ONAME){ONAME=j.name;ROLE=j.role;LS('cer_name',ONAME);LS('cer_role',ROLE);if(view=='vL')route()}}
+    if(!nameOk){const j=await api('ping',{dev:devName()});nameOk=1;if(j.tel!=null)LS('cer_tel',j.tel);if(j.name&&j.name!==ONAME){ONAME=j.name;ROLE=j.role;LS('cer_name',ONAME);LS('cer_role',ROLE);if(view=='vL')route()}}
     await flush();
     for(const s0 of await all('sop')){
       const fo=await fotoDi(s0.id),unsent=fo.filter(p=>!p.sent),dels=(s0.delf||[]).slice();
@@ -919,7 +920,7 @@ async function renderOps(keep){
   let j,l=null;try{[j,l]=await Promise.all([api('ops'),api('list').catch(()=>null)])}catch(e){$('vO').querySelector('main').innerHTML=`<h1 class="lt">Operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vO')return;
   /* anche l'amministratore principale compare tra gli operatori */
-  if(j.main)j.ops.push({code:'__main',name:j.main.name,admin:true,active:true,main:true,me:j.main.me});
+  if(j.main)j.ops.push({code:'__main',name:j.main.name,tel:j.main.tel||'',mail:j.main.mail||'',admin:true,active:true,main:true,me:j.main.me});
   const codes=new Set(j.ops.map(o=>o.code));
   OPS=j.ops.map(o=>{const s=l?l.sops.filter(x=>o.main?(x.ownerName===o.name&&!codes.has(x.owner)):x.owner===o.code):[];return Object.assign(o,{natt:s.filter(x=>!x.archived).length,narc:s.filter(x=>x.archived).length,last:Math.max(0,...s.map(x=>x.recv||0))})})
     .sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,'it'));
@@ -931,7 +932,7 @@ function drawOps(){
   const m=$('vO').querySelector('main');
   $('oback').textContent=OPSEL||OPNEW?'‹ Operatori':'‹ Sopralluoghi';
   if(OPNEW){
-    m.innerHTML=`<h1 class="lt">Nuovo operatore</h1><section class="card"><label class="fl">Nome e cognome<input id="opn" placeholder="es. MARIO ROSSI" autocomplete="off"></label><label class="ck"><input type="checkbox" id="opadm"> È un amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>`;
+    m.innerHTML=`<h1 class="lt">Nuovo operatore</h1><section class="card"><label class="fl">Nome e cognome<input id="opn" placeholder="es. MARIO ROSSI" autocomplete="off"></label><div class="row2"><label class="fl">Cellulare<input id="opt" type="tel" inputmode="tel" placeholder="es. 333 1234567" autocomplete="off"></label><label class="fl">Email<input id="ope" type="email" inputmode="email" placeholder="nome@esempio.it" autocomplete="off"></label></div><label class="ck"><input type="checkbox" id="opadm"> È un amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label><button class="btn pri wide" id="opadd">Crea operatore e link di accesso</button></section>`;
     setTimeout(()=>$('opn')&&$('opn').focus(),50);return;
   }
   const o=OPSEL&&OPS.find(x=>x.code===OPSEL);
@@ -940,6 +941,8 @@ function drawOps(){
 <section class="card op"><h2>Scheda operatore</h2>
 <dl class="opd">
 <dt>Nome</dt><dd>${esc(o.name)}${o.me?' (tu)':''}</dd>
+<dt>Cellulare</dt><dd>${o.tel?`<a href="tel:${esc(o.tel.replace(/\s+/g,''))}">${esc(o.tel)}</a>`:'<span class="mut">—</span>'}</dd>
+<dt>Email</dt><dd>${o.mail?`<a href="mailto:${esc(o.mail)}">${esc(o.mail)}</a>`:'<span class="mut">—</span>'}</dd>
 <dt>Ruolo</dt><dd>Amministratore principale (titolare dell’archivio su Google Drive)</dd>
 <dt>Accesso</dt><dd>✓ Sempre attivo</dd>
 <dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
@@ -947,6 +950,7 @@ ${o.me?`<dt>Il tuo link</dt><dd class="lk">${esc(opLink(CODE))}</dd>`:''}
 </dl>
 ${o.me?`<p class="hint" style="margin-top:10px">Apri questo link anche sul tuo cellulare: vedrai l’app esattamente come sul PC, con gli stessi sopralluoghi.</p><div class="row2"><button class="btn" data-ocp2="1">Copia il mio link</button><a class="btn" href="${waUrl('Accesso amministratore app sopralluoghi:\n'+opLink(CODE))}"${isPC()?'':' target="_blank" rel="noopener"'}>Mandalo su WhatsApp</a></div>`:''}
 ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
+${o.me?`<button class="btn pri wide big" style="margin-top:12px" data-oedm="1">✏️ Modifica contatti</button>`:''}
 <p class="hint" style="margin-top:10px">Il nome e il codice dell’amministratore principale non si modificano da qui.</p>
 </section>`;return;
   }
@@ -955,6 +959,8 @@ ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${es
 <section class="card op${o.active?'':' off'}"><h2>Scheda operatore</h2>
 <dl class="opd">
 <dt>Nome</dt><dd>${esc(o.name)}</dd>
+<dt>Cellulare</dt><dd>${o.tel?`<a href="tel:${esc(o.tel.replace(/\s+/g,''))}">${esc(o.tel)}</a>`:'<span class="mut">—</span>'}</dd>
+<dt>Email</dt><dd>${o.mail?`<a href="mailto:${esc(o.mail)}">${esc(o.mail)}</a>`:'<span class="mut">—</span>'}</dd>
 <dt>Ruolo</dt><dd>${o.admin?'Amministratore (vede tutti i sopralluoghi e gestisce gli operatori)':'Operatore'}</dd>
 <dt>Accesso</dt><dd>${o.active?'✓ Attivo':'✕ Disattivato'}</dd>
 <dt>Codice</dt><dd><b class="opc">${esc(o.code)}</b></dd>
@@ -964,30 +970,40 @@ ${o.created?`<dt>Creato il</dt><dd>${esc(dOra(o.created))}</dd>`:''}
 <dt>Sopralluoghi</dt><dd>${o.natt} attivi${o.narc?' · '+o.narc+' archiviati':''}${o.last?' · ultimo ricevuto '+esc(dOra(o.last)):''}</dd>
 <dt>Link di accesso</dt><dd class="lk">${esc(opLink(o.code))}</dd>
 </dl>
-${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" data-owa="${esc(o.code)}" href="${waUrl(opMsg(o.name,o.code))}"${isPC()?'':' target="_blank" rel="noopener"'}>Invia su WhatsApp</a></div>${o.sent?'':`<button class="lnk2" data-oman="${esc(o.code)}">Gliel’ho mandato in un altro modo: segna come inviato</button>`}`:''}
+${o.active?`<div class="row2" style="margin-top:10px"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" data-owa="${esc(o.code)}" href="${waUrl(opMsg(o.name,o.code),o.tel)}"${isPC()?'':' target="_blank" rel="noopener"'}>Invia su WhatsApp</a></div>${o.sent?'':`<button class="lnk2" data-oman="${esc(o.code)}">Gliel’ho mandato in un altro modo: segna come inviato</button>`}`:''}
 ${o.natt+o.narc?`<button class="btn wide" style="margin-top:8px" data-aopv="${esc(o.name)}">🗂 Vedi i suoi sopralluoghi</button>`:''}
 <button class="btn pri wide big" style="margin-top:12px" data-oed="${esc(o.code)}">✏️ Modifica</button>
 </section>`;return;
   }
   m.innerHTML=`<h1 class="lt">Operatori</h1>
 <button class="btn pri wide big" id="opnew">+ Nuovo operatore</button>
-${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}${o.me?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${o.main?'amministratore principale · ':o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.main?'':o.firstSeen?'✓ collegato · ':o.sent?'link inviato, non ancora aperto · ':'⚠ link non inviato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
+${OPS.length?OPS.map(o=>`<div class="it sl opr${o.active?'':' done'}" data-osel="${esc(o.code)}" role="button" tabindex="0"><div class="slt">${esc(o.name)}${o.me?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${o.tel?'📞 '+esc(o.tel)+' · ':''}${o.main?'amministratore principale · ':o.admin?'amministratore · ':''}${o.active?'':'disattivato · '}${o.main?'':o.firstSeen?'✓ collegato · ':o.sent?'link inviato, non ancora aperto · ':'⚠ link non inviato · '}${o.natt} ${o.natt==1?'sopralluogo attivo':'sopralluoghi attivi'}${o.narc?' · '+o.narc+' archiviati':''}</div><span class="chev">›</span></div>`).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo con il pulsante qui sopra.</p>'}`;
 }
 async function modificaOp(code){
   const o=OPS.find(x=>x.code===code);if(!o)return;
   const v=await dlgOpen(`<h3>Modifica operatore</h3>
 <label class="fl">Nome e cognome<input id="edn" value="${esc(o.name)}" autocomplete="off"></label>
+<div class="row2"><label class="fl">Cellulare<input id="edt" type="tel" inputmode="tel" value="${esc(o.tel||'')}" autocomplete="off"></label><label class="fl">Email<input id="edm" type="email" inputmode="email" value="${esc(o.mail||'')}" autocomplete="off"></label></div>
 <label class="ck"><input type="checkbox" id="eda"${o.admin?' checked':''}> Amministratore (vede i sopralluoghi di tutti e gestisce gli operatori)</label>
 <label class="ck"><input type="checkbox" id="edo"${o.active?' checked':''}> Accesso attivo (se lo togli non può più usare l’app né inviare sopralluoghi)</label>
-<p class="hint">Il link e il codice restano gli stessi. Se cambi il nome, diventa il nuovo “Tecnico” in tutti i suoi sopralluoghi, anche in quelli già fatti e archiviati.</p>
+<p class="hint">Il link e il codice restano gli stessi. Nome e cellulare diventano il “Tecnico” e il “Cellulare del tecnico” in tutti i suoi sopralluoghi, anche in quelli già fatti e archiviati.</p>
 <button class="btn dng wide" data-dr="del" style="margin-top:6px">🗑 Elimina operatore</button>`,[['Annulla','',''],['Salva','pri','1']]);
   if(v==='del'){eliminaOp(o);return}
   if(v!=='1')return;
-  const n=($('edn').value||'').trim()||o.name,adm=$('eda').checked,act=$('edo').checked,ch={op:code};
-  if(n!==o.name)ch.name=n;if(adm!==!!o.admin)ch.admin=adm;if(act!==!!o.active)ch.active=act;
+  const n=($('edn').value||'').trim()||o.name,adm=$('eda').checked,act=$('edo').checked,ch={op:code},tl=$('edt').value.trim(),ml=$('edm').value.trim();
+  if(n!==o.name)ch.name=n;if(tl!==(o.tel||''))ch.tel=tl;if(ml!==(o.mail||''))ch.mail=ml;if(adm!==!!o.admin)ch.admin=adm;if(act!==!!o.active)ch.active=act;
   if(Object.keys(ch).length==1)return;
   busy('Salvo le modifiche…');
   try{await api('setOp',ch);busyEnd();await renderOps(1)}
+  catch(e){busyEnd();note('Non riesco a salvare: '+e.message)}
+}
+async function modificaMain(){
+  const o=OPS.find(x=>x.main);if(!o)return;
+  const v=await dlgOpen(`<h3>I miei contatti</h3><div class="row2"><label class="fl">Cellulare<input id="mmt" type="tel" inputmode="tel" value="${esc(o.tel||'')}"></label><label class="fl">Email<input id="mmm" type="email" inputmode="email" value="${esc(o.mail||'')}"></label></div><p class="hint">Il cellulare viene messo come “Cellulare del tecnico” nei nuovi sopralluoghi che fai tu.</p>`,[['Annulla','',''],['Salva','pri','1']]);
+  if(v!=='1')return;
+  const tl=$('mmt').value.trim(),ml=$('mmm').value.trim();
+  busy('Salvo…');
+  try{await api('setOp',{op:'__main',tel:tl,mail:ml});LS('cer_tel',tl);busyEnd();await renderOps(1)}
   catch(e){busyEnd();note('Non riesco a salvare: '+e.message)}
 }
 async function eliminaOp(o){
@@ -1069,7 +1085,7 @@ async function caricaAss(){
   inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':'')+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
   try{const j=await api('ops');if(cur!==s||!$('asss'))return;
     const ops=(j.ops||[]).filter(o=>o.active).sort((a,b)=>a.name.localeCompare(b.name,'it'));
-    sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}"${s.ass&&s.ass.code==o.code?' selected':''}>${esc(o.name)}${o.admin?' (amministratore)':''}</option>`).join('')+`<option value="${esc(CODE)}"${s.ass&&s.ass.code==CODE?' selected':''}>Me stesso (sul mio telefono)</option>`;
+    sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}" data-tel="${esc(o.tel||'')}"${s.ass&&s.ass.code==o.code?' selected':''}>${esc(o.name)}${o.admin?' (amministratore)':''}</option>`).join('')+`<option value="${esc(CODE)}"${s.ass&&s.ass.code==CODE?' selected':''}>Me stesso (sul mio telefono)</option>`;
   }catch(e){sel.innerHTML='<option value="">Elenco non disponibile</option>';inf.textContent=e.message}
 }
 async function assegna(){
@@ -1080,7 +1096,7 @@ async function assegna(){
   try{
     s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now(),by:ONAME||'Amministratore'};
     /* il tecnico diventa l'operatore assegnato; il cellulare del tecnico precedente non vale più */
-    s.tecnico=s.ass.name;s.ttel='';save();await flush();
+    s.tecnico=s.ass.name;s.ttel=op===CODE?(LS('cer_tel')||''):(($('asss').selectedOptions[0]||{}).dataset||{}).tel||'';save();await flush();
     while(syncing)await new Promise(r=>setTimeout(r,300));
     await syncAll();if(syncErr)throw new Error(syncErr);
     await api('assign',{id:s.id,op});
@@ -1548,7 +1564,7 @@ document.addEventListener('click',e=>{
   {const op=t.closest&&t.closest('[data-aop]');if(op){ARCOP=op.dataset.aop;ARCQ='';SHOWARC=false;drawArch();scrollTo(0,0);return}}
   if(t.id=='aback'){if(ARCOP!=null||ARCQ){ARCOP=null;ARCQ='';drawArch()}else go('sop');return}
   if(t.id=='arcref'){renderArch(1);return}
-  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){apriWA(opMsg(n,j.code));segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
+  if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked,tel=$('opt').value.trim(),mail=$('ope').value.trim();const j=await api('addOp',{name:n,admin:adm,tel,mail});OPNEW=false;OPSEL=j.code;await renderOps(1);dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c'){copia(opLink(j.code));segnaInvio(j.code,'link copiato')}if(v=='w'){apriWA(opMsg(n,j.code),tel);segnaInvio(j.code,'WhatsApp')}})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp2){copia(opLink(CODE));return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));segnaInvio(t.dataset.ocp,'link copiato');return}
   if(t.dataset.owa){segnaInvio(t.dataset.owa,'WhatsApp');return}
@@ -1557,6 +1573,7 @@ document.addEventListener('click',e=>{
   if(t.id=='opnew'){OPNEW=true;drawOps();return}
   if(t.id=='oback'){if(OPSEL||OPNEW){OPSEL=null;OPNEW=false;drawOps()}else go('sop');return}
   if(t.dataset.oed){modificaOp(t.dataset.oed);return}
+  if(t.dataset.oedm){modificaMain();return}
   if(t.dataset.aopv){const n=t.dataset.aopv;go('arch');setTimeout(()=>{ARCOP=n;drawArch()},0);return}
   if(t.id=='bkp'){backup();return}
   if(t.id=='gpsb'){rileva();return}
