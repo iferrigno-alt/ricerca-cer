@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-29';
+const APPVER='2026.11.02-31';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -612,27 +612,49 @@ ${items.length?items.map(x=>x.s?cardL(x.s):cardR(x.e)).join(''):'<p class="hint"
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();if(ONAME&&linked()){s.tecnico=ONAME;s.ttel=LS('cer_tel')||''}
-  const prev=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente).sort((x,y)=>(y.mod||0)-(x.mod||0));
+  const loc=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente);
+  /* l'amministratore può partire anche dai sopralluoghi degli operatori */
+  if(isAdmin()&&!inClaude&&!LSRV){try{LSRV=(await api('list')).sops}catch(_){}}
+  const ids=new Set(loc.map(x=>x.id));
+  const prev=loc.map(x=>({id:x.id,cantiere:x.cantiere,luogo:x.luogo,data:x.data,mod:x.mod,chi:x.remote?x.remote.owner:''}))
+    .concat(isAdmin()&&LSRV?LSRV.filter(e=>!e.archived&&!ids.has(e.id)&&(e.cantiere||e.luogo)).map(e=>({id:e.id,cantiere:e.cantiere,luogo:e.luogo,data:e.data,mod:e.mod,chi:e.ownerName,r:1})):[])
+    .sort((x,y)=>(y.mod||0)-(x.mod||0));
   if(prev.length){
     const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3><p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
-<label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}">${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
+<label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}">${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data),x.chi&&'di '+x.chi].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
 <div id="cpo" class="cpo" hidden>
 <label class="chk"><input type="checkbox" id="cp1" checked> Cantiere, luogo e committente con contatti</label>
-<label class="chk"><input type="checkbox" id="cp2" checked> Referente e tecnico con contatti</label>
+<label class="chk"><input type="checkbox" id="cp2" checked> Referente del committente con contatti</label>
 <label class="chk"><input type="checkbox" id="cp3" checked> Posizione GPS</label>
-<label class="chk"><input type="checkbox" id="cp4"> Voci CER (solo i codici, senza foto né quantità)</label>
+<p class="hint" style="margin:8px 2px 2px">Voci CER</p>
+<label class="chk"><input type="radio" name="cpc" value="" checked> Non copiare le voci CER</label>
+<label class="chk"><input type="radio" name="cpc" value="c"> Solo i codici CER, senza foto né quantità</label>
+<label class="chk"><input type="radio" name="cpc" value="f"> Codici CER con foto e quantità</label>
+<label class="chk" style="margin-top:6px"><input type="checkbox" id="cp7"> Foto dello stato di fatto e accessibilità</label>
 <label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label>
-<p class="hint">Le foto non vengono copiate. La data diventa quella di oggi.</p></div>`,[['Annulla','',''],['Crea','pri','1']]);
+<p class="hint">Il tecnico è chi crea il sopralluogo. La data diventa quella di oggi.</p></div>`,[['Annulla','',''],['Crea','pri','1']]);
     if(v!=='1')return;
-    const src=prev.find(x=>x.id===$('cpf').value);
+    const pid=$('cpf').value,on=k=>$(k).checked,cpc=(document.querySelector('input[name=cpc]:checked')||{}).value||'',
+      o={c1:on('cp1'),c2:on('cp2'),c3:on('cp3'),c5:on('cp5'),c7:on('cp7')};
+    let src=null;
+    if(pid){src=await get('sop',pid);if(!src){src=await scaricaRemoto(pid);if(!src)return}}
     if(src){
-      const on=k=>$(k).checked;
-      if(on('cp1'))['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
-      if(on('cp2'))['ref','rtel','rmail','tecnico','ttel'].forEach(k=>s[k]=src[k]||'');
-      if(!s.tecnico&&ONAME&&linked()){s.tecnico=ONAME;s.ttel=LS('cer_tel')||''}
-      if(on('cp3')&&src.gps)s.gps=Object.assign({},src.gps);
-      if(on('cp4'))s.cer=(src.cer||[]).map(x=>({id:uid(),c:x.c||'',q:'',u:x.u||'',n:x.n||''}));
-      if(on('cp5')){s.note=src.note||'';s.sfn=src.sfn||''}
+      if(o.c1)['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
+      if(o.c2)['ref','rtel','rmail'].forEach(k=>s[k]=src[k]||'');
+      if(o.c3&&src.gps)s.gps=Object.assign({},src.gps);
+      if(o.c5){s.note=src.note||'';s.sfn=src.sfn||''}
+      const map={};
+      if(cpc)s.cer=(src.cer||[]).map(x=>{const id=uid();map[x.id]=id;return cpc=='f'?{id,c:x.c||'',q:x.q||'',u:x.u||'',n:x.n||''}:{id,c:x.c||'',q:'',u:x.u||'',n:x.n||''}});
+      /* foto: quelle dei CER con le loro quantità, e/o quelle dello stato di fatto */
+      if(cpc=='f'||o.c7){
+        const rk=m=>{const r={};Object.keys(m||{}).forEach(k=>{if(map[k])r[map[k]]=m[k]});return r};
+        let n=0;
+        for(const p of await fotoDi(src.id)){
+          const c=catOf(p);if(!((c=='rif'&&cpc=='f')||(c=='sf'&&o.c7))||!p.blob)continue;
+          await put('foto',{id:uid(),sop:s.id,blob:p.blob,cat:c,cer:c=='rif'?(p.cer||[]).map(k=>map[k]).filter(Boolean):[],qs:c=='rif'?rk(p.qs):{},us:c=='rif'?rk(p.us):{},nota:p.nota||'',ts:p.ts||Date.now()});n++;
+        }
+        s.nf=n;
+      }
     }
   }
   await put('sop',s);go('sop/'+s.id);
@@ -1084,23 +1106,28 @@ async function caricaAss(){
   const s=cur,sel=$('asss'),inf=$('assi');if(!sel)return;
   inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':'')+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
   try{const j=await api('ops');if(cur!==s||!$('asss'))return;
-    const ops=(j.ops||[]).filter(o=>o.active).sort((a,b)=>a.name.localeCompare(b.name,'it'));
-    sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}" data-tel="${esc(o.tel||'')}"${s.ass&&s.ass.code==o.code?' selected':''}>${esc(o.name)}${o.admin?' (amministratore)':''}</option>`).join('')+`<option value="${esc(CODE)}"${s.ass&&s.ass.code==CODE?' selected':''}>Me stesso (sul mio telefono)</option>`;
+    /* tutti: operatori, amministratori e l'amministratore principale */
+    const ops=(j.ops||[]).filter(o=>o.active).map(o=>Object.assign({},o,{self:o.code===CODE}));
+    if(j.main)ops.push({code:'__main',name:j.main.name,tel:j.main.tel||'',main:true,self:!!j.main.me});
+    ops.sort((a,b)=>a.name.localeCompare(b.name,'it'));
+    const isSel=o=>s.ass&&(s.ass.code===o.code||(o.self&&s.ass.code===CODE));
+    sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}" data-tel="${esc(o.tel||'')}" data-self="${o.self?1:0}" data-nm="${esc(o.name)}"${isSel(o)?' selected':''}>${esc(o.name)}${o.main?' (amministratore principale)':o.admin?' (amministratore)':''}${o.self?' — tu':''}</option>`).join('');
   }catch(e){sel.innerHTML='<option value="">Elenco non disponibile</option>';inf.textContent=e.message}
 }
 async function assegna(){
   const s=cur,op=$('asss').value;if(!op){note('Scegli prima l’operatore.');return}
-  const name=op===CODE?'te stesso':$('asss').selectedOptions[0].textContent;
+  const opt=$('asss').selectedOptions[0],self=opt.dataset.self==='1',nm=opt.dataset.nm||opt.textContent,otel=opt.dataset.tel||'';
+  const name=self?'te stesso':nm;
   if(!await ask('Assegnare “'+(s.cantiere||'Senza nome')+'” a '+name+'? Lo troverà sul suo telefono alla prossima apertura dell’app.','Assegna')){caricaAss();return}
   busy('Invio il sopralluogo all’ufficio…');
   try{
-    s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now(),by:ONAME||'Amministratore'};
+    s.ass={code:self?CODE:op,name:self?(ONAME||nm):nm,ts:Date.now(),by:ONAME||'Amministratore'};
     /* il tecnico diventa l'operatore assegnato; il cellulare del tecnico precedente non vale più */
-    s.tecnico=s.ass.name;s.ttel=op===CODE?(LS('cer_tel')||''):(($('asss').selectedOptions[0]||{}).dataset||{}).tel||'';save();await flush();
+    s.tecnico=s.ass.name;s.ttel=self?(LS('cer_tel')||otel):otel;save();await flush();
     while(syncing)await new Promise(r=>setTimeout(r,300));
     await syncAll();if(syncErr)throw new Error(syncErr);
-    await api('assign',{id:s.id,op});
-    if(op===CODE){busyEnd();note('Fatto: lo troverai anche sul tuo telefono alla prossima apertura dell’app.');caricaAss();return}
+    await api('assign',{id:s.id,op:self?CODE:op});
+    if(self){busyEnd();note('Fatto: lo troverai anche sul tuo telefono alla prossima apertura dell’app.');caricaAss();return}
     /* la copia del PC diventa quella dell'operatore: si riapre da “Lavori degli operatori” sempre aggiornata */
     dirty=false;cur=null;for(const p of await fotoDi(s.id))await del('foto',p.id);await del('sop',s.id);
     busyEnd();go('sop');
