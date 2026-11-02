@@ -440,6 +440,23 @@ const ask=(msg,ok,danger)=>dlgOpen(`<p>${esc(msg)}</p>`,[['Annulla','',''],[ok||
 const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
+/* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
+const APPVER='2026.11.02-2';
+async function checkUpd(){
+  if(inClaude||!/^https?:/.test(location.protocol))return;
+  try{
+    const r=await fetch(location.pathname+'?nv='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const m=(await r.text()).match(/const APPVER='([^']+)'/);
+    if(!m||m[1]===APPVER)return;
+    let k='';try{k=sessionStorage.getItem('cer_upd')||''}catch(e){}
+    if(k===m[1])return; /* già provato: evita ricarichi a ripetizione */
+    try{sessionStorage.setItem('cer_upd',m[1])}catch(e){}
+    const u=new URL(location.href);u.searchParams.set('v',m[1]);location.replace(u.toString());
+  }catch(e){}
+}
+/* all'apertura, e quando si torna sull'app dopo almeno 10 minuti (mai subito dopo la fotocamera) */
+let hidAt=0;checkUpd();
+document.addEventListener('visibilitychange',()=>{if(document.hidden){hidAt=Date.now();return}if(hidAt&&Date.now()-hidAt>600000&&$('dlg').hidden)checkUpd()});
 let DLp=null;const dlCap=()=>DLp||(DLp=inClaude?Promise.resolve(window.claude.use('downloads')).catch(()=>null):Promise.resolve(null));
 
 /* ============ SCELTA CODICE: usa la pagina di ricerca ============ */
@@ -660,16 +677,25 @@ async function archiviaRemoto(id,mod){
   catch(e){busyEnd();note('Non riesco a togliere da Drive: '+e.message)}
 }
 const dOra=t=>t?new Date(t).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+let SHOWARC=false;
+async function eliminaRemoto(id,nome){
+  if(!await ask('Eliminare definitivamente “'+nome+'” dall’archivio? Dati e foto vengono tolti da Google Drive (finiscono nel cestino di Drive) e da questo PC. Non viene salvato nessuno ZIP.','Elimina',1))return;
+  busy('Elimino dall’archivio…');
+  try{await api('archive',{id});for(const p of await fotoDi(id))await del('foto',p.id);await del('sop',id);busyEnd();renderArch()}
+  catch(e){busyEnd();note('Non riesco a eliminare: '+e.message)}
+}
 async function renderArch(){
   $('vA').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><button class="bk" data-go="arch">Aggiorna</button></div><main><h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint">Carico l’elenco dall’archivio…</p></main>`;
   if(!isAdmin()){$('vA').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
   let j;try{j=await api('list')}catch(e){$('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1><p class="hint err">${esc(e.message)}</p>`;return}
   if(view!='vA')return;
-  const g={};j.sops.forEach(x=>{(g[x.ownerName||'—']=g[x.ownerName||'—']||[]).push(x)});
+  const nArc=j.sops.filter(x=>x.archived).length;
+  const g={};j.sops.filter(x=>SHOWARC||!x.archived).forEach(x=>{(g[x.ownerName||'—']=g[x.ownerName||'—']||[]).push(x)});
   const names=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it'));
-  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?'':`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div>`}</div>`;
+  const card=x=>`<div class="it sl arc${x.archived?' done':''}"><div class="slt">${esc(x.cantiere||'Senza nome')}</div><div class="ds sm">${esc([x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</div><div class="meta">${x.ncer||0} ${x.ncer==1?'codice':'codici'} CER · ${x.nfoto||0} foto · ${x.archived?'archiviato il '+dOra(x.archived):'ricevuto '+dOra(x.recv)}</div>${x.archived?'':`<div class="row2" style="margin-top:8px"><button class="btn pri" data-ra="${esc(x.id)}" data-rm="${x.mod||0}">Apri</button><button class="btn" data-rz="${esc(x.id)}" data-rm="${x.mod||0}">Archivia (ZIP)</button></div><button class="btn dng wide" style="margin-top:8px" data-rx="${esc(x.id)}" data-rn="${esc(x.cantiere||'Senza nome')}">Elimina dall’archivio</button>`}</div>`;
   $('vA').querySelector('main').innerHTML=`<h1 class="lt">Sopralluoghi degli operatori</h1>
 ${names.length?names.map(n=>{const a=g[n].sort((x,y)=>(x.archived?1:0)-(y.archived?1:0)||(y.recv||0)-(x.recv||0)),att=a.filter(x=>!x.archived).length;return `<section class="card"><h2>${esc(n)} <span class="cnt">${att||''}</span></h2>${a.map(card).join('')}</section>`}).join(''):'<p class="hint">Nessun sopralluogo ricevuto finora.</p>'}
+${nArc?`<button class="btn wide" data-sarc="1">${SHOWARC?'Nascondi':'Mostra'} archiviati (${nArc})</button>`:''}
 <button class="btn wide" data-go="ops">👥 Gestisci operatori</button>`;
 }
 async function renderOps(){
@@ -1197,6 +1223,8 @@ document.addEventListener('click',e=>{
   if(t.id=='conn'){(async()=>{t.disabled=true;t.textContent='Collego…';try{const j=await collega($('csrv').value,$('ccode').value);note('Collegato come '+j.name+(j.role=='admin'?' (amministratore)':'')+'.');syncSoon(300);renderList()}catch(err){note(err.message);t.disabled=false;t.textContent='Collega'}})();return}
   if(t.dataset.ra){apriRemoto(t.dataset.ra,+t.dataset.rm);return}
   if(t.dataset.rz){archiviaRemoto(t.dataset.rz,+t.dataset.rm);return}
+  if(t.dataset.rx){eliminaRemoto(t.dataset.rx,t.dataset.rn);return}
+  if(t.dataset.sarc){SHOWARC=!SHOWARC;renderArch();return}
   if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
   if(t.dataset.oad){(async()=>{const on=t.dataset.ov=='1';if(!await ask(on?'Rendere amministratore questo operatore? Vedrà i sopralluoghi di tutti e potrà gestire gli operatori.':'Togliere i diritti di amministratore? Tornerà a vedere e inviare solo i suoi sopralluoghi.',on?'Rendi amministratore':'Togli diritti',on?0:1))return;try{await api('setOp',{op:t.dataset.oad,admin:on});renderOps()}catch(err){note(err.message)}})();return}
