@@ -50,6 +50,8 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .dlgb h3{margin:0 0 6px;font-size:19px}
 .dlgb p{margin:0 0 4px;overflow-wrap:anywhere}
 .dlga{display:grid;gap:8px;margin-top:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 2px;font-size:15px;line-height:1.3}.chk input{width:20px;height:20px;flex:none;margin:0}
+.cpo{margin-top:6px}
 .mw{background:var(--hzb);color:var(--hz);border-bottom:1px solid var(--hz);padding:10px 14px;font-size:14px}
 
 /* banner aggiunta */
@@ -428,6 +430,7 @@ async function shrink(file){
 
 /* ============ FINESTRE DI DIALOGO (nella pagina, funzionano ovunque) ============ */
 let dlgRes=null;
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value}});
 function dlgOpen(html,btns){
   if(dlgRes)dlgClose('');
   $('dlgc').innerHTML=html;
@@ -441,7 +444,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-3';
+const APPVER='2026.11.02-5';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -531,7 +534,7 @@ async function renderList(){
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
 ${isAdmin()&&!inClaude?`<div class="row2" style="margin-bottom:12px"><button class="btn pri" data-go="arch">🗂 Lavori degli operatori</button><button class="btn" data-go="ops">👥 Operatori</button></div>`:''}
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
-${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
+${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':''}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
 <section class="card" style="margin-top:18px"><h2>Invio all’ufficio</h2><div id="sync"></div></section>
 <section class="card"><h2>Backup</h2><p class="hint">Copia di sicurezza di tutti i sopralluoghi di questo dispositivo, da conservare o spostare su un altro telefono.</p>
 <div class="row2" style="margin-top:10px"><button class="btn" id="bkp">Esporta backup</button><label class="btn">Ripristina<input type="file" accept=".json,application/json" hidden id="rst"></label></div></section></main>`;
@@ -540,6 +543,28 @@ ${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${
 const newSop=()=>({id:uid(),cantiere:'',luogo:'',committente:'',ctel:'',cmail:'',ref:'',rtel:'',rmail:'',data:today(),tecnico:'',ttel:'',note:'',gps:null,acc:{},sfn:'',cer:[],nf:0,cr:Date.now(),mod:Date.now()});
 async function nuovo(){
   const s=newSop();
+  const prev=(await all('sop')).filter(x=>x.cantiere||x.luogo||x.committente).sort((x,y)=>(y.mod||0)-(x.mod||0));
+  if(prev.length){
+    const v=await dlgOpen(`<h3>Nuovo sopralluogo</h3><p class="hint">Puoi partire dai dati di un sopralluogo già fatto, oppure da una scheda vuota.</p>
+<label class="fl">Copia i dati da<select id="cpf"><option value="">— scheda vuota —</option>${prev.map(x=>`<option value="${esc(x.id)}">${esc([x.cantiere||'Senza nome',x.luogo,dIt(x.data)].filter(Boolean).join(' · '))}</option>`).join('')}</select></label>
+<div id="cpo" class="cpo" hidden>
+<label class="chk"><input type="checkbox" id="cp1" checked> Cantiere, luogo e committente con contatti</label>
+<label class="chk"><input type="checkbox" id="cp2" checked> Referente e tecnico con contatti</label>
+<label class="chk"><input type="checkbox" id="cp3" checked> Posizione GPS</label>
+<label class="chk"><input type="checkbox" id="cp4"> Voci CER (solo i codici, senza foto né quantità)</label>
+<label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label>
+<p class="hint">Le foto non vengono copiate. La data diventa quella di oggi.</p></div>`,[['Annulla','',''],['Crea','pri','1']]);
+    if(v!=='1')return;
+    const src=prev.find(x=>x.id===$('cpf').value);
+    if(src){
+      const on=k=>$(k).checked;
+      if(on('cp1'))['cantiere','luogo','committente','ctel','cmail'].forEach(k=>s[k]=src[k]||'');
+      if(on('cp2'))['ref','rtel','rmail','tecnico','ttel'].forEach(k=>s[k]=src[k]||'');
+      if(on('cp3')&&src.gps)s.gps=Object.assign({},src.gps);
+      if(on('cp4'))s.cer=(src.cer||[]).map(x=>({id:uid(),c:x.c||'',q:'',u:x.u||'',n:x.n||''}));
+      if(on('cp5')){s.note=src.note||'';s.sfn=src.sfn||''}
+    }
+  }
   await put('sop',s);go('sop/'+s.id);
 }
 const b2d=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)});
@@ -580,6 +605,25 @@ async function togliLocale(id){
   await del('sop',id);
   if(view=='vL'||view=='vS')route();
 }
+/* scarica sul dispositivo i sopralluoghi che l'ufficio ha assegnato a questo operatore */
+const goneGet=()=>{try{return JSON.parse(LS('cer_gone')||'{}')}catch(_){return {}}};
+function segnaTolto(id){const g=goneGet();g[id]=Date.now();LS('cer_gone',JSON.stringify(g))}
+async function scaricaAssegnati(){
+  let j;try{j=await api('mine')}catch(e){if(e.code==='azione sconosciuta')return;throw e}
+  const g=goneGet(),nuovi=[];
+  for(const e of j.sops||[]){
+    if(cur&&cur.id===e.id)continue;
+    const loc=await get('sop',e.id);
+    if(loc){
+      if(loc.remote||(loc.mod||0)>(loc.sentMod||0)||(loc.delf||[]).length)continue;
+      if(!(e.mod>(loc.pullMod||0)&&e.mod>(loc.sentMod||0)))continue;
+      if((await fotoDi(e.id)).some(p=>!p.sent))continue;
+    }else if(g[e.id]&&e.mod<=g[e.id])continue;
+    await scaricaRemoto(e.id,true,e.mod);
+    if(!loc)nuovi.push(e.cantiere||'Senza nome');
+  }
+  if(nuovi.length){if(view=='vL'||view=='vS')route();if($('dlg').hidden)note((nuovi.length==1?'Ti è stato assegnato un nuovo sopralluogo: ':'Ti sono stati assegnati nuovi sopralluoghi: ')+nuovi.join(', ')+'. Lo trovi nell’elenco Sopralluoghi.')}
+}
 async function pulisciChiusi(){
   const last=+(LS('cer_chk')||0);if(Date.now()-last<15*60000)return;
   LS('cer_chk',String(Date.now()));
@@ -617,6 +661,7 @@ async function syncAll(){
       if(cur&&cur.id===s0.id){cur.sentMod=snap;cur.delf=(cur.delf||[]).filter(x=>!dels.includes(x))}
     }
     LS('cer_last',String(Date.now()));
+    await scaricaAssegnati();
     await pulisciChiusi();
   }catch(e){syncErr=e.message||String(e)}
   syncing=false;syncUI();
@@ -651,6 +696,7 @@ async function liberaSpazio(id){
   const st=await syncState(s);
   if(st.todo){note('Questo sopralluogo non è ancora arrivato tutto in ufficio. Aspetta che l’invio sia completo.');return}
   if(!await ask('Il sopralluogo “'+(s.cantiere||'Senza nome')+'” è già in ufficio. Lo tolgo da questo telefono per liberare spazio?','Libera spazio',1))return;
+  segnaTolto(id);
   for(const p of await fotoDi(id))await del('foto',p.id);
   await del('sop',id);renderList();
 }
@@ -658,21 +704,22 @@ async function liberaSpazio(id){
 /* ---- amministratore: archivio diviso per operatore ---- */
 function busy(msg){$('dlgc').innerHTML=`<p>${esc(msg)}</p>`;$('dlga').innerHTML='';$('dlg').hidden=false}
 function busyEnd(){if(!dlgRes)$('dlg').hidden=true}
-async function scaricaRemoto(id){
-  busy('Scarico il sopralluogo…');
+async function scaricaRemoto(id,quiet,pullMod){
+  if(!quiet)busy('Scarico il sopralluogo…');
   try{
     const j=await api('getSop',{id}),s=j.sop,meta=s.fotoMeta||[];delete s.fotoMeta;
     const keep=new Set(meta.map(m=>m.id));
     for(const p of await fotoDi(id))if(!keep.has(p.id))await del('foto',p.id);
     let k=0;
     for(const m of meta){
-      k++;$('dlgc').innerHTML=`<p>Scarico le foto… ${k} di ${meta.length}</p>`;
+      k++;if(!quiet)$('dlgc').innerHTML=`<p>Scarico le foto… ${k} di ${meta.length}</p>`;
       const g=await api('getFoto',{sop:id,id:m.id});
       await put('foto',{id:m.id,sop:id,blob:b64b(g.b64,g.type),nota:m.nota||'',cer:m.cer||[],qs:m.qs||{},us:m.us||{},cat:m.cat||'rif',ts:m.ts||0,sent:1});
     }
-    s.sentMod=s.mod||Date.now();s.mod=s.sentMod;s.remote={owner:j.owner||''};s.delf=[];s.nf=meta.length;
-    await put('sop',s);busyEnd();return s;
-  }catch(e){busyEnd();note('Non riesco a scaricare: '+e.message);return null}
+    s.sentMod=s.mod||Date.now();s.mod=s.sentMod;s.delf=[];s.nf=meta.length;
+    if(quiet)s.pullMod=pullMod||0;else s.remote={owner:j.owner||''};
+    await put('sop',s);if(!quiet)busyEnd();return s;
+  }catch(e){if(quiet)throw e;busyEnd();note('Non riesco a scaricare: '+e.message);return null}
 }
 async function apriRemoto(id,mod){
   const loc=await get('sop',id);
@@ -770,6 +817,7 @@ ${fld('ref','Referente del committente','Nome e cognome')}
 ${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
 </section>
+${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p class="hint" style="margin:0 2px 10px">Prepara qui i dati e assegnalo: il sopralluogo compare da solo sul telefono dell’operatore, che lo completa sul posto.</p><div id="assi" class="hint"></div><div class="row2"><label class="fl" style="margin:0">Operatore<select id="asss"><option value="">Carico l’elenco…</option></select></label><button class="btn pri" id="assb" style="align-self:end">Assegna</button></div></section>`:''}
 <section class="card"><h2>Posizione GPS</h2>
 <button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
 <button class="btn wide" id="mpo" style="margin:0 0 10px">🗺 Scegli sulla mappa</button>
@@ -796,6 +844,32 @@ ${fld('data','Data','','date')}
 </section>
 </main>`;
   updGps();renderCer();renderPh();if(inClaude)$("mpo").hidden=true;
+  if($('asss'))caricaAss();
+}
+async function caricaAss(){
+  const s=cur,sel=$('asss'),inf=$('assi');if(!sel)return;
+  inf.innerHTML=s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>'+(s.ass.ts?' il '+esc(dOra(s.ass.ts)):''):(s.remote?'Sopralluogo di <b>'+esc(s.remote.owner||'operatore')+'</b>':'Non ancora assegnato');
+  try{const j=await api('ops');if(cur!==s||!$('asss'))return;
+    const ops=(j.ops||[]).filter(o=>o.active).sort((a,b)=>a.name.localeCompare(b.name,'it'));
+    sel.innerHTML='<option value="">— scegli —</option>'+ops.map(o=>`<option value="${esc(o.code)}"${s.ass&&s.ass.code==o.code?' selected':''}>${esc(o.name)}${o.admin?' (amministratore)':''}</option>`).join('')+`<option value="${esc(CODE)}"${s.ass&&s.ass.code==CODE?' selected':''}>Me stesso (sul mio telefono)</option>`;
+  }catch(e){sel.innerHTML='<option value="">Elenco non disponibile</option>';inf.textContent=e.message}
+}
+async function assegna(){
+  const s=cur,op=$('asss').value;if(!op){note('Scegli prima l’operatore.');return}
+  const name=op===CODE?'te stesso':$('asss').selectedOptions[0].textContent;
+  if(!await ask('Assegnare “'+(s.cantiere||'Senza nome')+'” a '+name+'? Lo troverà sul suo telefono alla prossima apertura dell’app.','Assegna'))return;
+  busy('Invio il sopralluogo all’ufficio…');
+  try{
+    s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now()};save();await flush();
+    while(syncing)await new Promise(r=>setTimeout(r,300));
+    await syncAll();if(syncErr)throw new Error(syncErr);
+    await api('assign',{id:s.id,op});
+    if(op===CODE){busyEnd();note('Fatto: lo troverai anche sul tuo telefono alla prossima apertura dell’app.');caricaAss();return}
+    /* la copia del PC diventa quella dell'operatore: si riapre da “Lavori degli operatori” sempre aggiornata */
+    dirty=false;cur=null;for(const p of await fotoDi(s.id))await del('foto',p.id);await del('sop',s.id);
+    busyEnd();go('sop');
+    note('Fatto: '+s.ass.name+' lo troverà sul telefono. Da ora lo vedi in “Lavori degli operatori” sotto il suo nome, con tutto quello che aggiunge sul posto.');
+  }catch(e){busyEnd();note('Non riesco ad assegnarlo: '+e.message)}
 }
 function updGps(keep){
   const g=cur.gps;
@@ -1068,7 +1142,7 @@ async function zipFilesFor(s){
 }
 async function elimina(){
   if(!await ask('Eliminare questo sopralluogo con tutte le sue foto? Non si può annullare.','Elimina',1))return;
-  const s=cur;dirty=false;cur=null;
+  const s=cur;dirty=false;cur=null;segnaTolto(s.id);
   for(const p of await fotoDi(s.id))await del('foto',p.id);
   await del('sop',s.id);go('sop');
 }
@@ -1237,7 +1311,7 @@ document.addEventListener('click',e=>{
   /* sopralluoghi */
   if(t.id=='nuovo'){nuovo();return}
   if(t.dataset.free){e.stopPropagation();liberaSpazio(t.dataset.free);return}
-  if(t.dataset.free2){(async()=>{if(!await ask('Tolgo la copia scaricata da questo PC? In ufficio resta su Google Drive.','Togli copia',1))return;for(const p of await fotoDi(t.dataset.free2))await del('foto',p.id);await del('sop',t.dataset.free2);renderList()})();return}
+  if(t.dataset.free2){(async()=>{if(!await ask('Tolgo la copia scaricata da questo PC? In ufficio resta su Google Drive.','Togli copia',1))return;segnaTolto(t.dataset.free2);for(const p of await fotoDi(t.dataset.free2))await del('foto',p.id);await del('sop',t.dataset.free2);renderList()})();return}
   if(t.id=='syncnow'){syncAll();return}
   if(t.id=='disc'){(async()=>{if(!await ask('Scollegare questo dispositivo dall’archivio dell’ufficio? I sopralluoghi restano sul dispositivo.','Scollega',1))return;scollega();renderList()})();return}
   if(t.id=='conn'){(async()=>{t.disabled=true;t.textContent='Collego…';try{const j=await collega($('csrv').value,$('ccode').value);note('Collegato come '+j.name+(j.role=='admin'?' (amministratore)':'')+'.');syncSoon(300);renderList()}catch(err){note(err.message);t.disabled=false;t.textContent='Collega'}})();return}
@@ -1272,6 +1346,7 @@ document.addEventListener('click',e=>{
   const ok=t.closest('[data-ok]');
   if(ok&&ovF){const k=ok.dataset.ok;ovF.cer=ovF.cer||[];ovF.cer=ovF.cer.includes(k)?ovF.cer.filter(x=>x!=k):ovF.cer.concat(k);ovDirty=true;paintOvk();return}
   if(t.id=='dels'){elimina();return}
+  if(t.id=='assb'){assegna();return}
   if(t.id=='prt'){print();return}
   if(t.id=='rdl'){scaricaReport();return}
   if(t.dataset.dc!=null){const i=+t.dataset.dc,x=cur.cer[i];(async()=>{if(!await ask('Togliere la voce '+lbl(cur,x)+' da questo sopralluogo? Le sue foto restano tra quelle da classificare.','Togli',1))return;const k=cur.cer.indexOf(x);if(k<0)return;cur.cer.splice(k,1);renderCer();save();for(const p of fotos){if((p.cer||[]).includes(x.id)){p.cer=p.cer.filter(y=>y!=x.id);await put('foto',p)}}renderPh()})();return}
