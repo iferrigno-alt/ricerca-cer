@@ -457,7 +457,9 @@ async function shrink(file){
 
 /* ============ FINESTRE DI DIALOGO (nella pagina, funzionano ovunque) ============ */
 let dlgRes=null;
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value}
+  /* scegliere l'operatore basta: chiede subito conferma e assegna */
+  if(e.target&&e.target.id==='asss'&&e.target.value&&!(cur&&cur.ass&&cur.ass.code===e.target.value))assegna()});
 function dlgOpen(html,btns){
   if(dlgRes)dlgClose('');
   $('dlgc').innerHTML=html;
@@ -471,7 +473,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-12';
+const APPVER='2026.11.02-13';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -908,7 +910,7 @@ async function caricaAss(){
 async function assegna(){
   const s=cur,op=$('asss').value;if(!op){note('Scegli prima l’operatore.');return}
   const name=op===CODE?'te stesso':$('asss').selectedOptions[0].textContent;
-  if(!await ask('Assegnare “'+(s.cantiere||'Senza nome')+'” a '+name+'? Lo troverà sul suo telefono alla prossima apertura dell’app.','Assegna'))return;
+  if(!await ask('Assegnare “'+(s.cantiere||'Senza nome')+'” a '+name+'? Lo troverà sul suo telefono alla prossima apertura dell’app.','Assegna')){caricaAss();return}
   busy('Invio il sopralluogo all’ufficio…');
   try{
     s.ass={code:op,name:op===CODE?(ONAME||'Amministratore'):name.replace(/ \(amministratore\)$/,''),ts:Date.now()};
