@@ -62,7 +62,7 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .tg button{font:inherit;font-size:14px;background:#fff;color:var(--hz);border:0;border-radius:8px;padding:6px 10px;flex:none}
 
 /* sopralluoghi */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln);min-height:56px}
+.top{position:sticky;top:var(--navh,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln);min-height:56px}
 .top h1{margin:0;font-size:24px}
 .bk{font:inherit;background:none;border:0;color:var(--ac);padding:6px 0;font-size:17px}
 .sv{font-size:13px;color:var(--mut)}
@@ -140,6 +140,13 @@ textarea{resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn{display:flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:16px;padding:11px 10px;border-radius:12px;border:1.5px solid var(--ac);background:none;color:var(--ac);text-align:center;cursor:pointer}
 .btn.pri{background:var(--ac);color:var(--acf)}
+#nav{position:sticky;top:0;z-index:7;background:var(--sf);border-bottom:1px solid var(--ln);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:8px 10px}
+@media(max-width:520px){#nav button{font-size:13px;padding:7px 9px}#nav .lg{display:none}}
+#nav::-webkit-scrollbar{display:none}
+#nav button{flex:none;font:inherit;font-size:14px;line-height:1.2;padding:8px 12px;border-radius:999px;border:1px solid var(--ln);background:var(--bg);color:var(--ink);white-space:nowrap;cursor:pointer}
+#nav button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+#nav button.nw{border-color:var(--ac);color:var(--ac);font-weight:600}
+@media print{#nav{display:none!important}}
 .btn.dng{border-color:var(--hz);color:var(--hz)}
 .btn:disabled{opacity:.6}
 .wide{width:100%;margin-top:10px}
@@ -266,6 +273,7 @@ textarea{resize:vertical}
 </style>
 </head>
 <body>
+<nav id="nav" hidden></nav>
 
 <div id="vS">
 <header>
@@ -483,7 +491,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-17';
+const APPVER='2026.11.02-18';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -525,8 +533,17 @@ function addRow(c){const x={id:uid(),c,q:'',u:lastU,n:''};cur.cer.push(x);return
 let fotos=[],umap={};
 let cur=null,target=null,targetName='',urls=[],focusNew=false,autoGps=false,dirty=false,st,watch=null;
 const V=['vS','vL','vE','vG','vR','vA','vO'];let view='vS';
+/* menu sempre in alto in tutte le pagine dei sopralluoghi */
+function renderNav(v){
+  const n=$('nav'),on=v!='vS';n.hidden=!on;
+  if(!on){document.documentElement.style.setProperty('--navh','0px');return}
+  const adm=isAdmin()&&!inClaude,act={vL:'sop',vE:'sop',vG:'sop',vR:'sop',vA:'arch',vO:'ops'}[v]||'';
+  const b=(k,l,c)=>`<button data-nav="${k}" class="${act===k?'on':''} ${c||''}">${l}</button>`;
+  n.innerHTML=b('cerca','🔎 Ricerca CER')+b('sop','📋 Sopralluoghi')+(adm?b('arch','🗂 Lavori<span class="lg"> degli operatori</span>')+b('ops','👥 Operatori'):'')+b('new','+ Nuovo<span class="lg"> sopralluogo</span>','nw');
+  requestAnimationFrame(()=>document.documentElement.style.setProperty('--navh',n.offsetHeight+'px'));
+}
 function show(v){
-  view=v;V.forEach(x=>$(x).hidden=x!=v);$('fab').hidden=v!='vS'||!!target||!!pick;$('mw').hidden=!MEM||v=='vS';
+  view=v;V.forEach(x=>$(x).hidden=x!=v);renderNav(v);$('fab').hidden=v!='vS'||!!target||!!pick;$('mw').hidden=!MEM||v=='vS';
   scrollTo(0,0);
 }
 function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];umap={};fotos=[]}
@@ -571,7 +588,6 @@ async function renderList(){
   const a=(await all('sop')).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
   const st={};if(linked()&&!inClaude)for(const x of a)st[x.id]=await syncState(x);
   $('vL').innerHTML=`<div class="top"><button class="bk" data-go="cerca">‹ Ricerca CER</button></div><main><h1 class="lt">Sopralluoghi</h1>
-${isAdmin()&&!inClaude?`<div class="row2" style="margin-bottom:12px"><button class="btn pri" data-go="arch">🗂 Lavori degli operatori</button><button class="btn" data-go="ops">👥 Operatori</button></div>`:''}
 <button class="btn pri wide big" id="nuovo">+ Nuovo sopralluogo</button>
 ${a.length>1?`<label class="fl srch">Cerca sopralluogo<input id="lq" type="search" placeholder="Cantiere, luogo, committente…" value="${esc(LQ)}" autocomplete="off"></label><p class="hint" id="lqn" style="margin:-4px 2px 8px"></p>`:''}
 ${a.length?a.map(s=>{const y=st[s.id];return `<div class="it sl" data-go="sop/${s.id}" role="button" tabindex="0" data-lq="${esc(normq([s.cantiere,s.luogo,s.committente,s.ref,s.tecnico,dIt(s.data),s.remote&&s.remote.owner].join(' ')))}"><div class="slt">${esc(s.cantiere||'Senza nome')}</div><div class="ds sm">${esc([s.luogo,dIt(s.data)].filter(Boolean).join(' · '))}</div><div class="meta">${s.remote?'di <b>'+esc(s.remote.owner||'operatore')+'</b> · ':(ONAME&&linked()?'di <b>'+esc(ONAME)+'</b> · ':'')}${s.ass&&isAdmin()&&s.ass.code!==CODE?'assegnato a <b>'+esc(s.ass.name)+'</b> · ':''}${s.ass&&!isAdmin()?'📌 assegnato dall’ufficio · ':''}${s.cer.length} ${s.cer.length==1?'codice':'codici'} CER · ${s.nf||0} foto${s.gps?' · 📍 GPS':''}${y?(y.revoked?' · ⚠ riassegnato dall’ufficio a un altro operatore':y.empty?' · scheda vuota':y.todo?' · ⏳ da inviare':' · ✓ in ufficio'):''}</div>${y&&!y.todo&&y.done&&!s.remote&&!isAdmin()?`<button class="lnk2" data-free="${s.id}">Libera spazio sul telefono</button>`:''}${s.remote?`<button class="lnk2" data-free2="${s.id}">Togli la copia da questo PC</button>`:''}</div>`}).join(''):'<p class="hint">Nessun sopralluogo ancora. Premi “Nuovo sopralluogo” quando sei sul posto.</p>'}
@@ -1450,6 +1466,7 @@ $('tga').onclick=()=>{if(pick){pickDone(null);return}const id=target;target=null
 
 document.addEventListener('click',e=>{
   const t=e.target;
+  {const nb=t.closest&&t.closest('[data-nav]');if(nb){const k=nb.dataset.nav;if(k=='new')nuovo();else go(k);return}}
   const dr=t.closest('[data-dr]');if(dr){dlgClose(dr.dataset.dr);return}
   if(t.id=='dlg'){dlgClose('');return}
   if(t.dataset.free||t.dataset.free2){/* gestiti sotto, prima della navigazione */}
