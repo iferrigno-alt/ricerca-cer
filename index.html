@@ -482,7 +482,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-15';
+const APPVER='2026.11.02-16';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -858,6 +858,14 @@ function drawArchRes(){
   box.innerHTML=names.length?names.map(n=>{const att=g[n].filter(x=>!x.archived).length,arc=g[n].length-att,last=Math.max(0,...g[n].filter(x=>!x.archived).map(x=>x.recv||0));
     return `<div class="it sl opr" data-aop="${esc(n)}" role="button" tabindex="0"><div class="slt">${esc(n)}${n===ONAME?' <span class="sm" style="font-weight:400;color:var(--mut)">(tu)</span>':''}</div><div class="meta">${att} ${att==1?'sopralluogo attivo':'sopralluoghi attivi'}${arc?' · '+arc+' archiviati':''}${last?' · ultimo ricevuto '+dOra(last):''}</div><span class="chev">›</span></div>`}).join(''):'<p class="hint">Nessun operatore ancora.</p>';
 }
+async function rinominaOp(code,old){
+  const v=await dlgOpen(`<h3>Cambia nome</h3><label class="fl">Nome e cognome<input id="rnn" value="${esc(old)}" autocomplete="off"></label><p class="hint">Il nuovo nome compare subito nell’elenco, nella sua cartella su Drive e sul suo telefono. Il link e il codice restano gli stessi. Nei sopralluoghi già fatti il campo “Tecnico” resta com’era.</p>`,[['Annulla','',''],['Salva','pri','1']]);
+  const n=($('rnn')&&$('rnn').value||'').trim();
+  if(v!=='1'||!n||n===old)return;
+  busy('Cambio il nome…');
+  try{await api('setOp',{op:code,name:n});busyEnd();renderOps()}
+  catch(e){busyEnd();note('Non riesco a cambiare il nome: '+e.message)}
+}
 async function renderOps(){
   $('vO').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button></div><main><h1 class="lt">Operatori</h1><p class="hint">Carico gli operatori…</p></main>`;
   if(!isAdmin()){$('vO').querySelector('main').innerHTML='<p class="hint">Questa sezione è solo per l’amministratore.</p>';return}
@@ -870,6 +878,7 @@ ${ops.length?ops.map(o=>{const l=opLink(o.code);return `<section class="card op$
 <p class="meta" style="margin:0 0 8px">Codice: <b class="opc">${esc(o.code)}</b></p>
 ${o.active?`<div class="row2"><button class="btn" data-ocp="${esc(o.code)}">Copia link</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(opMsg(o.name,o.code))}" target="_blank" rel="noopener">Invia su WhatsApp</a></div>`:''}
 ${o.active?`<button class="btn wide" data-oad="${esc(o.code)}" data-ov="${o.admin?0:1}" style="margin-top:8px">${o.admin?'Togli i diritti di amministratore':'Rendi amministratore'}</button>`:''}
+<button class="btn wide" data-orn="${esc(o.code)}" data-onm="${esc(o.name)}" style="margin-top:8px">✏️ Cambia nome</button>
 <button class="btn wide ${o.active?'dng':''}" data-otg="${esc(o.code)}" data-oa="${o.active?0:1}" style="margin-top:8px">${o.active?'Disattiva accesso':'Riattiva accesso'}</button></section>`}).join(''):'<p class="hint">Nessun operatore ancora. Crea il primo qui sopra.</p>'}`;
 }
 const opLink=code=>location.origin+location.pathname+'?op='+encodeURIComponent(code)+'&srv='+encodeURIComponent(SRV);
@@ -1423,6 +1432,7 @@ document.addEventListener('click',e=>{
   if(t.id=='arcref'){renderArch(1);return}
   if(t.id=='opadd'){(async()=>{const n=$('opn').value.trim();if(!n){$('opn').focus();return}t.disabled=true;try{const adm=$('opadm').checked;const j=await api('addOp',{name:n,admin:adm});await renderOps();dlgOpen(`<h3>Operatore creato</h3><p><b>${esc(n)}</b>${adm?' (amministratore)':''} · codice <b>${esc(j.code)}</b></p><p class="hint">Mandagli il link: aprendolo dal telefono l’app si collega da sola.</p>`,[['Copia link','','c'],['WhatsApp','pri','w'],['Chiudi','','']]).then(v=>{if(v=='c')copia(opLink(j.code));if(v=='w')window.open('https://wa.me/?text='+encodeURIComponent(opMsg(n,j.code)),'_blank')})}catch(err){note(err.message);t.disabled=false}})();return}
   if(t.dataset.ocp){copia(opLink(t.dataset.ocp));return}
+  if(t.dataset.orn){rinominaOp(t.dataset.orn,t.dataset.onm);return}
   if(t.dataset.oad){(async()=>{const on=t.dataset.ov=='1';if(!await ask(on?'Rendere amministratore questo operatore? Vedrà i sopralluoghi di tutti e potrà gestire gli operatori.':'Togliere i diritti di amministratore? Tornerà a vedere e inviare solo i suoi sopralluoghi.',on?'Rendi amministratore':'Togli diritti',on?0:1))return;try{await api('setOp',{op:t.dataset.oad,admin:on});renderOps()}catch(err){note(err.message)}})();return}
   if(t.dataset.otg){(async()=>{const on=t.dataset.oa=='1';if(!on&&!await ask('Disattivare questo operatore? Non potrà più inviare sopralluoghi. Quelli già inviati restano.','Disattiva',1))return;try{await api('setOp',{op:t.dataset.otg,active:on});renderOps()}catch(err){note(err.message)}})();return}
   if(t.id=='bkp'){backup();return}
