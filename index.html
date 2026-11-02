@@ -15,7 +15,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:66px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 14px 8px;border-bottom:1px solid var(--ln)}
+header{position:sticky;top:var(--navh,0px);z-index:5;background:var(--bg);padding:12px 14px 8px;border-bottom:1px solid var(--ln)}
 .box{display:flex;gap:8px}
 #q{flex:1;min-width:0;font:inherit;font-size:19px;padding:13px 14px;border-radius:14px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);outline:none}
 #q:focus{border-color:var(--ac)}
@@ -491,7 +491,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-18';
+const APPVER='2026.11.02-19';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -535,15 +535,15 @@ let cur=null,target=null,targetName='',urls=[],focusNew=false,autoGps=false,dirt
 const V=['vS','vL','vE','vG','vR','vA','vO'];let view='vS';
 /* menu sempre in alto in tutte le pagine dei sopralluoghi */
 function renderNav(v){
-  const n=$('nav'),on=v!='vS';n.hidden=!on;
+  const n=$('nav'),on=!(v=='vS'&&(pick||target));n.hidden=!on;
   if(!on){document.documentElement.style.setProperty('--navh','0px');return}
-  const adm=isAdmin()&&!inClaude,act={vL:'sop',vE:'sop',vG:'sop',vR:'sop',vA:'arch',vO:'ops'}[v]||'';
+  const adm=isAdmin()&&!inClaude,act={vS:'cerca',vL:'sop',vE:'sop',vG:'sop',vR:'sop',vA:'arch',vO:'ops'}[v]||'';
   const b=(k,l,c)=>`<button data-nav="${k}" class="${act===k?'on':''} ${c||''}">${l}</button>`;
   n.innerHTML=b('cerca','🔎 Ricerca CER')+b('sop','📋 Sopralluoghi')+(adm?b('arch','🗂 Lavori<span class="lg"> degli operatori</span>')+b('ops','👥 Operatori'):'')+b('new','+ Nuovo<span class="lg"> sopralluogo</span>','nw');
   requestAnimationFrame(()=>document.documentElement.style.setProperty('--navh',n.offsetHeight+'px'));
 }
 function show(v){
-  view=v;V.forEach(x=>$(x).hidden=x!=v);renderNav(v);$('fab').hidden=v!='vS'||!!target||!!pick;$('mw').hidden=!MEM||v=='vS';
+  view=v;V.forEach(x=>$(x).hidden=x!=v);renderNav(v);$('fab').hidden=true;$('mw').hidden=!MEM||v=='vS';
   scrollTo(0,0);
 }
 function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];umap={};fotos=[]}
