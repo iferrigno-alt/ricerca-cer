@@ -493,7 +493,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.02-32';
+const APPVER='2026.11.02-34';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -588,7 +588,7 @@ async function flush(){clearTimeout(st);if(!dirty||!cur)return;dirty=false;try{a
 /* ============ ELENCO SOPRALLUOGHI ============ */
 let LSRV=null;
 async function renderList(fromSrv){
-  const a=(await all('sop')).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
+  const a=(await all('sop')).filter(s=>isAdmin()||!s.remote).sort((x,y)=>(y.data||'').localeCompare(x.data||'')||(y.mod||0)-(x.mod||0));
   const st={};if(linked()&&!inClaude)for(const x of a)st[x.id]=await syncState(x);
   const adm=isAdmin()&&!inClaude,ix={};
   if(adm&&LSRV)LSRV.forEach(e=>ix[e.id]=e);
@@ -707,7 +707,10 @@ async function api(action,data){
 }
 async function collega(srv,code){
   const oS=SRV,oC=CODE;SRV=srv.trim();CODE=code.trim();
-  try{const j=await api('ping',{dev:devName()});ROLE=j.role;ONAME=j.name;if(j.tel!=null)LS('cer_tel',j.tel);LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';return j}
+  try{const j=await api('ping',{dev:devName()});ROLE=j.role;ONAME=j.name;if(j.tel!=null)LS('cer_tel',j.tel);LS('cer_srv',SRV);LS('cer_code',CODE);LS('cer_role',ROLE);LS('cer_name',ONAME);syncErr='';
+    /* cambio di persona su questo dispositivo: via le copie scaricate con l'accesso precedente, e controllo subito il resto */
+    if(oC&&oC!==CODE){LSRV=null;ARCJ=null;for(const s of await all('sop'))if(s.remote&&!(cur&&cur.id===s.id))await togliLocale(s.id);LS('cer_chk',null);LS('cer_chk2',null)}
+    return j}
   catch(e){SRV=oS;CODE=oC;throw e}
 }
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
@@ -760,6 +763,8 @@ async function allineaCopie(){
 }
 async function pulisciChiusi(){
   try{await allineaCopie()}catch(_){}
+  /* un operatore non tiene copie dei sopralluoghi altrui (restate da un accesso da amministratore) */
+  if(!isAdmin())for(const s of await all('sop'))if(s.remote&&!(cur&&cur.id===s.id))await togliLocale(s.id);
   const last=+(LS('cer_chk')||0);if(Date.now()-last<15*60000)return;
   LS('cer_chk',String(Date.now()));
   let n=0;
@@ -1426,8 +1431,16 @@ async function zipFilesFor(s){
   return files;
 }
 async function elimina(){
-  if(!await ask('Eliminare questo sopralluogo con tutte le sue foto? Non si può annullare.','Elimina',1))return;
-  const s=cur;dirty=false;cur=null;segnaTolto(s.id);
+  const s=cur,inUff=!!(s.sentMod||s.remote||(LSRV&&LSRV.some(e=>e.id===s.id)));
+  /* amministratore: se è già in ufficio lo elimina davvero, da Drive e da tutti i dispositivi */
+  if(isAdmin()&&!inClaude&&inUff){
+    if(!await ask('Eliminare definitivamente “'+(s.cantiere||'Senza nome')+'”? Viene tolto dall’archivio dell’ufficio (Google Drive), da questo dispositivo e dai telefoni degli operatori. Non si può annullare dall’app.','Elimina definitivamente',1))return;
+    busy('Elimino…');
+    try{await api('purge',{id:s.id})}catch(e){busyEnd();note('Non riesco a eliminarlo dall’archivio: '+e.message);return}
+    busyEnd();
+  }else if(!await ask('Eliminare questo sopralluogo con tutte le sue foto? Non si può annullare.','Elimina',1))return;
+  dirty=false;cur=null;segnaTolto(s.id);
+  if(LSRV)LSRV=LSRV.filter(e=>e.id!==s.id);
   for(const p of await fotoDi(s.id))await del('foto',p.id);
   await del('sop',s.id);go('sop');
 }
