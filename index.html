@@ -557,7 +557,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.06-9';
+const APPVER='2026.11.06-10';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -1826,9 +1826,8 @@ function arUI(){
   document.body.appendChild(el);
   el.addEventListener('beforexrselect',e=>e.preventDefault());
   $('arx').onclick=()=>AR&&AR.s.end();
-  $('arp').onclick=()=>{if(!AR||!AR.hit)return;AR.pend.push(AR.hit.slice());const need=AR.mode=='a'?4:2;
-    if(AR.pend.length>=need){AR.segs.push({t:AR.mode,p:AR.pend});AR.pend=[]}try{navigator.vibrate&&navigator.vibrate(20)}catch(_){}};
-  $('aru').onclick=()=>{if(!AR)return;if(AR.pend.length)AR.pend.pop();else AR.segs.pop()};
+  $('arp').onclick=()=>{if(!AR||!AR.hit)return;AR.add=true};
+  $('aru').onclick=()=>{if(!AR)return;const dl=pt=>{try{pt&&pt.anc&&pt.anc.delete()}catch(_){}};if(AR.pend.length)dl(AR.pend.pop());else{const sg=AR.segs.pop();sg&&sg.p.forEach(dl)}};
   $('ars').onclick=()=>{if(!AR)return;if(!AR.segs.length){note('Prima completa almeno una misura.');return}AR.shot=true};
   el.querySelectorAll('[data-arm]').forEach(b=>b.onclick=()=>{if(!AR)return;AR.mode=b.dataset.arm;AR.pend=[];el.querySelectorAll('[data-arm]').forEach(x=>x.classList.toggle('on',x===b))});
   return el;
@@ -1838,8 +1837,8 @@ async function arStart(cid,cat){
   const cv=$('arc'),gl=cv.getContext('webgl2',{xrCompatible:true,alpha:true});
   let s;
   /* prima chiedo anche l'accesso all'immagine della fotocamera (serve per la foto con le misure); se il telefono non lo dà, riprovo senza */
-  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay','camera-access'],domOverlay:{root:el}})}catch(_){}
-  if(!s)try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],optionalFeatures:['camera-access'],domOverlay:{root:el}})}
+  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay','camera-access'],optionalFeatures:['anchors'],domOverlay:{root:el}})}catch(_){}
+  if(!s)try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],optionalFeatures:['camera-access','anchors'],domOverlay:{root:el}})}
   catch(e){el.hidden=true;note('Non riesco ad avviare la misura: '+(e.message||e.name)+'. Controlla che “Google Play Services per AR” sia installato.');return}
   AR={s,gl,cid,cat:cat||'rif',sop:cur.id,segs:[],pend:[],mode:'l',hit:null,shot:false,n:0,q:Promise.resolve()};
   await gl.makeXRCompatible();
@@ -1883,8 +1882,17 @@ function arFrame(t,f){
   const A=AR;if(!A)return;const s=f.session;s.requestAnimationFrame(arFrame);
   const gl=A.gl,L=s.renderState.baseLayer;gl.bindFramebuffer(gl.FRAMEBUFFER,L.framebuffer);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   const pose=f.getViewerPose(A.ref);if(!pose)return;const v=pose.views[0];
-  const hr=f.getHitTestResults(A.hts);A.hit=null;
-  if(hr.length){const p=hr[0].getPose(A.ref);if(p){const q=p.transform.position;A.hit=[q.x,q.y,q.z]}}
+  const hr=f.getHitTestResults(A.hts);let raw=null;
+  if(hr.length){const p=hr[0].getPose(A.ref);if(p){const q=p.transform.position;raw=[q.x,q.y,q.z]}}
+  /* mirino stabilizzato: i piccoli tremolii vengono smorzati, gli spostamenti veri seguiti subito */
+  if(!raw)A.hit=null;else if(!A.hit||dist(A.hit,raw)>0.08)A.hit=raw;else{const k=0.25;A.hit=A.hit.map((x,i)=>x+(raw[i]-x)*k)}
+  /* i punti fissati restano agganciati al mondo reale (ancore): seguono le correzioni del tracciamento invece di scivolare */
+  const upd=pt=>{if(pt.anc&&f.trackedAnchors&&f.trackedAnchors.has(pt.anc)){const ap=f.getPose(pt.anc.anchorSpace,A.ref);if(ap){const q=ap.transform.position;pt[0]=q.x;pt[1]=q.y;pt[2]=q.z}}};
+  A.pend.forEach(upd);A.segs.forEach(sg=>sg.p.forEach(upd));
+  if(A.add){A.add=false;if(A.hit){const pt=A.hit.slice();
+    if(f.createAnchor)try{f.createAnchor(new XRRigidTransform({x:pt[0],y:pt[1],z:pt[2]}),A.ref).then(a=>{pt.anc=a},()=>{})}catch(_){}
+    A.pend.push(pt);const need=A.mode=='a'?4:2;if(A.pend.length>=need){A.segs.push({t:A.mode,p:A.pend});A.pend=[]}
+    try{navigator.vibrate&&navigator.vibrate(20)}catch(_){}}}
   const m=$('arm'),W=innerWidth,H=innerHeight,dpr=devicePixelRatio||1;
   if(m.width!==W*dpr){m.width=W*dpr;m.height=H*dpr}
   const c=m.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
