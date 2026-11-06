@@ -11,6 +11,7 @@
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1f;--sf:#17272e;--ink:#e6eef1;--mut:#93a8b1;--ln:#2a3f48;--ac:#5cc3d6;--acf:#06222a;--hz:#ff8a7d;--hzb:#3a1f1c;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0e1a1f;--sf:#17272e;--ink:#e6eef1;--mut:#93a8b1;--ln:#2a3f48;--ac:#5cc3d6;--acf:#06222a;--hz:#ff8a7d;--hzb:#3a1f1c;color-scheme:dark}
 *,*::before,*::after{box-sizing:inherit}
+details *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:66px}
@@ -69,6 +70,9 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 #et,.lt{font-size:24px;margin:6px 2px 12px;overflow-wrap:anywhere}
 .card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px;margin:0 0 12px}
 .card h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+details.dc>summary{list-style:none;cursor:pointer;margin:-14px;padding:14px}details.dc>summary::-webkit-details-marker{display:none}
+details.dc>summary h2{margin:0}details.dc[open]>summary{margin-bottom:0}.dcch{margin-left:auto;transition:transform .2s;color:var(--mut)}details.dc:not([open]) .dcch{transform:rotate(-90deg)}
+.dcr{font-size:13px;color:var(--mut);margin-top:4px}details.dc[open] .dcr{display:none}
 .cnt{font-size:13px;background:var(--bg);color:var(--mut);padding:1px 9px;border-radius:99px;font-weight:600}
 .cnt:empty{display:none}
 .cdb{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted var(--mut);text-underline-offset:5px;cursor:pointer}
@@ -540,7 +544,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.06-3';
+const APPVER='2026.11.06-5';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -1136,6 +1140,7 @@ const ACCM=Object.fromEntries(ACC.map(a=>[a[0],a]));
 const asel=(k,l)=>`<label class="fl">${l}<select data-a="${k}"><option value=""></option>${ACCM[k][2].map(o=>`<option${cur.acc[k]==o?' selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
 const afld=(k,l,dec,ph)=>`<label class="fl">${l}<input data-a="${k}"${dec?' inputmode="decimal"':''} placeholder="${esc(ph||'')}" value="${esc(cur.acc[k])}"></label>`;
 const fld=(k,l,ph,type,im)=>`<label class="fl">${l}<input data-k="${k}" type="${type||'text'}"${im?` inputmode="${im}" autocomplete="off"`:''} placeholder="${esc(ph||'')}" value="${esc(cur[k]==null?'':cur[k])}"></label>`;
+function dcRiep(s){const a=[s.committente,s.luogo,s.data?String(s.data).split('-').reverse().join('/'):''].filter(Boolean);return a.length?esc(a.join(' · ')):'<span class="mut">Tocca per compilare</span>'}
 function renderEdit(){
   const s=cur;
   $('vE').innerHTML=`<div class="top"><button class="bk" data-go="sop">‹ Sopralluoghi</button><span id="sv" class="sv"></span></div>
@@ -1143,7 +1148,7 @@ function renderEdit(){
 <h1 id="et">${esc(s.cantiere||'Nuovo sopralluogo')}</h1>
 ${s.ass?`<p class="assinfo">📌 Assegnato a <b>${esc(s.ass.name)}</b>${s.ass.by?' da <b>'+esc(s.ass.by)+'</b>':''}${s.ass.ts?' il '+esc(dOra(s.ass.ts)):''}</p>`:''}
 <button class="btn wide" id="gb" data-go="gal/${s.id}" style="margin:0 0 12px">🖼 Galleria foto per sezione e codice CER</button>
-<section class="card"><h2>Dati del cantiere</h2>
+<details class="card dc" id="dcw"><summary><h2>Dati del cantiere <span class="dcch">▾</span></h2><div id="dcr" class="dcr">${dcRiep(s)}</div></summary>
 ${fld('cantiere','Cantiere','es. Demolizione capannone')}
 ${fld('luogo','Luogo / indirizzo','Via, numero civico, comune')}
 ${fld('committente','Committente','Nome o ragione sociale')}
@@ -1153,7 +1158,8 @@ ${fld('ref','Referente del committente','Nome e cognome')}
 <div class="row2">${fld('tecnico','Tecnico che ha svolto il sopralluogo','Nome e cognome')}${fld('ttel','Cellulare del tecnico','','tel','tel')}</div>
 ${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
-</section>
+<button class="btn pri wide" id="dcs" style="margin-top:4px">💾 Salva e chiudi</button>
+</details>
 ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p class="hint" style="margin:0 2px 10px">Prepara qui i dati e assegnalo: il sopralluogo compare da solo sul telefono dell’operatore, che lo completa sul posto.</p><div id="assi" class="hint"></div><label class="fl" style="margin:0">Scegli l’operatore<select id="asss"><option value="">Carico l’elenco…</option></select></label></section>`:''}
 <section class="card"><h2>Posizione GPS</h2>
 <button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
@@ -1174,11 +1180,12 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 <div class="row2"><button class="btn pri" data-cam="sf">📷 Foto / video</button><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*,video/*" multiple hidden data-phs></label></div>
 <div id="phsf" class="grid"></div>
 </section>
-<section class="card"><h2>Automezzi e attrezzature necessari <span id="nmz" class="cnt"></span></h2>
+<details class="card dc" id="mzw"><summary><h2>Automezzi e attrezzature necessari <span id="nmz" class="cnt"></span><span class="dcch">▾</span></h2><div id="mzr" class="dcr"></div></summary>
 <p class="hint" style="margin:0 2px 10px">Spunta il tipo di mezzo e indica quanti ne servono. Se vuoi, apri il tipo e scegli anche i mezzi precisi.</p>
 <div id="mzl"></div>
 <label class="fl" style="margin-top:10px">Note sui mezzi<textarea data-k="mzn" rows="2" placeholder="Es. accesso solo con mezzi leggeri, serve gru, orari…">${esc(s.mzn||'')}</textarea></label>
-</section>
+<button class="btn pri wide" id="mzs" style="margin-top:10px">💾 Salva e chiudi</button>
+</details>
 <section class="card"><h2>Esporta</h2>
 <div class="row2"><button class="btn" data-go="rep/${s.id}">Report / PDF</button><button class="btn" id="csv">Tabella CSV</button></div>
 <button class="btn wide" id="zip">Foto con codici CER (ZIP)</button>
@@ -1339,7 +1346,7 @@ function rileva(){
   watch.to=setTimeout(gpsEnd,20000);
 }
 /* ============ AUTOMEZZI E ATTREZZATURE (dall'elenco aziendale) ============ */
-const MEZZI=[["Automezzi","Rimorchi scarrabili",[["AE18996","Rimorchio Zorzi","Scarrabile","AE 18996"],["AF57179","Rimorchio Zorzi","Scarrabile","AF 57179"],["XA619FE","Rimorchio Zorzi","Scarrabile","XA 619 FE"],["XA787SL","Rimorchio MEC","Scarrabile","XA 787 SL"],["XA956SX","Rimorchio Zorzi","Scarrabile","XA 956 SX"]]],["Automezzi","Scarrabili",[["DG054WA","Iveco Stralis 500","Scarrabile","DG 054 WA"],["ED288GZ","Iveco Stralis 500","Scarrabile","ED 288 GZ"],["FE907WB","Iveco Stralis 560","Scarrabile","FE 907 WB"],["FE908WB","Iveco Stralis 560","Scarrabile","FE 908 WB"],["GK347EV","Iveco Magirus AG","Scarrabile","GK 347 EV"],["GX461CR","Iveco","Scarrabile","GX 461 CR"]]],["Automezzi","Trattori",[["EA767HC","Iveco Magirus AG","Trattore","EA 767 HC"],["GM161VL","Iveco","Trattore","GM 161 VL"]]],["Automezzi","Semirimorchi",[["AB14186","Semirimorchio Adamoli","Cassonato","AB 14186"],["AB23463","Semirimorchio Viberti","Cisterna","AB 23463"],["XA996SX","Semirimorchio Adamoli","Cassonato","XA 996 SX"],["AF41237","Semirimorchio Menci","Cisterna","AF 41237"],["XA671PX","Semirimorchio Koegel","Cassonato","XA 671 PX"]]],["Automezzi","Autogru",[["GE291BM","Iveco","Furgone con gru","GE291BM"],["GJ248FP","Iveco","Furgone con gru","GJ248FP"]]],["Automezzi","Multibenna",[["FX013WE","Iveco 190.31","Multilift","FX 013 WE"],["GN396RN","Iveco 1A3C","Multilift","GN 396 RN"]]],["Automezzi","Autocisterne",[["CS888FK","Iveco Stralis 540","Cisterna","CS 888 FK"],["ES169YF","Iveco 120","Cisterna","ES 169 YF"],["ES578KB","Iveco 360","Cisterna","ES 578 KB"],["FM413VA","Iveco Stralis 480","Cisterna","FM 413 VA"],["FS092ZG","Iveco","Cisterna","FS 092 ZG"],["HA256BV","Iveco","Cisterna","HA 256 BV"]]],["Automezzi","Rimorchi cisterna",[["XA331ZN","Tecnokar","Cisterna","XA331ZN"],["XA726KD","Rimorchio Viberti","Cisterna","XA 726 KD"],["XA786KL","Rimorchio Viberti","Cisterna","XA 786 KL"]]],["Automezzi","Furgoni",[["DX267TN","Iveco 35/E4","Furgone serbatoi","DX 267 TN"],["EJ010GE","Peugeot Comb","Furgone","EJ 010 GE"],["EJ011GE","Peugeot Comb","Furgone","EJ 011 GE"],["EN028XH","Iveco Daily 35 E4","Furgone","EN 028 XH"],["FP435BC","Iveco","Furgone","FP 435 BC"],["FV298FN","Peugeot","Furgone","FV 298 FN"],["FZ203KS","Peugeot","Furgone boxer","FZ 203 KS"],["GC513JE","Fiat Ducato","Furgone","GC 513 JE"],["GC845JD","Peugeot partner","Furgone","GC 845 JD"],["GJ233FT","Iveco","Furgone cassonato","GJ 233 FT"],["GK255FA","Iveco","Furgone","GK 255 FA"],["GP359PG","Peugeot","Furgone sei posti","GP 359 PG"],["GZ230GW","Iveco","Furgone","GZ 230 GW"],["GZ231GW","Iveco","Furgone","GZ 231 GW"]]],["Automezzi","Auto",[["ED384LZ","Volkswagen golf","Auto","ED 384 LZ"],["EV175RN","Volkswagen tiguan","Auto","EV 175 RN"],["FH167WD","Peugeot 208","Auto","FH 167 WD"],["FL010NY","Peugeot 3008","Auto","FL 010 NY"],["FL631NV","Range Rover Evoque","Auto","FL 631 NV"],["FR349AX","BMW 218D Gran Tourer","Auto","FR 349 AX"],["FS679ZH","Volkswagen polo 1.6","Auto","FS 679 ZH"]]],["Attrezzature","Escavatore",[["CAT3027DHLJL01361","CAT 302.7D","Escavatore","CAT3027DHLJL01361"],["CAT00310TGWT01775","CAT 310","Escavatore","CAT00310TGWT01775"],["CAT03035LCE901060","CAT 303.5 CR","Escavatore","CAT03035LCE901060"]]],["Attrezzature","Bobcat",[["CAT226D3HD5R00196","Caterpillar 226D3","Attrezzatura movimento terra","CAT226D3HD5R00196"]]],["Attrezzature","Ragno",[["MATRICOLAINAILSA20011318","Ragno","Ragno","Matricola inail: SA200113/18"],["MATRICOLAINAIL2011000025SA","Ragno","Ragno","Matricola inail: 2011 0 00025 SA"]]],["Attrezzature","Rullo vibrante",[["CAT0CB17L64300385","Caterpillar CB1.7","Attrezzatura pavimentazione stradale","CAT0CB17L64300385"]]],["Attrezzature","Pala meccanica",[["17345","VENIERI VF3.63 D/1","Macchina operatrice","17345"]]],["Attrezzature","Carrello elevatore",[["P177B12025V","HYSTER EUROPE H2.5FT","Carrello elevatore","P177B12025V"]]],["Attrezzature","Spazzatrice",[["GK423PS","Dulevo International","Autospazzatrice","GK 423 PS"]]]];
+const MEZZI=[["Automezzi","Rimorchi scarrabili",[["AE18996","Rimorchio Zorzi","Scarrabile","AE 18996"],["AF57179","Rimorchio Zorzi","Scarrabile","AF 57179"],["XA619FE","Rimorchio Zorzi","Scarrabile","XA 619 FE"],["XA787SL","Rimorchio MEC","Scarrabile","XA 787 SL"],["XA956SX","Rimorchio Zorzi","Scarrabile","XA 956 SX"]]],["Automezzi","Scarrabili",[["DG054WA","Iveco Stralis 500","Scarrabile","DG 054 WA"],["ED288GZ","Iveco Stralis 500","Scarrabile","ED 288 GZ"],["FE907WB","Iveco Stralis 560","Scarrabile","FE 907 WB"],["FE908WB","Iveco Stralis 560","Scarrabile","FE 908 WB"],["GK347EV","Iveco Magirus AG","Scarrabile","GK 347 EV"],["GX461CR","Iveco","Scarrabile","GX 461 CR"]]],["Automezzi","Trattori",[["EA767HC","Iveco Magirus AG","Trattore","EA 767 HC"],["GM161VL","Iveco","Trattore","GM 161 VL"]]],["Automezzi","Semirimorchi",[["AB14186","Semirimorchio Adamoli","Cassonato","AB 14186"],["AB23463","Semirimorchio Viberti","Cisterna","AB 23463"],["XA996SX","Semirimorchio Adamoli","Cassonato","XA 996 SX"],["AF41237","Semirimorchio Menci","Cisterna","AF 41237"],["XA671PX","Semirimorchio Koegel","Cassonato","XA 671 PX"]]],["Automezzi","Autogru",[["GE291BM","Iveco","Furgone con gru","GE291BM"],["GJ248FP","Iveco","Furgone con gru","GJ248FP"]]],["Automezzi","Multibenna",[["FX013WE","Iveco 190.31","Multilift","FX 013 WE"],["GN396RN","Iveco 1A3C","Multilift","GN 396 RN"]]],["Automezzi","Autocisterne",[["CS888FK","Iveco Stralis 540","Cisterna","CS 888 FK"],["ES169YF","Iveco 120","Cisterna","ES 169 YF"],["ES578KB","Iveco 360","Cisterna","ES 578 KB"],["FM413VA","Iveco Stralis 480","Cisterna","FM 413 VA"],["FS092ZG","Iveco","Cisterna","FS 092 ZG"],["HA256BV","Iveco","Cisterna","HA 256 BV"]]],["Automezzi","Rimorchi cisterna",[["XA331ZN","Tecnokar","Cisterna","XA331ZN"],["XA726KD","Rimorchio Viberti","Cisterna","XA 726 KD"],["XA786KL","Rimorchio Viberti","Cisterna","XA 786 KL"]]],["Automezzi","Furgoni",[["DX267TN","Iveco 35/E4","Furgone serbatoi","DX 267 TN"],["EJ010GE","Peugeot Comb","Furgone","EJ 010 GE"],["EJ011GE","Peugeot Comb","Furgone","EJ 011 GE"],["EN028XH","Iveco Daily 35 E4","Furgone","EN 028 XH"],["FP435BC","Iveco","Furgone","FP 435 BC"],["FV298FN","Peugeot","Furgone","FV 298 FN"],["FZ203KS","Peugeot","Furgone boxer","FZ 203 KS"],["GC513JE","Fiat Ducato","Furgone","GC 513 JE"],["GC845JD","Peugeot partner","Furgone","GC 845 JD"],["GJ233FT","Iveco","Furgone cassonato","GJ 233 FT"],["GK255FA","Iveco","Furgone","GK 255 FA"],["GP359PG","Peugeot","Furgone sei posti","GP 359 PG"],["GZ230GW","Iveco","Furgone","GZ 230 GW"],["GZ231GW","Iveco","Furgone","GZ 231 GW"]]],["Attrezzature","Escavatore",[["CAT3027DHLJL01361","CAT 302.7D","Escavatore","CAT3027DHLJL01361"],["CAT00310TGWT01775","CAT 310","Escavatore","CAT00310TGWT01775"],["CAT03035LCE901060","CAT 303.5 CR","Escavatore","CAT03035LCE901060"]]],["Attrezzature","Bobcat",[["CAT226D3HD5R00196","Caterpillar 226D3","Attrezzatura movimento terra","CAT226D3HD5R00196"]]],["Attrezzature","Ragno",[["MATRICOLAINAILSA20011318","Ragno","Ragno","Matricola inail: SA200113/18"],["MATRICOLAINAIL2011000025SA","Ragno","Ragno","Matricola inail: 2011 0 00025 SA"]]],["Attrezzature","Rullo vibrante",[["CAT0CB17L64300385","Caterpillar CB1.7","Attrezzatura pavimentazione stradale","CAT0CB17L64300385"]]],["Attrezzature","Pala meccanica",[["17345","VENIERI VF3.63 D/1","Macchina operatrice","17345"]]],["Attrezzature","Carrello elevatore",[["P177B12025V","HYSTER EUROPE H2.5FT","Carrello elevatore","P177B12025V"]]],["Attrezzature","Spazzatrice",[["GK423PS","Dulevo International","Autospazzatrice","GK 423 PS"]]]];
 const mzKey=c=>c.toLowerCase().replace(/[^a-z0-9]+/g,'_');
 const MZ_BY=new Map();MEZZI.forEach(([g,c,it])=>it.forEach(v=>MZ_BY.set(v[0],{g,c,v})));
 function mzState(s){s.mzc=s.mzc||{};s.mzv=s.mzv||[];return s}
@@ -1350,7 +1357,7 @@ function renderMz(){
     const hd=g!==g0?`<h3 class="mzg">${esc(g)}</h3>`:'';g0=g;
     return hd+`<div class="mzc${on?' on':''}"><div class="mzr"><label class="mzk"><input type="checkbox" data-mzc="${k}"${on?' checked':''}> <b>${esc(c)}</b></label><input class="mzq" data-mzq="${k}" inputmode="numeric" placeholder="${sel||'n.'}" value="${esc(on?s.mzc[k]||'':'')}" aria-label="Quantità ${esc(c)}"${on?'':' disabled'}></div>
 <details${sel?' open':''}><summary>${it.length} ${it.length==1?'mezzo':'mezzi'}${sel?' · '+sel+' scelti':''}</summary>${it.map(v=>`<label class="mzv"><input type="checkbox" data-mzv="${esc(v[0])}" data-mzk="${k}"${s.mzv.includes(v[0])?' checked':''}> <span>${esc(v[1])}${v[2]&&v[2].toLowerCase()!==v[1].toLowerCase()?' <span class="mut">· '+esc(v[2])+'</span>':''}<br><span class="mzt">${esc(v[3])}</span></span></label>`).join('')}</details></div>`}).join('');
-  const n=mzCount(s);$('nmz').textContent=n?n:'';
+  const n=mzCount(s);$('nmz').textContent=n?n:'';mzRiep(s);
 }
 function mzChange(t){
   const s=mzState(cur),d=t.dataset;
@@ -1360,9 +1367,11 @@ function mzChange(t){
   save();const op=[...document.querySelectorAll('#mzl details')].map(x=>x.open);renderMz();document.querySelectorAll('#mzl details').forEach((x,i)=>{if(op[i])x.open=true});
 }
 /* testo per report ed export: [categoria, quantità, mezzi scelti] */
+function mzRiep(s){const e=$('mzr');if(!e)return;const r=mzRighe(s).map(x=>(x.q?x.q+' × ':'')+x.c);e.innerHTML=r.length?esc(r.join(' · ')):'<span class="mut">Nessun mezzo scelto · tocca per scegliere</span>'}
 function mzRighe(s){mzState(s);return MEZZI.filter(([g,c])=>mzKey(c) in s.mzc).map(([g,c,it])=>{const k=mzKey(c),sel=it.filter(v=>s.mzv.includes(v[0]));const q=s.mzc[k]||(sel.length?String(sel.length):'');return {g,c,q,sel}})}
 /* le note vanno a capo e la casella si allunga con il testo */
-function autoH(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+3)+'px'}
+function autoH(el){if(!el||!el.offsetParent)return;el.style.height='auto';el.style.height=(el.scrollHeight+3)+'px'}
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('dc')&&d.open)autoHAll(d)},true);
 function autoHAll(root){(root||document).querySelectorAll('textarea.nt,textarea[data-k]').forEach(autoH)}
 function renderCer(){
   const L=$('cers');$('nc').textContent=cur.cer.length||'';
@@ -1682,7 +1691,7 @@ async function addCer(c){
 $('vE').addEventListener('input',e=>{
   const t=e.target,d=t.dataset;if(!cur)return;
   if(d.a){cur.acc[d.a]=t.value;save()}
-  else if(d.k){if(t.tagName==='TEXTAREA')autoH(t);cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';save()}
+  else if(d.k){if(t.tagName==='TEXTAREA')autoH(t);cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';if($('dcr'))$('dcr').innerHTML=dcRiep(cur);save()}
   else if(t.id=='lat'||t.id=='lon'){stopGps();$('gpsb').disabled=false;const a=num($('lat').value),b=num($('lon').value);cur.gps=(a!=null&&b!=null&&Math.abs(a)<=90&&Math.abs(b)<=180)?{lat:a,lon:b,acc:null,man:1,ts:Date.now()}:null;updGps(true);save()}
   else if(d.q!=null){cur.cer[+d.q].q=t.value;renderTot();save()}
   else if(d.n!=null){cur.cer[+d.n].n=t.value;autoH(t);save()}
@@ -1862,6 +1871,7 @@ document.addEventListener('click',e=>{
   if(t.id=='ovclr'&&ovF){ovF.cer=[];ovDirty=true;paintOvk();return}
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
+  if(t.id=='dcs'||t.id=='mzs'){if(document.activeElement)document.activeElement.blur();save();flush();setStatus('Salvato ✓');const w=$(t.id=='dcs'?'dcw':'mzw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
   if(t.id=='zip'){flush();zipFoto(cur);return}
   const ct=t.closest('[data-cat]');
   if(ct&&ovF){const k=ct.dataset.cat;if(k!=catOf(ovF)){ovF.cat=k;delete ovF.acc;if(k!='rif')ovF.cer=[];ovDirty=true;$('ovh').textContent='Foto '+CATS.find(c=>c[0]==k)[1].toLowerCase();paintOvk()}return}
