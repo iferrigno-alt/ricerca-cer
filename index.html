@@ -557,7 +557,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.06-7';
+const APPVER='2026.11.06-9';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -1181,11 +1181,12 @@ ${fld('data','Data','','date')}
 <div id="tot" class="tot"></div>
 <button class="btn wide" id="crs" style="margin-top:10px">▴ Chiudi</button>
 </details>
-<section class="card"><h2>Stato di fatto e accessibilità <span id="ns" class="cnt"></span><button class="opn" id="os" data-go="gal/${s.id}/sf" hidden>Apri ›</button></h2>
+<details class="card dc" id="sfw"><summary><h2>Stato di fatto e accessibilità <span id="ns" class="cnt"></span><button class="opn" id="os" data-go="gal/${s.id}/sf" hidden>Apri ›</button><span class="dcch">▾</span></h2><div id="sfr" class="dcr"></div></summary>
 <label class="fl">Note<textarea data-k="sfn" rows="4" placeholder="Stato dei luoghi, accessi, mezzi, ostacoli, permessi, referente sul posto…">${esc(s.sfn)}</textarea></label>
 <div class="row2"><button class="btn pri" data-cam="sf">📷 Foto / video</button><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*,video/*" multiple hidden data-phs></label></div>
 <div id="phsf" class="grid"></div>
-</section>
+<button class="btn pri wide" id="sfs" style="margin-top:10px">💾 Salva e chiudi</button>
+</details>
 <details class="card dc" id="mzw"><summary><h2>Automezzi e attrezzature necessari <span id="nmz" class="cnt"></span><span class="dcch">▾</span></h2><div id="mzr" class="dcr"></div></summary>
 <p class="hint" style="margin:0 2px 10px">Spunta il tipo di mezzo e indica quanti ne servono. Se vuoi, apri il tipo e scegli anche i mezzi precisi.</p>
 <div id="mzl"></div>
@@ -1417,6 +1418,7 @@ function paintLinks(){
   });
   renderTot();
 }
+function sfRiep(n){const e=$('sfr');if(!e||!cur)return;if(n==null)n=+($('ns').textContent||0);const nt=String(cur.sfn||'').trim();const a=[n?n+(n==1?' foto':' foto/video'):'',nt.length>70?nt.slice(0,70)+'…':nt].filter(Boolean);e.innerHTML=a.length?esc(a.join(' · ')):'<span class="mut">Nessuna nota o foto · tocca per compilare</span>'}
 function crRiep(){const e=$('crr');if(!e||!cur)return;e.innerHTML=cur.cer.length?cur.cer.map(x=>`<div class="crl${x.c?'':' nc'}"><b>${esc(lbl(cur,x))}</b>${String(x.q||'').trim()?' · '+esc(x.q+' '+x.u):''}</div>`).join(''):'<span class="mut">Nessun rifiuto · tocca per aggiungere</span>'}
 function renderTot(){
   const m=totali(cur,fotos),nh=cur.cer.filter(x=>{const r=RM.get(x.c);return r&&r[2]}).length,t=totTxt(m);
@@ -1437,7 +1439,7 @@ async function renderPh(){
   const unc=fotos.map((p,i)=>[p,i]).filter(([p])=>!codesOf(s,p).length);
   $('unc').hidden=true;
   $('phs').innerHTML=unc.map(([p,i])=>`<button class="th" data-pf="${p.id}"><img src="${umap[p.id]}" alt="Foto ${i+1}" loading="lazy"><span>${i+1}</span>${p.nota?'<i>✎</i>':''}<b class="no">senza CER</b></button>`).join('');
-  $('ns').textContent=fotosSf.length||'';
+  $('ns').textContent=fotosSf.length||'';sfRiep(fotosSf.length);
   $('phsf').innerHTML=fotosSf.map((p,i)=>`<button class="th" data-pf="${p.id}"><img src="${mk(p)}" alt="Foto stato di fatto S${i+1}" loading="lazy"><span>S${i+1}</span>${p.nota?'<i>✎</i>':''}</button>`).join('');
   paintLinks();
 }
@@ -1707,7 +1709,7 @@ async function addCer(c){
 $('vE').addEventListener('input',e=>{
   const t=e.target,d=t.dataset;if(!cur)return;
   if(d.a){cur.acc[d.a]=t.value;save()}
-  else if(d.k){if(t.tagName==='TEXTAREA')autoH(t);cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';if($('dcr'))$('dcr').innerHTML=dcRiep(cur);save()}
+  else if(d.k){if(t.tagName==='TEXTAREA')autoH(t);cur[d.k]=t.value;if(d.k=='cantiere')$('et').textContent=t.value||'Nuovo sopralluogo';if($('dcr'))$('dcr').innerHTML=dcRiep(cur);if(d.k=='sfn')sfRiep();save()}
   else if(t.id=='lat'||t.id=='lon'){stopGps();$('gpsb').disabled=false;const a=num($('lat').value),b=num($('lon').value);cur.gps=(a!=null&&b!=null&&Math.abs(a)<=90&&Math.abs(b)<=180)?{lat:a,lon:b,acc:null,man:1,ts:Date.now()}:null;updGps(true);save()}
   else if(d.q!=null){cur.cer[+d.q].q=t.value;renderTot();save()}
   else if(d.n!=null){cur.cer[+d.n].n=t.value;autoH(t);save()}
@@ -1813,7 +1815,7 @@ async function arOk(){try{return !!(navigator.xr&&await navigator.xr.isSessionSu
 async function misura(cid,cat){
   if(await arOk()){arStart(cid,cat);return}
   if(isApple()){await dlgOpen(`<h3>📏 Misura su iPhone</h3><p>Apple non permette alle app web di misurare con la fotocamera, quindi su iPhone si usa l’app <b>Metro</b> (già installata):</p><ol style="padding-left:20px;line-height:1.5"><li>Apri <b>Metro</b> e inquadra la zona.</li><li>Tocca <b>+</b> sul primo punto e di nuovo <b>+</b> sul secondo: compare la misura.</li><li>Premi il <b>pulsante bianco</b> (in basso a destra): la foto con la misura va in Foto.</li><li>Torna qui e premi <b>🖼 Dalla galleria</b> per aggiungerla al sopralluogo.</li></ol>`,[['Ho capito','pri','1']]);return}
-  await dlgOpen(`<h3>📏 Misura non disponibile</h3><p>Questo dispositivo o browser non supporta la misura con la fotocamera.</p><p class="hint">Su Android serve <b>Chrome</b> aggiornato e l’app <b>Google Play Services per AR</b> (dal Play Store). Su iPhone usa l’app Metro.</p>`,[['Chiudi','pri','1']]);
+  await dlgOpen(`<h3>📏 Misura non disponibile</h3><p>Questo dispositivo o browser non supporta la misura con la fotocamera.</p><p class="hint">Su Android serve <b>Chrome</b> aggiornato (Firefox e il browser di WhatsApp non la supportano) e l’app <b>Google Play Services per AR</b> (dal Play Store). Su iPhone usa l’app Metro.</p>`,[['Chiudi','pri','1']]);
 }
 function arUI(){
   let el=$('ar');if(el)return el;
@@ -1835,14 +1837,17 @@ async function arStart(cid,cat){
   const el=arUI();el.hidden=false;
   const cv=$('arc'),gl=cv.getContext('webgl2',{xrCompatible:true,alpha:true});
   let s;
-  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],optionalFeatures:['camera-access'],domOverlay:{root:el}})}
+  /* prima chiedo anche l'accesso all'immagine della fotocamera (serve per la foto con le misure); se il telefono non lo dà, riprovo senza */
+  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay','camera-access'],domOverlay:{root:el}})}catch(_){}
+  if(!s)try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],optionalFeatures:['camera-access'],domOverlay:{root:el}})}
   catch(e){el.hidden=true;note('Non riesco ad avviare la misura: '+(e.message||e.name)+'. Controlla che “Google Play Services per AR” sia installato.');return}
   AR={s,gl,cid,cat:cat||'rif',sop:cur.id,segs:[],pend:[],mode:'l',hit:null,shot:false,n:0,q:Promise.resolve()};
   await gl.makeXRCompatible();
   s.updateRenderState({baseLayer:new XRWebGLLayer(s,gl)});
   AR.ref=await s.requestReferenceSpace('local');
   AR.hts=await s.requestHitTestSource({space:await s.requestReferenceSpace('viewer')});
-  try{AR.bind=new XRWebGLBinding(s,gl)}catch(_){}
+  try{AR.bind=new XRWebGLBinding(s,gl)}catch(e){AR.why='binding: '+e.message}
+  AR.camOk=!s.enabledFeatures||s.enabledFeatures.includes('camera-access');if(!AR.camOk)AR.why='il telefono non concede l’immagine della fotocamera (camera-access)';
   s.addEventListener('end',arEnd);
   s.requestAnimationFrame(arFrame);
 }
@@ -1891,11 +1896,12 @@ function arFrame(t,f){
 }
 function arShot(f,v){
   const A=AR,gl=A.gl;let cvs=null;
+  if(!v.camera&&!A.why)A.why='nessuna immagine dalla fotocamera';
   try{if(A.bind&&v.camera){const cam=v.camera,tex=A.bind.getCameraImage(cam),W=cam.width,H=cam.height;
     if(!A.prog){const sh=(ty,src)=>{const o=gl.createShader(ty);gl.shaderSource(o,src);gl.compileShader(o);return o};const p=gl.createProgram();
       gl.attachShader(p,sh(gl.VERTEX_SHADER,'#version 300 es\nin vec2 a;out vec2 u;void main(){u=a*.5+.5;gl_Position=vec4(a,0,1);}'));
       gl.attachShader(p,sh(gl.FRAGMENT_SHADER,'#version 300 es\nprecision mediump float;in vec2 u;uniform sampler2D t;out vec4 o;void main(){o=texture(t,u);}'));
-      gl.linkProgram(p);A.prog=p;A.vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,A.vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW)}
+      gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('shader: '+gl.getProgramInfoLog(p));A.prog=p;A.vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,A.vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW)}
     const rt=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,rt);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,rt,0);
     gl.viewport(0,0,W,H);gl.useProgram(A.prog);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(gl.getUniformLocation(A.prog,'t'),0);
@@ -1903,17 +1909,20 @@ function arShot(f,v){
     const px=new Uint8Array(W*H*4);gl.readPixels(0,0,W,H,gl.RGBA,gl.UNSIGNED_BYTE,px);
     gl.bindFramebuffer(gl.FRAMEBUFFER,f.session.renderState.baseLayer.framebuffer);gl.deleteFramebuffer(fb);gl.deleteTexture(rt);
     const id=new ImageData(W,H),row=W*4;for(let y=0;y<H;y++)id.data.set(px.subarray((H-1-y)*row,(H-y)*row),y*row);
-    cvs=document.createElement('canvas');cvs.width=W;cvs.height=H;cvs.getContext('2d').putImageData(id,0,0)}}catch(e){cvs=null}
+    cvs=document.createElement('canvas');cvs.width=W;cvs.height=H;cvs.getContext('2d').putImageData(id,0,0)}}catch(e){cvs=null;A.why='errore: '+(e.message||e)}
+  const real=!!cvs;
   const testo=A.segs.map((s,i)=>(A.segs.length>1?'M'+(i+1)+' ':'')+shTxt(s)).join(' · ');
   if(!cvs){/* il telefono non dà l'immagine: salvo uno schema con le misure */
-    cvs=document.createElement('canvas');cvs.width=innerWidth*2;cvs.height=innerHeight*2;const c=cvs.getContext('2d');c.fillStyle='#22313a';c.fillRect(0,0,cvs.width,cvs.height)}
+    cvs=document.createElement('canvas');cvs.width=innerWidth*2;cvs.height=innerHeight*2;const c=cvs.getContext('2d');c.fillStyle='#22313a';c.fillRect(0,0,cvs.width,cvs.height);
+    c.fillStyle='#ffd60a';c.font='600 26px system-ui,sans-serif';c.textAlign='left';c.textBaseline='top';c.fillText('Immagine reale non disponibile: '+(A.why||'?'),20,20);
+    if(!A.warn){A.warn=1;$('arh').textContent='⚠ Il telefono non dà l’immagine: salvo solo lo schema ('+(A.why||'?')+')'}}
   const c=cvs.getContext('2d'),k=Math.max(1,cvs.width/innerWidth);
   arDraw(c,v,cvs.width,cvs.height,null,k);
   c.font=`700 ${15*k}px system-ui,sans-serif`;c.textAlign='left';c.textBaseline='bottom';const tx='📏 '+testo,w=c.measureText(tx).width+20*k;
   c.fillStyle='rgba(0,0,0,.72)';c.fillRect(0,cvs.height-34*k,Math.min(cvs.width,w),34*k);c.fillStyle='#fff';c.fillText(tx,10*k,cvs.height-9*k);
   A.n++;try{navigator.vibrate&&navigator.vibrate(30)}catch(_){}
   $('arh').textContent='Foto salvata con le misure ('+A.n+')';
-  cvs.toBlob(b=>{if(!b)return;A.q=A.q.then(()=>put('foto',{id:uid(),sop:A.sop,blob:b,nota:'Misure: '+testo,cer:A.cid?[A.cid]:[],cat:A.cat,ts:Date.now()})).catch(()=>note('Non riesco a salvare la foto: memoria del browser piena?'))},'image/jpeg',.88);
+  cvs.toBlob(b=>{if(!b)return;A.q=A.q.then(()=>put('foto',{id:uid(),sop:A.sop,blob:b,nota:'Misure: '+testo+(real?'':' [schema senza foto: '+(A.why||'?')+']'),cer:A.cid?[A.cid]:[],cat:A.cat,ts:Date.now()})).catch(()=>note('Non riesco a salvare la foto: memoria del browser piena?'))},'image/jpeg',.88);
 }
 async function arEnd(){
   const A=AR;AR=null;const el=$('ar');if(el)el.hidden=true;if(!A)return;
@@ -2003,7 +2012,7 @@ document.addEventListener('click',e=>{
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
   if(t.id=='crs'){const w=$('crw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
-  if(t.id=='dcs'||t.id=='mzs'){if(document.activeElement)document.activeElement.blur();save();flush();setStatus('Salvato ✓');const w=$(t.id=='dcs'?'dcw':'mzw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
+  if(t.id=='dcs'||t.id=='mzs'||t.id=='sfs'){if(document.activeElement)document.activeElement.blur();save();flush();setStatus('Salvato ✓');const w=$(t.id=='dcs'?'dcw':t.id=='sfs'?'sfw':'mzw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
   if(t.id=='zip'){flush();zipFoto(cur);return}
   const ct=t.closest('[data-cat]');
   if(ct&&ovF){const k=ct.dataset.cat;if(k!=catOf(ovF)){ovF.cat=k;delete ovF.acc;if(k!='rif')ovF.cer=[];ovDirty=true;$('ovh').textContent='Foto '+CATS.find(c=>c[0]==k)[1].toLowerCase();paintOvk()}return}
