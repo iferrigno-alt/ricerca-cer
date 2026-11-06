@@ -557,7 +557,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.06-10';
+const APPVER='2026.11.06-11';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -1837,7 +1837,7 @@ async function arStart(cid,cat){
   const cv=$('arc'),gl=cv.getContext('webgl2',{xrCompatible:true,alpha:true});
   let s;
   /* prima chiedo anche l'accesso all'immagine della fotocamera (serve per la foto con le misure); se il telefono non lo dà, riprovo senza */
-  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay','camera-access'],optionalFeatures:['anchors'],domOverlay:{root:el}})}catch(_){}
+  try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay','camera-access'],optionalFeatures:['anchors'],domOverlay:{root:el}})}catch(e){window._arWhy=(e&&e.message)||String(e)}
   if(!s)try{s=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],optionalFeatures:['camera-access','anchors'],domOverlay:{root:el}})}
   catch(e){el.hidden=true;note('Non riesco ad avviare la misura: '+(e.message||e.name)+'. Controlla che “Google Play Services per AR” sia installato.');return}
   AR={s,gl,cid,cat:cat||'rif',sop:cur.id,segs:[],pend:[],mode:'l',hit:null,shot:false,n:0,q:Promise.resolve()};
@@ -1846,7 +1846,7 @@ async function arStart(cid,cat){
   AR.ref=await s.requestReferenceSpace('local');
   AR.hts=await s.requestHitTestSource({space:await s.requestReferenceSpace('viewer')});
   try{AR.bind=new XRWebGLBinding(s,gl)}catch(e){AR.why='binding: '+e.message}
-  AR.camOk=!s.enabledFeatures||s.enabledFeatures.includes('camera-access');if(!AR.camOk)AR.why='il telefono non concede l’immagine della fotocamera (camera-access)';
+  AR.camOk=!s.enabledFeatures||s.enabledFeatures.includes('camera-access');if(!AR.camOk)AR.why='camera-access non concesso'+(window._arWhy?' ('+window._arWhy+')':'');
   s.addEventListener('end',arEnd);
   s.requestAnimationFrame(arFrame);
 }
@@ -1860,7 +1860,8 @@ function area3(P){let x=0,y=0,z=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(
 const aFmt=v=>(Math.round(v*100)/100).toFixed(2).replace('.',',')+' m²';
 function shTxt(s){if(s.t=='l')return mFmt(dist(s.p[0],s.p[1]));const P=s.p,l=[0,1,2,3].map(i=>dist(P[i],P[(i+1)%4]));
   return 'Area '+aFmt(area3(P))+' ('+mFmt((l[0]+l[2])/2)+' × '+mFmt((l[1]+l[3])/2)+')'}
-function arDraw(c,v,W,H,cur3,k){
+function arDraw(c,v,W,H,cur3,k,SG,PD){
+  SG=SG||AR.segs;PD=PD||AR.pend;const MODE=AR?AR.mode:'l';
   k=k||1;c.lineCap='round';c.textAlign='center';c.textBaseline='middle';
   const lbl=(t,x,y)=>{c.font=`700 ${16*k}px system-ui,sans-serif`;const w=c.measureText(t).width+14*k;c.fillStyle='rgba(0,0,0,.72)';c.beginPath();c.roundRect?c.roundRect(x-w/2,y-14*k,w,28*k,8*k):c.rect(x-w/2,y-14*k,w,28*k);c.fill();c.fillStyle='#fff';c.fillText(t,x,y+1)};
   const seg=(a,b,live)=>{const A=arProj(v,a,W,H),B=arProj(v,b,W,H);if(!A||!B)return;
@@ -1869,13 +1870,13 @@ function arDraw(c,v,W,H,cur3,k){
     [A,B].forEach(P=>{c.fillStyle='#fff';c.beginPath();c.arc(P[0],P[1],6*k,0,7);c.fill();c.strokeStyle='#0b6577';c.lineWidth=2*k;c.stroke()});
     lbl(mFmt(dist(a,b)),(A[0]+B[0])/2,(A[1]+B[1])/2-18*k)};
   const fill=(P,live)=>{const Q=P.map(p=>arProj(v,p,W,H));if(Q.some(q=>!q))return null;c.fillStyle=live?'rgba(255,214,10,.18)':'rgba(11,101,119,.30)';c.beginPath();Q.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();c.fill();return [Q.reduce((s,q)=>s+q[0],0)/Q.length,Q.reduce((s,q)=>s+q[1],0)/Q.length]};
-  AR.segs.forEach(s=>{if(s.t=='l'){seg(s.p[0],s.p[1]);return}
+  SG.forEach(s=>{if(s.t=='l'){seg(s.p[0],s.p[1]);return}
     const C=fill(s.p);for(let i=0;i<4;i++)seg(s.p[i],s.p[(i+1)%4]);if(C){lbl(aFmt(area3(s.p)),C[0],C[1])}});
-  const P=AR.pend;
+  const P=PD;
   if(P.length){const L=cur3?P.concat([cur3]):P;
-    if(AR.mode=='a'&&L.length>=3){const C=fill(L,true);if(L.length==4&&C)lbl(aFmt(area3(L)),C[0],C[1])}
+    if(MODE=='a'&&L.length>=3){const C=fill(L,true);if(L.length==4&&C)lbl(aFmt(area3(L)),C[0],C[1])}
     for(let i=0;i+1<L.length;i++)seg(L[i],L[i+1],i+1==L.length-1&&!!cur3);
-    if(AR.mode=='a'&&L.length==4)seg(L[3],L[0],true);
+    if(MODE=='a'&&L.length==4)seg(L[3],L[0],true);
     if(L.length==1){const A=arProj(v,L[0],W,H);if(A){c.fillStyle='#ffd60a';c.beginPath();c.arc(A[0],A[1],7*k,0,7);c.fill()}}}
 }
 function arFrame(t,f){
@@ -1920,6 +1921,10 @@ function arShot(f,v){
     cvs=document.createElement('canvas');cvs.width=W;cvs.height=H;cvs.getContext('2d').putImageData(id,0,0)}}catch(e){cvs=null;A.why='errore: '+(e.message||e)}
   const real=!!cvs;
   const testo=A.segs.map((s,i)=>(A.segs.length>1?'M'+(i+1)+' ':'')+shTxt(s)).join(' · ');
+  if(!cvs&&!A.noLater){/* il telefono non dà l'immagine durante la misura: chiudo la misura e scatto subito con la fotocamera normale, disegnando sopra le misure */
+    A.later={P:Float32Array.from(v.projectionMatrix),M:Float32Array.from(v.transform.inverse.matrix),segs:A.segs.map(s=>({t:s.t,p:s.p.map(x=>[x[0],x[1],x[2]])})),W:innerWidth,H:innerHeight,testo};
+    $('arh').textContent='📷 Tieni fermo il telefono: scatto la foto…';try{navigator.vibrate&&navigator.vibrate(30)}catch(_){}
+    setTimeout(()=>{try{A.s.end()}catch(_){}},150);return}
   if(!cvs){/* il telefono non dà l'immagine: salvo uno schema con le misure */
     cvs=document.createElement('canvas');cvs.width=innerWidth*2;cvs.height=innerHeight*2;const c=cvs.getContext('2d');c.fillStyle='#22313a';c.fillRect(0,0,cvs.width,cvs.height);
     c.fillStyle='#ffd60a';c.font='600 26px system-ui,sans-serif';c.textAlign='left';c.textBaseline='top';c.fillText('Immagine reale non disponibile: '+(A.why||'?'),20,20);
@@ -1934,7 +1939,28 @@ function arShot(f,v){
 }
 async function arEnd(){
   const A=AR;AR=null;const el=$('ar');if(el)el.hidden=true;if(!A)return;
+  if(A.later){try{await arLater(A)}catch(e){note('Non riesco a scattare la foto dopo la misura: '+(e.message||e))}}
   await A.q;if(cur&&cur.id===A.sop){save();await renderPh();setStatus(A.n?'Salvato ✓ · '+A.n+(A.n==1?' foto con misure':' foto con misure'):'Salvato ✓')}
+}
+/* foto reale scattata appena chiusa la misura: l'inquadratura è la stessa, le misure vengono disegnate sopra */
+async function arLater(A){
+  const L=A.later;setStatus('Scatto la foto con le misure…');
+  let st=null;for(let i=0;i<8&&!st;i++){try{st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1440}}})}catch(e){await new Promise(r=>setTimeout(r,350))}}
+  if(!st)throw new Error('fotocamera non disponibile');
+  const vd=document.createElement('video');vd.muted=true;vd.playsInline=true;vd.srcObject=st;try{await vd.play()}catch(_){}
+  for(let i=0;i<40&&!vd.videoWidth;i++)await new Promise(r=>setTimeout(r,50));
+  await new Promise(r=>setTimeout(r,450));/* lascio stabilizzare esposizione e messa a fuoco */
+  const vw=vd.videoWidth,vh=vd.videoHeight,asp=L.W/L.H;let sx=0,sy=0,cw=vw,ch=vh;
+  if(vw/vh>asp){cw=vh*asp;sx=(vw-cw)/2}else{ch=vw/asp;sy=(vh-ch)/2}
+  const sc=Math.min(1,1600/Math.max(cw,ch)),cvs=document.createElement('canvas');cvs.width=Math.round(cw*sc);cvs.height=Math.round(ch*sc);
+  const c=cvs.getContext('2d');c.drawImage(vd,sx,sy,cw,ch,0,0,cvs.width,cvs.height);
+  try{st.getTracks().forEach(x=>x.stop())}catch(_){}
+  const k=cvs.width/L.W,fv={projectionMatrix:L.P,transform:{inverse:{matrix:L.M}}};
+  arDraw(c,fv,cvs.width,cvs.height,null,k,L.segs,[]);
+  c.font=`700 ${15*k}px system-ui,sans-serif`;c.textAlign='left';c.textBaseline='bottom';const tx='📏 '+L.testo,w=c.measureText(tx).width+20*k;
+  c.fillStyle='rgba(0,0,0,.72)';c.fillRect(0,cvs.height-34*k,Math.min(cvs.width,w),34*k);c.fillStyle='#fff';c.fillText(tx,10*k,cvs.height-9*k);
+  const b=await new Promise(r=>cvs.toBlob(r,'image/jpeg',.88));if(!b)throw new Error('immagine vuota');
+  await put('foto',{id:uid(),sop:A.sop,blob:b,nota:'Misure: '+L.testo,cer:A.cid?[A.cid]:[],cat:A.cat,ts:Date.now()});A.n++;
 }
 /* ============ FOTO A SCHERMO INTERO CON ZOOM ============ */
 let Z={s:1,x:0,y:0},zp=new Map(),zpinch=null,zlast=0,zmoved=false;
