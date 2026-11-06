@@ -72,7 +72,7 @@ main{padding:10px 14px 40px;max-width:720px;margin:0 auto}
 .card h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
 details.dc>summary{list-style:none;cursor:pointer;margin:-14px;padding:14px}details.dc>summary::-webkit-details-marker{display:none}
 details.dc>summary h2{margin:0}details.dc[open]>summary{margin-bottom:0}.dcch{margin-left:auto;transition:transform .2s;color:var(--mut)}details.dc:not([open]) .dcch{transform:rotate(-90deg)}
-.dcr{font-size:13px;color:var(--mut);margin-top:4px}details.dc[open] .dcr{display:none}
+.dcr{font-size:13px;color:var(--mut);margin-top:4px}.crl{font-size:15px;color:var(--ink);padding:2px 0}.crl.nc b{color:var(--hz)}details.dc[open] .dcr{display:none}
 .cnt{font-size:13px;background:var(--bg);color:var(--mut);padding:1px 9px;border-radius:99px;font-weight:600}
 .cnt:empty{display:none}
 .cdb{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline dotted var(--mut);text-underline-offset:5px;cursor:pointer}
@@ -557,7 +557,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.06-6';
+const APPVER='2026.11.06-7';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -1173,21 +1173,14 @@ ${fld('data','Data','','date')}
 <label class="fl">Note<textarea data-k="note" rows="3" placeholder="Accessi, condizioni del sito, persone presenti…">${esc(s.note)}</textarea></label>
 <button class="btn pri wide" id="dcs" style="margin-top:4px">💾 Salva e chiudi</button>
 </details>
-${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p class="hint" style="margin:0 2px 10px">Prepara qui i dati e assegnalo: il sopralluogo compare da solo sul telefono dell’operatore, che lo completa sul posto.</p><div id="assi" class="hint"></div><label class="fl" style="margin:0">Scegli l’operatore<select id="asss"><option value="">Carico l’elenco…</option></select></label></section>`:''}
-<section class="card"><h2>Posizione GPS</h2>
-<button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
-<button class="btn wide" id="mpo" style="margin:0 0 10px">🗺 Scegli sulla mappa</button>
-<div id="gpsp" class="gpsp" hidden><div id="gpspt"></div><div class="row2" style="margin-top:8px"><button class="btn" id="gpsc">Annulla</button><button class="btn pri" id="gpss">💾 Salva questa posizione</button></div></div>
-<div class="row2"><label class="fl">Latitudine<input id="lat" inputmode="decimal" placeholder="40.6263"></label><label class="fl">Longitudine<input id="lon" inputmode="decimal" placeholder="14.3757"></label></div>
-<div id="gpsi" class="hint"></div>
-</section>
-<section class="card"><h2>Rifiuti e codici CER <span id="nc" class="cnt"></span><button class="opn" id="of" data-go="gal/${s.id}/rif" hidden>Foto ›</button></h2>
+<details class="card dc" id="crw"><summary><h2>Rifiuti e codici CER <span id="nc" class="cnt"></span><button class="opn" id="of" data-go="gal/${s.id}/rif" hidden>Foto ›</button><span class="dcch">▾</span></h2><div id="crr" class="dcr"></div></summary>
 <p class="hint" style="margin:0 2px 10px">Aggiungi una voce per ogni rifiuto e scatta le foto dentro la voce. Il codice puoi sceglierlo subito o assegnarlo dopo.</p>
 <div id="unc" class="unc" hidden><h3>Foto senza voce CER <span id="nf" class="cnt"></span></h3><p class="hint">Queste foto non sono collegate a nessuna voce. Toccane una per collegarla, oppure spostale tutte insieme.</p><div id="phs" class="grid"></div><button class="btn wide" id="uncall" style="margin-top:8px">Sposta tutte in una voce…</button></div>
 <div id="cers"></div>
 <button class="btn pri wide big" id="addc">+ Aggiungi CER</button>
 <div id="tot" class="tot"></div>
-</section>
+<button class="btn wide" id="crs" style="margin-top:10px">▴ Chiudi</button>
+</details>
 <section class="card"><h2>Stato di fatto e accessibilità <span id="ns" class="cnt"></span><button class="opn" id="os" data-go="gal/${s.id}/sf" hidden>Apri ›</button></h2>
 <label class="fl">Note<textarea data-k="sfn" rows="4" placeholder="Stato dei luoghi, accessi, mezzi, ostacoli, permessi, referente sul posto…">${esc(s.sfn)}</textarea></label>
 <div class="row2"><button class="btn pri" data-cam="sf">📷 Foto / video</button><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*,video/*" multiple hidden data-phs></label></div>
@@ -1199,6 +1192,14 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 <label class="fl" style="margin-top:10px">Note sui mezzi<textarea data-k="mzn" rows="2" placeholder="Es. accesso solo con mezzi leggeri, serve gru, orari…">${esc(s.mzn||'')}</textarea></label>
 <button class="btn pri wide" id="mzs" style="margin-top:10px">💾 Salva e chiudi</button>
 </details>
+<details class="card dc" id="gpw"><summary><h2>Posizione GPS <span class="dcch">▾</span></h2><div id="gpr" class="dcr"></div></summary>
+<button class="btn pri" id="gpsb">${s.gps?'Rileva di nuovo':'📍 Rileva posizione'}</button>
+<button class="btn wide" id="mpo" style="margin:0 0 10px">🗺 Scegli sulla mappa</button>
+<div id="gpsp" class="gpsp" hidden><div id="gpspt"></div><div class="row2" style="margin-top:8px"><button class="btn" id="gpsc">Annulla</button><button class="btn pri" id="gpss">💾 Salva questa posizione</button></div></div>
+<div class="row2"><label class="fl">Latitudine<input id="lat" inputmode="decimal" placeholder="40.6263"></label><label class="fl">Longitudine<input id="lon" inputmode="decimal" placeholder="14.3757"></label></div>
+<div id="gpsi" class="hint"></div>
+</details>
+${isAdmin()&&!inClaude?`<details class="card dc" id="asw"><summary><h2>Assegna a un operatore <span class="dcch">▾</span></h2><div class="dcr">${s.ass?'Assegnato a <b>'+esc(s.ass.name)+'</b>':'Non ancora assegnato'}</div></summary><p class="hint" style="margin:0 2px 10px">Prepara qui i dati e assegnalo: il sopralluogo compare da solo sul telefono dell’operatore, che lo completa sul posto.</p><div id="assi" class="hint"></div><label class="fl" style="margin:0">Scegli l’operatore<select id="asss"><option value="">Carico l’elenco…</option></select></label></details>`:''}
 <section class="card"><h2>Esporta</h2>
 <div class="row2"><button class="btn" data-go="rep/${s.id}">Report / PDF</button><button class="btn" id="csv">Tabella CSV</button></div>
 <button class="btn wide" id="zip">Foto con codici CER (ZIP)</button>
@@ -1247,7 +1248,7 @@ async function assegna(){
   }catch(e){busyEnd();note('Non riesco ad assegnarlo: '+e.message)}
 }
 function updGps(keep){
-  const g=cur.gps;
+  const g=cur.gps;if($('gpr'))$('gpr').innerHTML=g?esc(g.lat+', '+g.lon):'<span class="mut">Non rilevata</span>';
   if(!keep){$('lat').value=g?g.lat:'';$('lon').value=g?g.lon:''}
   $('gpsb').textContent=g?'Rileva di nuovo':'📍 Rileva posizione';
   $('gpsi').innerHTML=g?[g.acc?'Precisione ±'+g.acc+' m':(g.map?'Scelta sulla mappa':g.man?'Coordinate inserite a mano':''),g.ts?new Date(g.ts).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'',`<a href="${maps(g)}" target="_blank" rel="noopener">Apri sulla mappa</a>`].filter(Boolean).join(' · ')
@@ -1384,6 +1385,7 @@ function mzRiep(s){const e=$('mzr');if(!e)return;const r=mzRighe(s).map(x=>(x.q?
 function mzRighe(s){mzState(s);return MEZZI.filter(([g,c])=>mzKey(c) in s.mzc).map(([g,c,it])=>{const k=mzKey(c),sel=it.filter(v=>s.mzv.includes(v[0]));const q=s.mzc[k]||(sel.length?String(sel.length):'');return {g,c,q,sel}})}
 /* le note vanno a capo e la casella si allunga con il testo */
 function autoH(el){if(!el||!el.offsetParent)return;el.style.height='auto';el.style.height=(el.scrollHeight+3)+'px'}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('summary button');if(b)e.preventDefault()},true);
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('dc')&&d.open)autoHAll(d)},true);
 function autoHAll(root){(root||document).querySelectorAll('textarea.nt,textarea[data-k]').forEach(autoH)}
 function renderCer(){
@@ -1399,7 +1401,7 @@ ${x.c?'':`<button class="btn pri wide" data-chg="${i}" style="margin-top:8px">�
 <div class="qh" id="qh${x.id}"></div>
 <textarea class="nt" data-n="${i}" rows="1" placeholder="Note (stato fisico, ubicazione, contenitore…)">${esc(x.n)}</textarea></div>`}).join('')
     :'<p class="hint" style="margin-bottom:4px">Nessun rifiuto ancora. Premi “+ Aggiungi CER”.</p>';
-  renderTot();paintLinks();requestAnimationFrame(()=>autoHAll($('cers')));
+  renderTot();paintLinks();crRiep();requestAnimationFrame(()=>autoHAll($('cers')));
 }
 const lbl=(s,x)=>{if(x.c)return fmt(x.c)+(isH(x.c)?'*':'');const b=s.cer.filter(y=>!y.c);return 'Codice da assegnare'+(b.length>1?' ('+(b.indexOf(x)+1)+')':'')};
 const codesOf=(s,p)=>(p.cer||[]).map(id=>s.cer.find(x=>x.id==id)).filter(Boolean);
@@ -1415,6 +1417,7 @@ function paintLinks(){
   });
   renderTot();
 }
+function crRiep(){const e=$('crr');if(!e||!cur)return;e.innerHTML=cur.cer.length?cur.cer.map(x=>`<div class="crl${x.c?'':' nc'}"><b>${esc(lbl(cur,x))}</b>${String(x.q||'').trim()?' · '+esc(x.q+' '+x.u):''}</div>`).join(''):'<span class="mut">Nessun rifiuto · tocca per aggiungere</span>'}
 function renderTot(){
   const m=totali(cur,fotos),nh=cur.cer.filter(x=>{const r=RM.get(x.c);return r&&r[2]}).length,t=totTxt(m);
   $('tot').innerHTML=cur.cer.length?`<b>${cur.cer.length}</b> ${cur.cer.length==1?'codice':'codici'}${nh?` (${nh} pericolos${nh==1?'o':'i'})`:''}${t?' · Totale: <b>'+esc(t)+'</b>':''}`:'';
@@ -1999,6 +2002,7 @@ document.addEventListener('click',e=>{
   if(t.id=='ovclr'&&ovF){ovF.cer=[];ovDirty=true;paintOvk();return}
   if(t.id=='ovnew'){(async()=>{const f=ovF;const c=await pickCode('Codice CER per questa foto');if(!c||!cur||ovF!==f)return;let x=cur.cer.find(y=>y.c==c);if(!x){x=addRow(c);ovAdded.push(x.id);save();if(view=='vE')renderCer()}f.cer=f.cer||[];if(!f.cer.includes(x.id))f.cer.push(x.id);ovDirty=true;paintOvk()})();return}
   if(t.id=='csv'){flush();csv(cur);return}
+  if(t.id=='crs'){const w=$('crw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
   if(t.id=='dcs'||t.id=='mzs'){if(document.activeElement)document.activeElement.blur();save();flush();setStatus('Salvato ✓');const w=$(t.id=='dcs'?'dcw':'mzw');w.open=false;w.scrollIntoView({block:'start',behavior:'smooth'});return}
   if(t.id=='zip'){flush();zipFoto(cur);return}
   const ct=t.closest('[data-cat]');
