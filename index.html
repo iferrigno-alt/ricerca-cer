@@ -195,7 +195,18 @@ textarea{resize:vertical}
 .tot:empty{display:none}
 .sl{padding:13px 14px}
 .srch input{font-size:17px}
-.okk{color:#1a7f37;font-weight:600}.mut{color:var(--mut)}
+.okk{color:#1a7f37;font-weight:600}
+.mzg{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 2px 6px}
+.mzc{border:1px solid var(--ln);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--bg)}
+.mzc.on{border-color:var(--ac);box-shadow:inset 3px 0 0 var(--ac)}
+.mzr{display:flex;align-items:center;gap:10px}
+.mzk{flex:1;display:flex;align-items:center;gap:10px;font-size:16px;cursor:pointer}
+.mzk input,.mzv input{width:22px;height:22px;flex:none;margin:0}
+.mzq{width:64px;flex:none;text-align:center;font:inherit;font-size:16px;padding:8px;border:1.5px solid var(--ln);border-radius:10px;background:var(--sf);color:var(--ink)}
+.mzq:disabled{opacity:.4}
+.mzc details{margin-top:6px}.mzc summary{font-size:13px;color:var(--mut);cursor:pointer;padding:4px 0}
+.mzv{display:flex;gap:10px;align-items:flex-start;padding:7px 2px;border-top:1px solid var(--ln);font-size:15px;cursor:pointer}
+.mzt{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}.mut{color:var(--mut)}
 .assinfo{margin:-4px 2px 12px;padding:8px 12px;border-radius:10px;background:var(--sf);border:1px solid var(--ln);font-size:14px}.wrn{color:var(--hz);font-weight:600}
 .opd{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}.opd dt{color:var(--mut)}.opd dd{margin:0;overflow-wrap:anywhere}.opd .lk{font-size:13px;color:var(--mut)}
 .it[hidden]{display:none}
@@ -210,6 +221,27 @@ textarea{resize:vertical}
 .ovz{position:absolute;top:8px;right:8px;width:46px;height:46px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 #ovi{cursor:zoom-in}
 #vR img{cursor:zoom-in}
+#cam{position:fixed;inset:0;z-index:70;background:#000;color:#fff}
+#camv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#camfl{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+#camfl.on{opacity:.75;transition:none}
+.camtop{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,0))}
+.camn{font-size:13px;opacity:.85}
+.cambot{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;padding:14px 18px calc(env(safe-area-inset-bottom,0px) + 18px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.7))}
+.camth{width:84px;height:64px;display:flex;align-items:center}
+.camth img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:2px solid #fff}
+.camth span{margin-left:-14px;margin-top:-44px;background:var(--ac);color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:1px 7px}
+#camsh{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:rgba(255,255,255,.35);box-shadow:0 0 0 3px rgba(0,0,0,.25);cursor:pointer}
+#camsh:active{background:#fff;transform:scale(.94)}
+.camsp{width:84px;display:flex;justify-content:flex-end}
+.cammd{display:flex;flex-direction:column;gap:6px}
+.cammd button{border:1px solid rgba(255,255,255,.6);background:rgba(0,0,0,.35);color:#fff;font:inherit;font-size:12px;font-weight:700;letter-spacing:.05em;padding:6px 10px;border-radius:99px;cursor:pointer}
+.cammd button.on{background:#fff;color:#000}
+#cam.vid #camsh{background:#e5322d;border-color:#fff}
+#cam.rec #camsh{border-radius:16px;transform:scale(.8);background:#e5322d}
+.camrec{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 70px);background:#e5322d;color:#fff;font-weight:700;font-size:14px;padding:4px 12px;border-radius:99px}
+[data-pf].isv::after{content:'▶';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;padding-left:3px;box-sizing:border-box;pointer-events:none}
+#ovv{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 #zv{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 #zvi{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:0 0;will-change:transform;cursor:zoom-in;-webkit-user-drag:none}
 #zv.zin #zvi{cursor:grab}
@@ -313,10 +345,14 @@ textarea{resize:vertical}
 <div class="mpb"><div id="mpi" class="mpi">Tocca la mappa per mettere il segnaposto, poi trascinalo per precisare.</div><button class="btn pri wide" id="mps" disabled style="margin-top:8px">💾 Salva questa posizione</button></div>
 </div>
 <div id="dlg" class="dlg" hidden><div class="dlgb" role="dialog" aria-modal="true"><div id="dlgc"></div><div class="dlga" id="dlga"></div></div></div>
+<div id="cam" hidden><video id="camv" playsinline muted autoplay></video><div id="camfl"></div>
+<div class="camtop"><div><b id="camt">Fotocamera</b><div id="camn" class="camn">Nessuna foto scattata</div></div><button class="btn pri" id="camok">Fine</button></div>
+<div id="camrec" class="camrec" hidden>● REC <span id="camtm">0:00</span></div>
+<div class="cambot"><div id="camth" class="camth"></div><button id="camsh" aria-label="Scatta"></button><div class="camsp"><div class="cammd"><button data-cmd="f" class="on">FOTO</button><button data-cmd="v">VIDEO</button></div></div></div></div>
 <div id="zv" hidden><img id="zvi" alt=""><button id="zvx" aria-label="Chiudi">✕</button><div class="zvh" id="zvh">Pizzica con due dita o tocca due volte per ingrandire · trascina per spostarti</div></div>
 <div id="ov" hidden>
 <div class="ovt"><div id="ovh" class="ovh"></div><button id="ovq" class="ovq">Annulla</button></div>
-<div class="ovw"><img id="ovi" alt="" title="Tocca per ingrandire"><button class="ovz" id="ovz" aria-label="Ingrandisci la foto">🔍</button><button class="ova l" id="ovp" aria-label="Foto precedente">‹</button><button class="ova r" id="ovx" aria-label="Foto successiva">›</button></div>
+<div class="ovw"><img id="ovi" alt="" title="Tocca per ingrandire"><video id="ovv" controls playsinline hidden></video><button class="ovz" id="ovz" aria-label="Ingrandisci la foto">🔍</button><button class="ova l" id="ovp" aria-label="Foto precedente">‹</button><button class="ova r" id="ovx" aria-label="Foto successiva">›</button></div>
 <div id="ovqs" class="ovqty" hidden></div>
 <button id="ovlink" class="btn wide ovlk" hidden>Collega a una voce CER…</button>
 <textarea id="ovn" rows="1" placeholder="Didascalia (facoltativa)"></textarea>
@@ -487,7 +523,8 @@ document.addEventListener('input',e=>{
 });
 let LQ='';
 function filtraLista(){const q=normq(LQ).trim().split(/\s+/).filter(Boolean);let n=0;document.querySelectorAll('#vL [data-lq]').forEach(el=>{const ok=q.every(w=>el.dataset.lq.includes(w));el.hidden=!ok;if(ok)n++});const h=$('lqn');if(h)h.textContent=q.length?(n?n+(n==1?' trovato':' trovati'):'Nessun sopralluogo con questo nome'):''}
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value;const so=(e.target.selectedOptions[0]||{}).dataset||{};if($('cpx'))$('cpx').hidden=so.solo==='1';if($('cpsolo'))$('cpsolo').hidden=so.solo!=='1'}
+document.addEventListener('change',e=>{if(e.target&&cur&&view=='vE'&&(e.target.dataset.mzc||e.target.dataset.mzv)){mzChange(e.target);return}
+  if(e.target&&e.target.id==='cpf'){const o=$('cpo');if(o)o.hidden=!e.target.value;const so=(e.target.selectedOptions[0]||{}).dataset||{};if($('cpx'))$('cpx').hidden=so.solo==='1';if($('cpsolo'))$('cpsolo').hidden=so.solo!=='1'}
   /* scegliere l'operatore basta: chiede subito conferma e assegna */
   if(e.target&&e.target.id==='asss'&&e.target.value&&!(cur&&cur.ass&&cur.ass.code===e.target.value))assegna()});
 function dlgOpen(html,btns){
@@ -503,7 +540,7 @@ const note=msg=>dlgOpen(`<p>${esc(msg)}</p>`,[['OK','pri','1']]);
 /* salvataggio file: dentro claude.ai passa dalla conferma di Claude, altrove condivisione o download */
 const inClaude=!!(window.claude&&typeof window.claude.use=='function');
 /* ============ AGGIORNAMENTO AUTOMATICO: controlla se sul sito c'è una versione più nuova ============ */
-const APPVER='2026.11.04-1';
+const APPVER='2026.11.06-3';
 async function checkUpd(){
   if(inClaude||!/^https?:/.test(location.protocol))return;
   try{
@@ -647,12 +684,13 @@ async function nuovo(){
 <label class="chk"><input type="radio" name="cpc" value="c"> Solo i codici CER, senza foto né quantità</label>
 <label class="chk"><input type="radio" name="cpc" value="f"> Codici CER con foto e quantità</label>
 <label class="chk" style="margin-top:6px"><input type="checkbox" id="cp7"> Foto dello stato di fatto e accessibilità</label>
-<label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label></div><p class="hint" id="cpsolo" hidden>Da questo sopralluogo si copiano solo i dati del cantiere, del committente, del referente e la posizione.</p>
+<label class="chk"><input type="checkbox" id="cp5"> Note (cantiere e stato di fatto)</label>
+<label class="chk"><input type="checkbox" id="cp8"> Automezzi e attrezzature necessari</label></div><p class="hint" id="cpsolo" hidden>Da questo sopralluogo si copiano solo i dati del cantiere, del committente, del referente e la posizione.</p>
 <p class="hint">Il tecnico è chi riceve il sopralluogo. La data diventa quella di oggi.</p></div>`:''}`,[['Annulla','',''],['Crea','pri','1']]);
     if(v!=='1')return;
     if(AO&&$('cpa')){opA=AO.find(o=>o.code===$('cpa').value)||null;if(opA&&opA.self)opA=null}
     const pid=$('cpf')?$('cpf').value:'',on=k=>!!($(k)&&$(k).checked),cpc=(document.querySelector('input[name=cpc]:checked')||{}).value||'',
-      o={c1:on('cp1'),c2:on('cp2'),c3:on('cp3'),c5:on('cp5'),c7:on('cp7')};
+      o={c1:on('cp1'),c2:on('cp2'),c3:on('cp3'),c5:on('cp5'),c7:on('cp7'),c8:on('cp8')};
     let src=null;const solo=pid&&DATI.find(e=>e.id===pid&&!ids.has(pid));
     if(solo){const a=solo.ana||{};
       if(o.c1){s.cantiere=solo.cantiere||'';s.luogo=solo.luogo||'';s.committente=solo.committente||'';s.ctel=a.ctel||'';s.cmail=a.cmail||''}
@@ -665,6 +703,7 @@ async function nuovo(){
       if(o.c2)['ref','rtel','rmail'].forEach(k=>s[k]=src[k]||'');
       if(o.c3&&src.gps)s.gps=Object.assign({},src.gps);
       if(o.c5){s.note=src.note||'';s.sfn=src.sfn||''}
+      if(o.c8){s.mzc=Object.assign({},src.mzc||{});s.mzv=(src.mzv||[]).slice();s.mzn=src.mzn||''}
       const map={};
       if(cpc)s.cer=(src.cer||[]).map(x=>{const id=uid();map[x.id]=id;return cpc=='f'?{id,c:x.c||'',q:x.q||'',u:x.u||'',n:x.n||''}:{id,c:x.c||'',q:'',u:x.u||'',n:x.n||''}});
       /* foto: quelle dei CER con le loro quantità, e/o quelle dello stato di fatto */
@@ -673,7 +712,7 @@ async function nuovo(){
         let n=0;
         for(const p of await fotoDi(src.id)){
           const c=catOf(p);if(!((c=='rif'&&cpc=='f')||(c=='sf'&&o.c7))||!p.blob)continue;
-          await put('foto',{id:uid(),sop:s.id,blob:p.blob,cat:c,cer:c=='rif'?(p.cer||[]).map(k=>map[k]).filter(Boolean):[],qs:c=='rif'?rk(p.qs):{},us:c=='rif'?rk(p.us):{},nota:p.nota||'',ts:p.ts||Date.now()});n++;
+          await put('foto',{id:uid(),sop:s.id,blob:p.blob,vid:p.vid||0,poster:p.poster||null,dur:p.dur||0,cat:c,cer:c=='rif'?(p.cer||[]).map(k=>map[k]).filter(Boolean):[],qs:c=='rif'?rk(p.qs):{},us:c=='rif'?rk(p.us):{},nota:p.nota||'',ts:p.ts||Date.now()});n++;
         }
         s.nf=n;
       }
@@ -697,7 +736,7 @@ async function assegnaNuovo(id,o){
 const b2d=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)});
 async function backup(){
   const s=await all('sop'),f=await all('foto'),fo=[];
-  for(const p of f)fo.push(Object.assign({},p,{blob:await b2d(p.blob)}));
+  for(const p of f)fo.push(Object.assign({},p,{blob:await b2d(p.blob),poster:p.poster?await b2d(p.poster):null}));
   await esporta('backup_sopralluoghi_'+today()+'.json',new Blob([JSON.stringify({app:'ricerca-cer',v:1,sop:s,foto:fo})],{type:'application/json'}));
 }
 /* ============ ARCHIVIO ONLINE (Google Drive) ============ */
@@ -734,7 +773,7 @@ async function collega(srv,code){
 function scollega(){CODE=ROLE=ONAME='';SRV=DEFAULT_SRV;['cer_srv','cer_code','cer_role','cer_name'].forEach(k=>LS(k,null))}
 const b2b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=ko;r.readAsDataURL(b)});
 const b64b=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||'image/jpeg'})};
-const vuoto=(s,fo)=>!s.ass&&!s.sentMod&&!fo.length&&!(s.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s[k]||'').trim());
+const vuoto=(s,fo)=>!s.ass&&!s.sentMod&&!(s.mzc&&Object.keys(s.mzc).length)&&!fo.length&&!(s.cer||[]).length&&!['cantiere','luogo','committente','ref','note','sfn'].some(k=>(s[k]||'').trim());
 async function syncState(s){const fo=await fotoDi(s.id);if(vuoto(s,fo))return{todo:0,unsent:0,done:false,empty:true};if(s.revoked)return{todo:0,unsent:0,done:false,revoked:true};const n=((s.sentMod||0)<(s.mod||0)?1:0)+fo.filter(p=>!p.sent).length+(s.delf||[]).length;return{todo:n,unsent:fo.filter(p=>!p.sent).length,done:!n&&(s.sentMod||0)>0}}
 function syncSoon(ms){if(!linked()||inClaude)return;clearTimeout(syncTm);syncTm=setTimeout(syncAll,ms==null?2500:ms)}
 /* toglie dal telefono i sopralluoghi che l'ufficio ha già archiviato o eliminato */
@@ -807,7 +846,7 @@ async function syncAll(){
       if(vuoto(s0,fo)||s0.revoked)continue;
       if((s0.sentMod||0)>=(s0.mod||0)&&!unsent.length&&!dels.length)continue;
       const snap=s0.mod||0;
-      const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0}))});
+      const sop=Object.assign({},s0,{fotoMeta:fo.map(p=>({id:p.id,cat:catOf(p),cer:p.cer||[],qs:p.qs||{},us:p.us||{},nota:p.nota||'',ts:p.ts||0,vid:isVid(p)?1:0,dur:p.dur||0}))});
       delete sop.sentMod;delete sop.delf;delete sop.remote;
       try{await api('putSop',{sop})}
       catch(e){if(e.code==='archiviato'){await togliLocale(s0.id);continue}
@@ -816,10 +855,11 @@ async function syncAll(){
         throw e}
       for(const p of unsent){
         await api('putFoto',{sop:s0.id,id:p.id,type:(p.blob&&p.blob.type)||'image/jpeg',b64:await b2b64(p.blob)});
+        if(isVid(p)&&p.poster)await api('putFoto',{sop:s0.id,id:p.id+'__p',type:'image/jpeg',b64:await b2b64(p.poster)});
         const fr=await get('foto',p.id);if(fr){fr.sent=1;await put('foto',fr)}
         syncUI();
       }
-      for(const id of dels)await api('delFoto',{sop:s0.id,id});
+      for(const id of dels){await api('delFoto',{sop:s0.id,id});try{await api('delFoto',{sop:s0.id,id:id+'__p'})}catch(_){}}
       const fresh=await get('sop',s0.id);
       if(fresh){fresh.sentMod=snap;fresh.delf=(fresh.delf||[]).filter(x=>!dels.includes(x));await put('sop',fresh)}
       if(cur&&cur.id===s0.id){cur.sentMod=snap;cur.delf=(cur.delf||[]).filter(x=>!dels.includes(x))}
@@ -877,8 +917,9 @@ async function scaricaRemoto(id,quiet,pullMod){
     let k=0;
     for(const m of meta){
       k++;if(!quiet)$('dlgc').innerHTML=`<p>Scarico le foto… ${k} di ${meta.length}</p>`;
-      const g=await api('getFoto',{sop:id,id:m.id});
-      await put('foto',{id:m.id,sop:id,blob:b64b(g.b64,g.type),nota:m.nota||'',cer:m.cer||[],qs:m.qs||{},us:m.us||{},cat:m.cat||'rif',ts:m.ts||0,sent:1});
+      const g=await api('getFoto',{sop:id,id:m.id});let poster=null;
+      if(m.vid){try{const gp=await api('getFoto',{sop:id,id:m.id+'__p'});poster=b64b(gp.b64,gp.type)}catch(_){}}
+      await put('foto',{id:m.id,sop:id,blob:b64b(g.b64,g.type),vid:m.vid?1:0,poster,dur:m.dur||0,nota:m.nota||'',cer:m.cer||[],qs:m.qs||{},us:m.us||{},cat:m.cat||'rif',ts:m.ts||0,sent:1});
     }
     s.sentMod=s.mod||Date.now();s.mod=s.sentMod;s.delf=[];s.nf=meta.length;
     if(quiet)s.pullMod=pullMod||0;else s.remote={owner:j.owner||''};
@@ -1084,7 +1125,7 @@ async function ripristina(file){
   try{
     const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.sop))throw 0;
     for(const s of d.sop)await put('sop',s);
-    for(const p of d.foto||[]){p.blob=await (await fetch(p.blob)).blob();await put('foto',p)}
+    for(const p of d.foto||[]){p.blob=await (await fetch(p.blob)).blob();if(p.poster)p.poster=await (await fetch(p.poster)).blob();await put('foto',p)}
     note('Ripristinati '+d.sop.length+' sopralluoghi e '+(d.foto||[]).length+' foto.');renderList();
   }catch(_){note('Questo file non è un backup valido.')}
 }
@@ -1130,8 +1171,13 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 </section>
 <section class="card"><h2>Stato di fatto e accessibilità <span id="ns" class="cnt"></span><button class="opn" id="os" data-go="gal/${s.id}/sf" hidden>Apri ›</button></h2>
 <label class="fl">Note<textarea data-k="sfn" rows="4" placeholder="Stato dei luoghi, accessi, mezzi, ostacoli, permessi, referente sul posto…">${esc(s.sfn)}</textarea></label>
-<div class="row2"><label class="btn pri">📷 Scatta foto<input type="file" accept="image/*" capture="environment" hidden data-phs></label><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*" multiple hidden data-phs></label></div>
+<div class="row2"><button class="btn pri" data-cam="sf">📷 Foto / video</button><label class="btn">🖼 Dalla galleria<input type="file" accept="image/*,video/*" multiple hidden data-phs></label></div>
 <div id="phsf" class="grid"></div>
+</section>
+<section class="card"><h2>Automezzi e attrezzature necessari <span id="nmz" class="cnt"></span></h2>
+<p class="hint" style="margin:0 2px 10px">Spunta il tipo di mezzo e indica quanti ne servono. Se vuoi, apri il tipo e scegli anche i mezzi precisi.</p>
+<div id="mzl"></div>
+<label class="fl" style="margin-top:10px">Note sui mezzi<textarea data-k="mzn" rows="2" placeholder="Es. accesso solo con mezzi leggeri, serve gru, orari…">${esc(s.mzn||'')}</textarea></label>
 </section>
 <section class="card"><h2>Esporta</h2>
 <div class="row2"><button class="btn" data-go="rep/${s.id}">Report / PDF</button><button class="btn" id="csv">Tabella CSV</button></div>
@@ -1141,6 +1187,7 @@ ${isAdmin()&&!inClaude?`<section class="card"><h2>Assegna a un operatore</h2><p 
 </main>`;
   updGps();renderCer();renderPh();if(inClaude)$("mpo").hidden=true;
   if($('asss'))caricaAss();
+  renderMz();
   requestAnimationFrame(()=>autoHAll($('vE')));
 }
 /* elenco completo per assegnare: operatori, amministratori e amministratore principale */
@@ -1291,6 +1338,29 @@ function rileva(){
   },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
   watch.to=setTimeout(gpsEnd,20000);
 }
+/* ============ AUTOMEZZI E ATTREZZATURE (dall'elenco aziendale) ============ */
+const MEZZI=[["Automezzi","Rimorchi scarrabili",[["AE18996","Rimorchio Zorzi","Scarrabile","AE 18996"],["AF57179","Rimorchio Zorzi","Scarrabile","AF 57179"],["XA619FE","Rimorchio Zorzi","Scarrabile","XA 619 FE"],["XA787SL","Rimorchio MEC","Scarrabile","XA 787 SL"],["XA956SX","Rimorchio Zorzi","Scarrabile","XA 956 SX"]]],["Automezzi","Scarrabili",[["DG054WA","Iveco Stralis 500","Scarrabile","DG 054 WA"],["ED288GZ","Iveco Stralis 500","Scarrabile","ED 288 GZ"],["FE907WB","Iveco Stralis 560","Scarrabile","FE 907 WB"],["FE908WB","Iveco Stralis 560","Scarrabile","FE 908 WB"],["GK347EV","Iveco Magirus AG","Scarrabile","GK 347 EV"],["GX461CR","Iveco","Scarrabile","GX 461 CR"]]],["Automezzi","Trattori",[["EA767HC","Iveco Magirus AG","Trattore","EA 767 HC"],["GM161VL","Iveco","Trattore","GM 161 VL"]]],["Automezzi","Semirimorchi",[["AB14186","Semirimorchio Adamoli","Cassonato","AB 14186"],["AB23463","Semirimorchio Viberti","Cisterna","AB 23463"],["XA996SX","Semirimorchio Adamoli","Cassonato","XA 996 SX"],["AF41237","Semirimorchio Menci","Cisterna","AF 41237"],["XA671PX","Semirimorchio Koegel","Cassonato","XA 671 PX"]]],["Automezzi","Autogru",[["GE291BM","Iveco","Furgone con gru","GE291BM"],["GJ248FP","Iveco","Furgone con gru","GJ248FP"]]],["Automezzi","Multibenna",[["FX013WE","Iveco 190.31","Multilift","FX 013 WE"],["GN396RN","Iveco 1A3C","Multilift","GN 396 RN"]]],["Automezzi","Autocisterne",[["CS888FK","Iveco Stralis 540","Cisterna","CS 888 FK"],["ES169YF","Iveco 120","Cisterna","ES 169 YF"],["ES578KB","Iveco 360","Cisterna","ES 578 KB"],["FM413VA","Iveco Stralis 480","Cisterna","FM 413 VA"],["FS092ZG","Iveco","Cisterna","FS 092 ZG"],["HA256BV","Iveco","Cisterna","HA 256 BV"]]],["Automezzi","Rimorchi cisterna",[["XA331ZN","Tecnokar","Cisterna","XA331ZN"],["XA726KD","Rimorchio Viberti","Cisterna","XA 726 KD"],["XA786KL","Rimorchio Viberti","Cisterna","XA 786 KL"]]],["Automezzi","Furgoni",[["DX267TN","Iveco 35/E4","Furgone serbatoi","DX 267 TN"],["EJ010GE","Peugeot Comb","Furgone","EJ 010 GE"],["EJ011GE","Peugeot Comb","Furgone","EJ 011 GE"],["EN028XH","Iveco Daily 35 E4","Furgone","EN 028 XH"],["FP435BC","Iveco","Furgone","FP 435 BC"],["FV298FN","Peugeot","Furgone","FV 298 FN"],["FZ203KS","Peugeot","Furgone boxer","FZ 203 KS"],["GC513JE","Fiat Ducato","Furgone","GC 513 JE"],["GC845JD","Peugeot partner","Furgone","GC 845 JD"],["GJ233FT","Iveco","Furgone cassonato","GJ 233 FT"],["GK255FA","Iveco","Furgone","GK 255 FA"],["GP359PG","Peugeot","Furgone sei posti","GP 359 PG"],["GZ230GW","Iveco","Furgone","GZ 230 GW"],["GZ231GW","Iveco","Furgone","GZ 231 GW"]]],["Automezzi","Auto",[["ED384LZ","Volkswagen golf","Auto","ED 384 LZ"],["EV175RN","Volkswagen tiguan","Auto","EV 175 RN"],["FH167WD","Peugeot 208","Auto","FH 167 WD"],["FL010NY","Peugeot 3008","Auto","FL 010 NY"],["FL631NV","Range Rover Evoque","Auto","FL 631 NV"],["FR349AX","BMW 218D Gran Tourer","Auto","FR 349 AX"],["FS679ZH","Volkswagen polo 1.6","Auto","FS 679 ZH"]]],["Attrezzature","Escavatore",[["CAT3027DHLJL01361","CAT 302.7D","Escavatore","CAT3027DHLJL01361"],["CAT00310TGWT01775","CAT 310","Escavatore","CAT00310TGWT01775"],["CAT03035LCE901060","CAT 303.5 CR","Escavatore","CAT03035LCE901060"]]],["Attrezzature","Bobcat",[["CAT226D3HD5R00196","Caterpillar 226D3","Attrezzatura movimento terra","CAT226D3HD5R00196"]]],["Attrezzature","Ragno",[["MATRICOLAINAILSA20011318","Ragno","Ragno","Matricola inail: SA200113/18"],["MATRICOLAINAIL2011000025SA","Ragno","Ragno","Matricola inail: 2011 0 00025 SA"]]],["Attrezzature","Rullo vibrante",[["CAT0CB17L64300385","Caterpillar CB1.7","Attrezzatura pavimentazione stradale","CAT0CB17L64300385"]]],["Attrezzature","Pala meccanica",[["17345","VENIERI VF3.63 D/1","Macchina operatrice","17345"]]],["Attrezzature","Carrello elevatore",[["P177B12025V","HYSTER EUROPE H2.5FT","Carrello elevatore","P177B12025V"]]],["Attrezzature","Spazzatrice",[["GK423PS","Dulevo International","Autospazzatrice","GK 423 PS"]]]];
+const mzKey=c=>c.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+const MZ_BY=new Map();MEZZI.forEach(([g,c,it])=>it.forEach(v=>MZ_BY.set(v[0],{g,c,v})));
+function mzState(s){s.mzc=s.mzc||{};s.mzv=s.mzv||[];return s}
+function mzCount(s){mzState(s);return Object.keys(s.mzc).length}
+function renderMz(){
+  const s=mzState(cur),box=$('mzl');if(!box)return;let g0='';
+  box.innerHTML=MEZZI.map(([g,c,it])=>{const k=mzKey(c),on=k in s.mzc,sel=it.filter(v=>s.mzv.includes(v[0])).length;
+    const hd=g!==g0?`<h3 class="mzg">${esc(g)}</h3>`:'';g0=g;
+    return hd+`<div class="mzc${on?' on':''}"><div class="mzr"><label class="mzk"><input type="checkbox" data-mzc="${k}"${on?' checked':''}> <b>${esc(c)}</b></label><input class="mzq" data-mzq="${k}" inputmode="numeric" placeholder="${sel||'n.'}" value="${esc(on?s.mzc[k]||'':'')}" aria-label="Quantità ${esc(c)}"${on?'':' disabled'}></div>
+<details${sel?' open':''}><summary>${it.length} ${it.length==1?'mezzo':'mezzi'}${sel?' · '+sel+' scelti':''}</summary>${it.map(v=>`<label class="mzv"><input type="checkbox" data-mzv="${esc(v[0])}" data-mzk="${k}"${s.mzv.includes(v[0])?' checked':''}> <span>${esc(v[1])}${v[2]&&v[2].toLowerCase()!==v[1].toLowerCase()?' <span class="mut">· '+esc(v[2])+'</span>':''}<br><span class="mzt">${esc(v[3])}</span></span></label>`).join('')}</details></div>`}).join('');
+  const n=mzCount(s);$('nmz').textContent=n?n:'';
+}
+function mzChange(t){
+  const s=mzState(cur),d=t.dataset;
+  if(d.mzc){const k=d.mzc;if(t.checked)s.mzc[k]=s.mzc[k]||'';else{delete s.mzc[k];const c=MEZZI.find(x=>mzKey(x[1])===k);if(c)s.mzv=s.mzv.filter(id=>!c[2].some(v=>v[0]===id))}}
+  else if(d.mzv){if(t.checked){if(!s.mzv.includes(d.mzv))s.mzv.push(d.mzv);if(!(d.mzk in s.mzc))s.mzc[d.mzk]=''}else s.mzv=s.mzv.filter(x=>x!==d.mzv)}
+  else if(d.mzq){s.mzc[d.mzq]=t.value.replace(/[^\d]/g,'');save();return}
+  save();const op=[...document.querySelectorAll('#mzl details')].map(x=>x.open);renderMz();document.querySelectorAll('#mzl details').forEach((x,i)=>{if(op[i])x.open=true});
+}
+/* testo per report ed export: [categoria, quantità, mezzi scelti] */
+function mzRighe(s){mzState(s);return MEZZI.filter(([g,c])=>mzKey(c) in s.mzc).map(([g,c,it])=>{const k=mzKey(c),sel=it.filter(v=>s.mzv.includes(v[0]));const q=s.mzc[k]||(sel.length?String(sel.length):'');return {g,c,q,sel}})}
 /* le note vanno a capo e la casella si allunga con il testo */
 function autoH(el){if(!el)return;el.style.height='auto';el.style.height=(el.scrollHeight+3)+'px'}
 function autoHAll(root){(root||document).querySelectorAll('textarea.nt,textarea[data-k]').forEach(autoH)}
@@ -1302,7 +1372,7 @@ function renderCer(){
     return `<div class="cr${h?' h':''}${x.c?'':' nc'}"><div class="crh">${head}<button class="xb" data-dc="${i}" aria-label="Rimuovi voce">✕</button></div>
 <div class="ds sm">${r?esc(r[1]):'Scatta pure le foto: il codice lo assegni quando lo sai.'}</div>
 ${x.c?'':`<button class="btn pri wide" data-chg="${i}" style="margin-top:8px">🔍 Assegna codice CER</button>`}
-<div class="cfr"><div class="cfs" id="cf${x.id}"></div><label class="btn sm2 pri">📷 Foto<input type="file" accept="image/*" capture="environment" hidden data-phc="${x.id}"></label><label class="btn sm2" aria-label="Foto dalla galleria">🖼<input type="file" accept="image/*" multiple hidden data-phc="${x.id}"></label></div>
+<div class="cfr"><div class="cfs" id="cf${x.id}"></div><button class="btn sm2 pri" data-camc="${x.id}">📷 Foto / video</button><label class="btn sm2" aria-label="Foto dalla galleria">🖼<input type="file" accept="image/*,video/*" multiple hidden data-phc="${x.id}"></label></div>
 <div class="qr"><input data-q="${i}" data-qid="${x.id}" inputmode="decimal" placeholder="Quantità" value="${esc(x.q)}"><select data-u="${i}" aria-label="Unità di misura">${UN.map(u=>`<option${u==x.u?' selected':''}>${u}</option>`).join('')}</select></div>
 <div class="qh" id="qh${x.id}"></div>
 <textarea class="nt" data-n="${i}" rows="1" placeholder="Note (stato fisico, ubicazione, contenitore…)">${esc(x.n)}</textarea></div>`}).join('')
@@ -1333,7 +1403,8 @@ async function renderPh(){
   freeUrls();
   if(s.nf!==f.length){s.nf=f.length;save()}
   const sp=split(f);fotos=sp.gen;fotosAcc=sp.acc;fotosSf=sp.sf;umap={};
-  const mk=p=>{const u=URL.createObjectURL(p.blob);urls.push(u);umap[p.id]=u;return u};
+  f.forEach(p=>{if(isVid(p))VIDS.add(p.id)});
+  const mk=p=>{const u=URL.createObjectURL(pimg(p));urls.push(u);umap[p.id]=u;return u};
   $('nf').textContent=fotos.filter(p=>!codesOf(s,p).length).length||'';
   $('of').hidden=!fotos.length;$('os').hidden=!fotosSf.length;
   $('gb').textContent='🖼 Galleria foto per sezione e codice CER'+(f.length?' ('+f.length+')':'');
@@ -1352,7 +1423,9 @@ const CATS=[['sf','Stato di fatto e accessibilità','S'],['rif','Rifiuti','']];
 async function addFoto(files,cid,cat){
   if(!files.length)return;
   const s=cur;setStatus('Salvo foto…');
-  try{for(const f of files){const b=await shrink(f);await put('foto',{id:uid(),sop:s.id,blob:b,nota:'',cer:cid?[cid]:[],cat:cat||'rif',ts:Date.now()})}}
+  try{for(const f of files){
+    if(/^video\//.test(f.type)){const pp=await makePoster(f);await put('foto',{id:uid(),sop:s.id,blob:f,vid:1,poster:pp.poster,dur:pp.dur,nota:'',cer:cid?[cid]:[],cat:cat||'rif',ts:Date.now()});continue}
+    const b=await shrink(f);await put('foto',{id:uid(),sop:s.id,blob:b,nota:'',cer:cid?[cid]:[],cat:cat||'rif',ts:Date.now()})}}
   catch(e){note('Non riesco a salvare la foto: memoria del browser piena?')}
   if(cur===s){save();await renderPh();setStatus('Salvato ✓')}
 }
@@ -1393,19 +1466,22 @@ async function openPh(id,list){
   const pos=ovList.indexOf(id);
   if(ovList.length>1)$('ovh').textContent+='  ·  '+(pos+1)+' di '+ovList.length;
   $('ovp').hidden=pos<=0;$('ovx').hidden=pos<0||pos>=ovList.length-1;
-  $('ovmore').open=false;ovU=URL.createObjectURL(ovF.blob);$('ovi').src=ovU;$('ovn').value=ovF.nota||'';paintOvk();$('ov').hidden=false;
+  const vv=isVid(ovF);$('ovmore').open=false;ovU=URL.createObjectURL(ovF.blob);
+  $('ovv').hidden=!vv;$('ovi').hidden=vv;$('ovz').hidden=vv;
+  if(vv){$('ovi').removeAttribute('src');$('ovv').src=ovU}else{$('ovv').pause();$('ovv').removeAttribute('src');$('ovi').src=ovU}$('ovn').value=ovF.nota||'';paintOvk();$('ov').hidden=false;
 }
 let ovAdded=[];
 async function closePh(salva){
   if(salva)await savePh();
   else if(ovAdded.length&&cur){const f=await fotoDi(cur.id),used=new Set(f.flatMap(p=>p.cer||[]));const n=cur.cer.length;cur.cer=cur.cer.filter(x=>!ovAdded.includes(x.id)||used.has(x.id)||x.q||x.n);if(cur.cer.length!=n){save();if(view=='vE')renderCer()}}
   ovAdded=[];
-  $('ov').hidden=true;$('ovi').removeAttribute('src');if(ovU)URL.revokeObjectURL(ovU);ovF=ovU=null;
+  $('ov').hidden=true;$('ovi').removeAttribute('src');try{$('ovv').pause()}catch(_){}$('ovv').removeAttribute('src');if(ovU)URL.revokeObjectURL(ovU);ovF=ovU=null;
   if(cur)renderPh();
 }
 const csvQ=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
 const csvBlob=rows=>new Blob(['﻿'+rows.map(r=>r.map(csvQ).join(';')).join('\r\n')],{type:'text/csv'});
-const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);return 'foto_'+String(i+1).padStart(2,'0')+(k.length?'_CER_'+k.join('_'):cs.length?'_CER_da_assegnare':'')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg')};
+const fotoName=(s,p,i)=>{const cs=codesOf(s,p),k=cs.filter(x=>x.c).map(x=>x.c);return 'foto_'+String(i+1).padStart(2,'0')+(k.length?'_CER_'+k.join('_'):cs.length?'_CER_da_assegnare':'')+fExt(p)};
+const fExt=p=>{const ty=(p.blob&&p.blob.type)||'';return /mp4|quicktime/.test(ty)?(/quicktime/.test(ty)?'.mov':'.mp4'):/webm/.test(ty)?'.webm':/^video\//.test(ty)?'.mp4':ty=='image/png'?'.png':'.jpg'};
 const fotoNums=(f,id)=>f.map((p,i)=>(p.cer||[]).includes(id)?i+1:0).filter(Boolean);
 async function csv(s){esporta(fname(s)+'.csv',csvBlob(await csvRowsFor(s)))}
 async function csvRowsFor(s){
@@ -1447,7 +1523,7 @@ async function zipFilesFor(s){
   const files=f.map((p,i)=>({name:fotoName(s,p,i),blob:p.blob}));
   const el=[['File foto','Foto n.','Sezione','Codici CER','Descrizioni','Quantità presunta','Didascalia']];
   f.forEach((p,i)=>{const cs=codesOf(s,p);el.push([files[i].name,i+1,'Rifiuti',cs.map(x=>lbl(s,x)).join(', '),cs.map(x=>{const r=RM.get(x.c);return r?r[1]:''}).join(' | '),cs.filter(x=>pqv(p,x)!=null).map(x=>pqTxt(p,x)+(cs.length>1?' ('+lbl(s,x)+')':'')).join('; '),p.nota||''])});
-  fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+(p.blob&&p.blob.type=='image/png'?'.png':'.jpg');files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','','',p.nota||''])});
+  fs.forEach((p,i)=>{const n='statodifatto_'+String(i+1).padStart(2,'0')+fExt(p);files.push({name:n,blob:p.blob});el.push([n,'S'+(i+1),'Stato di fatto e accessibilità','','','',p.nota||''])});
   files.push({name:'elenco_foto.csv',blob:csvBlob(el)});
   if((s.sfn||'').trim())files.push({name:'stato_di_fatto_note.txt',blob:new Blob([s.sfn],{type:'text/plain'})});
   return files;
@@ -1473,7 +1549,8 @@ async function renderGal(){
   const s=cur,f=await fotoDi(s.id);if(cur!==s||view!='vG')return;
   freeUrls();const sp=split(f);fotos=sp.gen;fotosAcc=sp.acc;fotosSf=sp.sf;
   const nr=new Map(fotos.map((p,i)=>[p.id,i+1])),one=!!galGrp;
-  const th=(p,lab)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<button class="th" data-pf="${p.id}"><img src="${u}" alt="Foto ${lab}" loading="lazy"><span>${lab}</span>${p.nota?'<i>✎</i>':''}</button>`};
+  f.forEach(p=>{if(isVid(p))VIDS.add(p.id)});
+  const th=(p,lab)=>{const u=URL.createObjectURL(pimg(p));urls.push(u);return `<button class="th" data-pf="${p.id}"><img src="${u}" alt="Foto ${lab}" loading="lazy"><span>${lab}</span>${p.nota?'<i>✎</i>':''}</button>`};
   const G=[['sf','Stato di fatto e accessibilità',esc(s.sfn||''),fotosSf,(p,i)=>th(p,'S'+(i+1)),'']];
   s.cer.forEach(x=>{const r=RM.get(x.c);G.push(['c:'+x.id,x.c?`CER ${fmt(x.c)}${isH(x.c)?'*<span class="hb">pericoloso</span>':''}`:esc(lbl(s,x)),esc(r?r[1]:'')+(x.q?' · <b>'+esc(x.q)+' '+x.u+'</b>':''),fotos.filter(p=>(p.cer||[]).includes(x.id)),p=>th(p,String(nr.get(p.id))),'Nessuna foto collegata a questo codice.'])});
   G.push(['rif','Tutte le foto dei rifiuti','',fotos,(p,i)=>th(p,String(i+1)),'']);
@@ -1520,7 +1597,7 @@ async function reportHtml(){
 async function renderRep(s){
   repSop=s;setPrintCss();const pdt=dIt(s.data)||dIt(today());
   const {gen:f,sf:fs}=split(await fotoDi(s.id));
-  const fig=(p,lab,extra)=>{const u=URL.createObjectURL(p.blob);urls.push(u);return `<figure><img src="${u}" alt="${lab}"><figcaption><b>${lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
+  const fig=(p,lab,extra)=>{const u=URL.createObjectURL(pimg(p));urls.push(u);const vv=isVid(p);return `<figure${vv?' class="fv"':''}><img src="${u}" alt="${lab}"><figcaption><b>${vv?'▶ Video '+lab.replace(/^Foto /,'')+(p.dur?' ('+durTxt(p.dur)+')':''):lab}</b>${extra||''}${p.nota?' — '+esc(p.nota):''}</figcaption></figure>`};
   const grid=items=>items.length?`<div class="pg">${items.join('')}</div>`:'';
   const chunk=(a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o.length?o:[[]]};
   const lines=t=>String(t||'').split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/80)),0);
@@ -1544,6 +1621,14 @@ async function renderRep(s){
   const rp=[];let cur_=[],sum=0;rows.forEach(r=>{if(cur_.length&&sum+r.u>34){rp.push(cur_);cur_=[];sum=0}cur_.push(r.h);sum+=r.u});if(cur_.length||!rp.length)rp.push(cur_);
   const haz=s.cer.some(x=>{const r=RM.get(x.c);return r&&r[2]});
   rp.forEach((c,k)=>pages.push({sec:k?'':'Rifiuti individuati',h:`<div class="ph"><h2>Rifiuti individuati${k?' <span class="seg">(segue)</span>':''}</h2></div>${s.cer.length?`<table class="tb">${thead}<tbody>${c.join('')}</tbody></table>${k==rp.length-1&&haz?'<p style="font-size:13px;color:#555">* rifiuto pericoloso.</p>':''}`:'<p>Nessun codice registrato.</p>'}`}));
+  /* 3b. automezzi e attrezzature necessari */
+  const mzr=mzRighe(s),mzn=(s.mzn||'').trim();
+  if(mzr.length||mzn){
+    const mh='<thead><tr><th>Tipo</th><th class="r">Quantità</th><th>Mezzi indicati</th></tr></thead>';
+    const rr=mzr.map(r=>({u:Math.max(1,r.sel.length)+.7,h:`<tr><td><b>${esc(r.c)}</b><div style="color:#555;font-size:12px">${esc(r.g)}</div></td><td class="r nw"><b>${esc(r.q||'—')}</b></td><td>${r.sel.length?r.sel.map(v=>`<div>${esc(v[1])} — <span class="nw">${esc(v[3])}</span></div>`).join(''):'<span style="color:#777">tipo indicato, mezzo da definire</span>'}</td></tr>`}));
+    const mp=[];let c_=[],su=0;rr.forEach(r=>{if(c_.length&&su+r.u>30){mp.push(c_);c_=[];su=0}c_.push(r.h);su+=r.u});if(c_.length||!mp.length)mp.push(c_);
+    mp.forEach((c,k)=>pages.push({sec:k?'':'Automezzi e attrezzature necessari',h:`<div class="ph"><h2>Automezzi e attrezzature necessari${k?' <span class="seg">(segue)</span>':''}</h2></div>${c.length?`<table class="tb">${mh}<tbody>${c.join('')}</tbody></table>`:''}${k==mp.length-1&&mzn?`<p style="white-space:pre-line;margin:12px 0 0"><b>Note:</b> ${esc(mzn)}</p>`:''}`}));
+  }
   /* 4. una sezione per ogni CER: 6 foto per pagina, intestazione e totale ripetuti */
   const home=new Map();f.forEach(p=>{const id=(p.cer||[]).find(k=>s.cer.some(y=>y.id==k));home.set(p.id,id||null)});
   const cap=(p,x)=>{const q=pqTxt(p,x)?' · '+pqTxt(p,x):'';const altri=codesOf(s,p).filter(y=>y.id!=x.id);return q+(altri.length?' · anche '+altri.map(y=>lbl(s,y)+(pqTxt(p,y)?' ('+pqTxt(p,y)+')':'')).join(', '):'')};
@@ -1601,6 +1686,7 @@ $('vE').addEventListener('input',e=>{
   else if(t.id=='lat'||t.id=='lon'){stopGps();$('gpsb').disabled=false;const a=num($('lat').value),b=num($('lon').value);cur.gps=(a!=null&&b!=null&&Math.abs(a)<=90&&Math.abs(b)<=180)?{lat:a,lon:b,acc:null,man:1,ts:Date.now()}:null;updGps(true);save()}
   else if(d.q!=null){cur.cer[+d.q].q=t.value;renderTot();save()}
   else if(d.n!=null){cur.cer[+d.n].n=t.value;autoH(t);save()}
+  else if(d.mzq){mzChange(t)}
 });
 $('vE').addEventListener('change',e=>{
   const t=e.target,d=t.dataset;if(!cur)return;
@@ -1618,6 +1704,81 @@ $('ovp').onclick=()=>ovGo(-1);$('ovx').onclick=()=>ovGo(1);
 let tx0=null;
 $('ovi').addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});
 $('ovi').addEventListener('touchend',e=>{if(tx0==null)return;const dx=e.changedTouches[0].clientX-tx0;tx0=null;if(Math.abs(dx)>50)ovGo(dx<0?1:-1)});
+/* ============ VIDEO: si salvano come le foto, con un'immagine di anteprima ============ */
+const VID_PH=new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240"><rect width="100%" height="100%" fill="#222"/><text x="50%" y="56%" fill="#fff" font-size="64" text-anchor="middle" font-family="sans-serif">▶</text></svg>'],{type:'image/svg+xml'});
+const isVid=p=>!!(p&&(p.vid||(p.blob&&/^video\//.test(p.blob.type))));
+const pimg=p=>isVid(p)?(p.poster||VID_PH):p.blob;
+const durTxt=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+async function makePoster(blob){
+  const u=URL.createObjectURL(blob);
+  try{const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=u;
+    await new Promise((ok,ko)=>{v.onloadeddata=ok;v.onerror=ko;setTimeout(ok,4000)});
+    try{v.currentTime=Math.min(.5,(v.duration||1)/2);await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,1500)})}catch(_){}
+    const M=800,k=Math.min(1,M/Math.max(v.videoWidth||1,v.videoHeight||1)),c=document.createElement('canvas');c.width=Math.round((v.videoWidth||320)*k);c.height=Math.round((v.videoHeight||240)*k);
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+    const b=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.8));return {poster:b,dur:isFinite(v.duration)?v.duration:0};
+  }catch(_){return {poster:null,dur:0}}finally{URL.revokeObjectURL(u)}
+}
+/* segna con ▶ le miniature dei video, ovunque compaiano */
+let VIDS=new Set();
+new MutationObserver(()=>{if(!VIDS.size)return;document.querySelectorAll('[data-pf]:not(.isv)').forEach(el=>{if(VIDS.has(el.dataset.pf))el.classList.add('isv')})}).observe(document.body,{childList:true,subtree:true});
+/* ============ FOTOCAMERA DELL'APP: scatti a raffica, senza conferma, si esce con Fine ============ */
+let CAM=null;
+function camFallback(cid,cat){const i=document.createElement('input');i.type='file';i.accept='image/*';i.capture='environment';i.onchange=()=>{const a=[...i.files];if(a.length)addFoto(a,cid,cat)};i.click()}
+async function apriCam(cid,cat){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||inClaude){camFallback(cid,cat);return}
+  let st;
+  try{st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1440}}})}
+  catch(e){note('Non riesco ad aprire la fotocamera dell’app'+(e&&e.name==='NotAllowedError'?': manca il permesso. Consentilo nelle impostazioni del browser per questo sito.':'.')+' Uso la fotocamera del telefono.');camFallback(cid,cat);return}
+  const x=cid&&cur.cer.find(y=>y.id==cid);
+  CAM={st,cid,cat:cat||'rif',n:0,q:Promise.resolve(),sop:cur.id,mode:'f',rec:null};
+  $('cam').classList.remove('vid','rec');$('camrec').hidden=true;document.querySelectorAll('[data-cmd]').forEach(b=>b.classList.toggle('on',b.dataset.cmd=='f'));
+  $('camt').textContent=cat=='sf'?'Stato di fatto e accessibilità':x?('Foto '+(x.c?lbl(cur,x):'voce senza codice')):'Foto';
+  $('camn').textContent='Tocca il pulsante per scattare. FOTO/VIDEO a destra. Premi Fine quando hai finito.';$('camth').innerHTML='';
+  const v=$('camv');v.srcObject=st;$('cam').hidden=false;try{await v.play()}catch(_){}
+}
+function camFrame(M){const v=$('camv'),k=Math.min(1,M/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return c}
+function camCount(){const C=CAM;$('camn').textContent=C.n+(C.n==1?' elemento salvato':' elementi salvati')+' · premi Fine per uscire'}
+async function camMode(m){
+  const C=CAM;if(!C||C.rec)return;C.mode=m;
+  document.querySelectorAll('[data-cmd]').forEach(b=>b.classList.toggle('on',b.dataset.cmd==m));
+  $('cam').classList.toggle('vid',m=='v');
+  /* il microfono si chiede solo la prima volta che si passa al video */
+  if(m=='v'&&!C.mic){try{const a=await navigator.mediaDevices.getUserMedia({audio:true});C.mic=a;a.getAudioTracks().forEach(tr=>C.st.addTrack(tr))}catch(_){C.mic='no'}}
+}
+function vidType(){const L=['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];for(const x of L)try{if(MediaRecorder.isTypeSupported(x))return x}catch(_){}return ''}
+function videoStart(){
+  const C=CAM;if(!C||C.rec)return;if(!window.MediaRecorder){note('Questo telefono non permette di registrare video dall’app. Usa il pulsante 🖼 per caricarne uno dalla galleria.');return}
+  const poster=camFrame(800);const ty=vidType();let r;
+  try{r=new MediaRecorder(C.st,Object.assign({videoBitsPerSecond:1500000},ty?{mimeType:ty}:{}))}catch(e){note('Non riesco a registrare il video: '+e.message);return}
+  const parts=[];r.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data)};
+  const t0=Date.now();C.rec={r,t0,tick:setInterval(()=>{const s=(Date.now()-t0)/1000;$('camtm').textContent=durTxt(s);if(s>=120)videoStop()},250)};
+  r.onstop=()=>{const blob=new Blob(parts,{type:(r.mimeType||ty||'video/webm').split(';')[0]}),dur=(Date.now()-t0)/1000;
+    poster.toBlob(pb=>{const u=URL.createObjectURL(pb);$('camth').innerHTML=`<img src="${u}" alt=""><span>${C.n}</span>`;
+      C.q=C.q.then(()=>put('foto',{id:uid(),sop:C.sop,blob,vid:1,poster:pb,dur,nota:'',cer:C.cid?[C.cid]:[],cat:C.cat,ts:Date.now()})).catch(()=>note('Non riesco a salvare il video: memoria del browser piena?'))},'image/jpeg',.8)};
+  r.start(1000);$('cam').classList.add('rec');$('camrec').hidden=false;$('camtm').textContent='0:00';
+}
+function videoStop(){const C=CAM;if(!C||!C.rec)return;clearInterval(C.rec.tick);try{C.rec.r.stop()}catch(_){}C.rec=null;C.n++;camCount();$('cam').classList.remove('rec');$('camrec').hidden=true}
+function scatta(){
+  if(!CAM)return;const v=$('camv');if(!v.videoWidth)return;
+  if(CAM.mode=='v'){if(CAM.rec)videoStop();else videoStart();return}
+  const M=1600,k=Math.min(1,M/Math.max(v.videoWidth,v.videoHeight)),w=Math.round(v.videoWidth*k),h=Math.round(v.videoHeight*k);
+  const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0,w,h);
+  const fl=$('camfl');fl.classList.add('on');setTimeout(()=>fl.classList.remove('on'),60);
+  try{navigator.vibrate&&navigator.vibrate(30)}catch(_){}
+  const C=CAM;C.n++;camCount();
+  c.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);$('camth').innerHTML=`<img src="${u}" alt=""><span>${C.n}</span>`;
+    C.q=C.q.then(()=>put('foto',{id:uid(),sop:C.sop,blob:b,nota:'',cer:C.cid?[C.cid]:[],cat:C.cat,ts:Date.now()})).catch(()=>note('Non riesco a salvare la foto: memoria del browser piena?'))},'image/jpeg',.85);
+}
+async function chiudiCam(){
+  if(!CAM)return;if(CAM.rec){videoStop();await new Promise(r=>setTimeout(r,400))}const C=CAM;CAM=null;
+  try{C.st.getTracks().forEach(t=>t.stop())}catch(_){}try{if(C.mic&&C.mic!=='no')C.mic.getTracks().forEach(t=>t.stop())}catch(_){}
+  $('camv').srcObject=null;$('cam').hidden=true;
+  await C.q;if(cur&&cur.id===C.sop){save();await renderPh();setStatus('Salvato ✓')}
+}
+$('camsh').onclick=scatta;$('camok').onclick=chiudiCam;
+document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>camMode(b.dataset.cmd));
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&CAM)chiudiCam()});
 /* ============ FOTO A SCHERMO INTERO CON ZOOM ============ */
 let Z={s:1,x:0,y:0},zp=new Map(),zpinch=null,zlast=0,zmoved=false;
 function zApply(){const v=$('zv'),w=v.clientWidth,h=v.clientHeight;
@@ -1643,11 +1804,12 @@ const zEnd=e=>{if(!zp.has(e.pointerId))return;zp.delete(e.pointerId);if(zp.size<
 zv.addEventListener('pointerup',zEnd);zv.addEventListener('pointercancel',zEnd);
 zv.addEventListener('wheel',e=>{e.preventDefault();zAt(Z.s*(e.deltaY<0?1.2:1/1.2),e.clientX,e.clientY)},{passive:false});
 zv.addEventListener('dblclick',e=>e.preventDefault());
-document.addEventListener('keydown',e=>{if(!$('zv').hidden){if(e.key=='Escape')chiudiZoom();return}if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(false)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;const id=ovF.id;await del('foto',id);if(cur&&ovF.sop===cur.id){cur.delf=(cur.delf||[]).concat(id);save()}closePh(false)};
+document.addEventListener('keydown',e=>{if(CAM){if(e.key=='Escape')chiudiCam();else if(e.key==' '||e.key=='Enter'){e.preventDefault();scatta()}return}if(!$('zv').hidden){if(e.key=='Escape')chiudiZoom();return}if(pick&&e.key=='Escape'&&$('ov').hidden){pickDone(null);return}if($('ov').hidden||e.target.id=='ovn')return;if(e.key=='ArrowLeft')ovGo(-1);else if(e.key=='ArrowRight')ovGo(1);else if(e.key=='Escape')closePh(false)});$('ovd').onclick=async()=>{if(!ovF||!await ask('Eliminare questa foto?','Elimina',1))return;const id=ovF.id;await del('foto',id);if(cur&&ovF.sop===cur.id){cur.delf=(cur.delf||[]).concat(id);save()}closePh(false)};
 $('tga').onclick=()=>{if(pick){pickDone(null);return}const id=target;target=null;go(id?'sop/'+id:'sop')};
 
 document.addEventListener('click',e=>{
   const t=e.target;
+  {const cb=t.closest&&t.closest('[data-cam],[data-camc]');if(cb&&cur){if(cb.dataset.camc)apriCam(cb.dataset.camc,'rif');else apriCam(null,cb.dataset.cam);return}}
   {const nb=t.closest&&t.closest('[data-nav]');if(nb){const k=nb.dataset.nav;if(k=='new')nuovo();else go(k);return}}
   const dr=t.closest('[data-dr]');if(dr){dlgClose(dr.dataset.dr);return}
   if(t.id=='dlg'){dlgClose('');return}
